@@ -1,8 +1,10 @@
 import { isGameStarted, useGameStore } from '../store/gameStore';
+import { useUiStore } from '../store/uiStore';
 import { ConnectScreen } from './ConnectScreen';
 import { GameRoom } from './GameRoom';
 import { GameScreen } from './GameScreen';
 import { LobbyScreen } from './LobbyScreen';
+import { MapEditorScreen } from './MapEditorScreen';
 
 /**
  * Top-level router. Picks the screen based on the connection status and the
@@ -18,6 +20,12 @@ import { LobbyScreen } from './LobbyScreen';
 export function Root(): JSX.Element {
   const status = useGameStore((s) => s.status);
   const currentGame = useGameStore((s) => s.currentGame);
+  const appView = useUiStore((s) => s.appView);
+
+  // The map editor is a standalone tool, reachable regardless of connection.
+  if (appView === 'mapEditor') {
+    return <MapEditorScreen />;
+  }
 
   if (status !== 'connected') {
     return <ConnectScreen />;
