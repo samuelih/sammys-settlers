@@ -603,6 +603,18 @@ public class SOCServer extends Server
     public static final String PROP_JSETTLERS_SAVEGAME_DIR = "jsettlers.savegame.dir";
 
     /**
+     * Property {@code jsettlers.custommaps.dir}: directory to scan at startup for user-defined custom board maps
+     * ({@code *.map.json} files), each registered as a custom scenario.
+     *<P>
+     * If set, but isn't an existing directory, server will warn at startup and load no custom maps.
+     * Requires the {@code gson.jar} on the classpath (same as savegame); if missing, server warns and
+     * skips custom maps. Invalid map files are logged and skipped, never crashing the server.
+     * See {@code doc/Custom-Maps.md} for the file format.
+     * @since 2.7.00
+     */
+    public static final String PROP_JSETTLERS_CUSTOMMAPS_DIR = "jsettlers.custommaps.dir";
+
+    /**
      * Property {@code jsettlers.stats.file.name} is the filename to append an optional daily stats summary
      * with the same information as the {@code *STATS*} command, using {@link StatsFileWriterTask}.
      *<P>
@@ -679,6 +691,7 @@ public class SOCServer extends Server
         PROP_JSETTLERS_BOTS_TIMEOUT_TURN,       "Robot turn timeout (seconds) for third-party bots",
         PROP_JSETTLERS_DEBUG_BOTS_DATACHECK_RSRC, "Debug flag to check bots' count of player resources",
         PROP_JSETTLERS_SAVEGAME_DIR,            "Dir in which to store savegame files",
+        PROP_JSETTLERS_CUSTOMMAPS_DIR,          "Dir to scan at startup for custom board maps (*.map.json)",
         PROP_JSETTLERS_STATS_FILE_NAME,         "If set, filename to append daily *STATS* into",
         PROP_JSETTLERS_TEST_VALIDATE__CONFIG,   "Flag to validate server and DB config, then exit (same as -t command-line option)",
         PROP_JSETTLERS_TEST_DB,                 "Flag to test database methods, then exit",
@@ -1872,6 +1885,9 @@ public class SOCServer extends Server
                      + PROP_JSETTLERS_ACCOUNTS_ADMINS);
         }
 
+        if (props.containsKey(PROP_JSETTLERS_CUSTOMMAPS_DIR))
+            initSocServer_customMaps();
+
         /**
          * Check other misc optional properties:
          */
@@ -2580,6 +2596,50 @@ public class SOCServer extends Server
             System.err.println
                 ("Warning: savegame disabled: Can't find Gson class"
                  + (((loadErr != null) && ! (loadErr instanceof ClassNotFoundException)) ? ": " + loadErr : ""));
+        }
+    }
+
+    /**
+     * Initialize optional custom-maps feature, as part of {@link #initSocServer(String, String)}.
+     * Scans {@link #PROP_JSETTLERS_CUSTOMMAPS_DIR} for {@code *.map.json} files and registers each valid one
+     * as a custom scenario via {@link CustomMapLoader}.
+     *<P>
+     * Like savegame, this requires the {@code gson.jar} on the classpath; if it's missing, this method warns
+     * and loads no custom maps. {@link CustomMapLoader} never crashes the server because of a bad map file.
+     * Call only if {@link #props} contains {@link #PROP_JSETTLERS_CUSTOMMAPS_DIR}.
+     * @since 2.7.00
+     */
+    private void initSocServer_customMaps()
+    {
+        final String customMapsDirPath = props.getProperty(PROP_JSETTLERS_CUSTOMMAPS_DIR);
+        if (customMapsDirPath == null)
+            return;   // <--- Early return: property absent ---
+
+        boolean foundGson = false;
+        Throwable loadErr = null;
+        try
+        {
+            foundGson = (null != Class.forName("com.google.gson.Gson"));
+        } catch(Throwable th) {
+            loadErr = th;
+        }
+
+        if ((loadErr != null) || ! foundGson)
+        {
+            System.err.println
+                ("Warning: custom maps disabled: Can't find Gson class"
+                 + (((loadErr != null) && ! (loadErr instanceof ClassNotFoundException)) ? ": " + loadErr : ""));
+            return;   // <--- Early return: no Gson on classpath ---
+        }
+
+        try
+        {
+            final File customMapsDir = new File(customMapsDirPath);
+            final int n = CustomMapLoader.loadAndRegisterAll(customMapsDir);
+            if (n > 0)
+                System.err.println("Custom maps: registered " + n + " map(s) from " + customMapsDirPath);
+        } catch (SecurityException e) {
+            System.err.println("Warning: Can't access custommaps.dir " + customMapsDirPath + ": " + e);
         }
     }
 

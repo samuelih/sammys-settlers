@@ -620,6 +620,53 @@ public class SOCScenario
     }
 
     /**
+     * Reserved key prefix for custom (user-defined) scenarios loaded from external map files at server startup:
+     * {@code "SC_X"}.
+     *<P>
+     * A custom scenario's key is this prefix followed by up to 4 uppercase ASCII alphanumeric characters
+     * derived from the map's filename, keeping the total key length within the 8-character maximum.
+     * Reserving this prefix guarantees custom scenarios can never shadow a built-in scenario,
+     * because no built-in scenario key starts with {@code "SC_X"}.
+     *
+     * @see #registerCustomScenario(SOCScenario)
+     * @since 2.7.00
+     */
+    public static final String CUSTOM_SCENARIO_KEY_PREFIX = "SC_X";
+
+    /**
+     * Register a custom (user-defined) scenario loaded from an external map file at server startup.
+     * Unlike {@link #addKnownScenario(SOCScenario)}, this method is meant for server use and validates
+     * that the scenario's key uses the reserved {@link #CUSTOM_SCENARIO_KEY_PREFIX} so it can't shadow
+     * a built-in scenario.
+     *<P>
+     * The scenario's {@link SOCVersionedItem#minVersion minVersion} must be at least
+     * {@link #VERSION_FOR_SCENARIOS} (2000).
+     *<P>
+     * Does not recalculate {@link #ALL_KNOWN_SCENARIOS_MIN_VERSION}; custom scenarios use minVersion 2000,
+     * which is the floor for all scenarios, so that cached value remains correct.
+     *
+     * @param scNew  New custom scenario to register; not null.
+     *     Its {@link SOCVersionedItem#key key} must start with {@link #CUSTOM_SCENARIO_KEY_PREFIX}.
+     * @throws IllegalArgumentException if {@code scNew} is null, its key doesn't start with
+     *     {@link #CUSTOM_SCENARIO_KEY_PREFIX}, or a scenario with that key is already registered
+     * @see #CUSTOM_SCENARIO_KEY_PREFIX
+     * @since 2.7.00
+     */
+    public static void registerCustomScenario(final SOCScenario scNew)
+        throws IllegalArgumentException
+    {
+        if (scNew == null)
+            throw new IllegalArgumentException("scNew null");
+        if (! scNew.key.startsWith(CUSTOM_SCENARIO_KEY_PREFIX))
+            throw new IllegalArgumentException
+                ("Custom scenario key must start with " + CUSTOM_SCENARIO_KEY_PREFIX + ": " + scNew.key);
+        if (allScenarios.containsKey(scNew.key))
+            throw new IllegalArgumentException("Scenario key already registered: " + scNew.key);
+
+        allScenarios.put(scNew.key, scNew);
+    }
+
+    /**
      * Clone this scenario map and its contents.
      * @param scens  a map of {@link SOCScenario}s, or null
      * @return a deep copy of all scenario objects within scens, or null if scens is null

@@ -474,7 +474,31 @@ public class SOCBoardAtServer extends SOCBoardLarge
             // PORTS_TYPES_MAINLAND will be checked for "clumps" of several adjacent 3-for-1 or 2-for-1
             // ports in makeNewBoard_shufflePorts. PORTS_TYPES_ISLANDS will not be checked.
 
-        if (hasScenario4ISL)
+        final CustomMapLoader.ParsedCustomMap customMap = CustomMapLoader.getLoadedMap(scen);
+
+        if (customMap != null)
+        {
+            // Custom (user-defined) map loaded from a *.map.json file at server startup.
+            // Feed its parsed arrays through the existing makeNewBoard_placeHexes pipeline.
+
+            landAreasLegalNodes = new HashSet[customMap.maxLandAreaNumber + 1];
+
+            makeNewBoard_placeHexes
+                (customMap.landHexType.clone(), customMap.landHexCoord, false, customMap.landHexNumber.clone(),
+                 customMap.shuffle, customMap.shuffle, customMap.landAreaPathRanges,
+                 false, false, maxPl, opt_breakClumps, scen, opts);
+
+            if (customMap.robberHex != 0)
+                setRobberHex(customMap.robberHex, false);
+            pirateHex = customMap.pirateHex;  // 0 if none
+
+            // All custom-map ports break clumps like mainland ports
+            PORTS_TYPES_MAINLAND = customMap.portType;  // null if no ports
+            PORT_LOC_FACING_MAINLAND = customMap.portEdgeFacing;  // null if no ports
+            PORTS_TYPES_ISLANDS = null;
+            PORT_LOC_FACING_ISLANDS = null;
+        }
+        else if (hasScenario4ISL)
         {
             // Four Islands (SC_4ISL)
 
@@ -2772,6 +2796,12 @@ public class SOCBoardAtServer extends SOCBoardLarge
             else if (sc.equals(SOCScenario.K_SC_NSHO))
             {
                 heightWidth = NSHO_BOARDSIZE[(maxPl == 6) ? 2 : (maxPl == 4) ? 1 : 0];
+            }
+            else if (CustomMapLoader.isCustomMap(sc))
+            {
+                // Custom maps always use the larger 6-player fallback board size, so the same
+                // map's coordinates are valid regardless of the game's actual player count.
+                heightWidth = FALLBACK_BOARDSIZE[1];
             }
         }
 

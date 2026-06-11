@@ -37,6 +37,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.SystemColor;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -255,6 +256,12 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
      * @since 2.0.00
      */
     private static boolean didScaleUIManagerFonts;
+
+    /**
+     * Tracking flag to make sure {@link #scaleUIManagerFontsForFontSizePref()} is done only once.
+     * @since 2.7.00
+     */
+    private static boolean didScaleUIManagerFontsForPref;
 
     private final SOCPlayerClient client;
 
@@ -478,6 +485,13 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
      * @since 1.1.07
      */
     protected JButton gi;
+
+    /**
+     * "Preferences..." button, opens {@link PreferencesDialog} to view and edit client
+     * {@link UserPreferences}.
+     * @since 2.7.00
+     */
+    protected JButton pref;
 
     /**
      * Local Server indicator in main panel: blank, or 'server is running' if
@@ -809,6 +823,10 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
      */
     public static final void scaleUIManagerFonts(final int displayScale)
     {
+        // Apply the user's font-size preference first; this is independent of high-DPI scaling
+        // and must run before windows are created (this method is called once at startup).
+        scaleUIManagerFontsForFontSizePref();
+
         if ((displayScale <= 1) || didScaleUIManagerFonts)
             return;
 
@@ -827,6 +845,60 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
         }
 
         didScaleUIManagerFonts = true;
+    }
+
+    /**
+     * If the user's {@link UserPreferences.PreferenceDescriptor#KEY_UI_FONT_SIZE} preference is not
+     * "normal", adjust the Swing look-and-feel default font sizes by a small fixed point delta:
+     * small = -2pt, large = +3pt, xlarge = +6pt (relative to the current default sizes).
+     * Does nothing for "normal" or an unrecognized value.
+     *<P>
+     * Conservative and safe: skips any {@link UIManager} key whose value isn't a {@link Font},
+     * and never reduces a font below 8pt. Sets a flag so it runs only once per JVM, since it's
+     * applied before windows are created (called from {@link #scaleUIManagerFonts(int)} at startup).
+     * @since 2.7.00
+     */
+    public static final void scaleUIManagerFontsForFontSizePref()
+    {
+        if (didScaleUIManagerFontsForPref)
+            return;
+
+        didScaleUIManagerFontsForPref = true;
+
+        final String sizePref = UserPreferences.getPref
+            (UserPreferences.PreferenceDescriptor.KEY_UI_FONT_SIZE, "normal");
+
+        final int delta;
+        if ("small".equals(sizePref))
+            delta = -2;
+        else if ("large".equals(sizePref))
+            delta = 3;
+        else if ("xlarge".equals(sizePref))
+            delta = 6;
+        else
+            return;   // <--- Early return: "normal" or unrecognized; no change ---
+
+        try
+        {
+            final Set<Object> keySet = UIManager.getLookAndFeelDefaults().keySet();
+            for (final Object key : keySet.toArray(new Object[keySet.size()]))
+            {
+                if ((key == null) || ! key.toString().toLowerCase().contains("font"))
+                    continue;
+
+                Font font = UIManager.getDefaults().getFont(key);
+                if (font == null)
+                    continue;
+
+                float newSize = font.getSize2D() + delta;
+                if (newSize < 8f)
+                    newSize = 8f;
+                UIManager.put(key, font.deriveFont(newSize));
+            }
+        } catch (RuntimeException e) {
+            // be safe if UIManager lookups misbehave on some platforms
+            System.err.println("Error applying uiFontSize preference: " + e);
+        }
     }
 
     public SOCPlayerClient getClient()
@@ -904,6 +976,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
         jg = new JButton(strings.get("pcli.main.join.game"));     // "Join Game"
         pg = new JButton(strings.get("pcli.main.practice"));      // "Practice" -- "practice game" text is too wide
         gi = new JButton(strings.get("pcli.main.game.info"));     // "Game Info" -- show game options
+        pref = new JButton(strings.get("pcli.main.preferences")); // "Preferences..."
 
         if (SOCPlayerClient.IS_PLATFORM_WINDOWS && ! isOSColorHighContrast)
         {
@@ -913,6 +986,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
             jg.setBackground(null);
             pg.setBackground(null);
             gi.setBackground(null);
+            pref.setBackground(null);
         }
 
         versionOrlocalTCPPortLabel = new JLabel();
@@ -1004,6 +1078,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
         jg.addActionListener(actionListener);
         pg.addActionListener(actionListener);
         gi.addActionListener(actionListener);
+        pref.addActionListener(actionListener);
 
         initMainPanelLayout(true, null);  // status line only, until later call to showVersion
 
@@ -1231,11 +1306,22 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
         gbl.setConstraints(l, c);
         mainPane.add(l);
 
-        // Row 4 (spacer/localTCP label)
+        // Row 4 (spacer/localTCP label, Preferences btn)
 
-        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.gridwidth = (hasChannels) ? 4 : 3;
         gbl.setConstraints(localTCPServerLabel, c);
         mainPane.add(localTCPServerLabel);
+
+        c.gridwidth = 1;
+        c.fill = GridBagConstraints.NONE;
+        gbl.setConstraints(pref, c);
+        mainPane.add(pref);  // "Preferences..."
+        c.fill = GridBagConstraints.BOTH;
+
+        l = new JLabel();
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gbl.setConstraints(l, c);
+        mainPane.add(l);
 
         // Row 5 (version/port# label, join channel btn, show-options btn, join game btn)
 
@@ -1363,7 +1449,20 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
         {
             boolean showPopupCannotJoin = false;
 
-            if ((target == jc) || (target == channel) || (target == chlist)) // Join channel stuff
+            if (target == pref) // Preferences dialog
+            {
+                Window parent;
+                try
+                {
+                    parent = AskDialog.getParentWindow(this);
+                } catch (RuntimeException re) {
+                    parent = null;
+                }
+                PreferencesDialog.createAndShow(this, parent);
+
+                return;   // <--- Early return: handled Preferences button ---
+            }
+            else if ((target == jc) || (target == channel) || (target == chlist)) // Join channel stuff
             {
                 showPopupCannotJoin = ! guardedActionPerform_channels(target);
             }
