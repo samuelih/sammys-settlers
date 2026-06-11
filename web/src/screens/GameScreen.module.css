@@ -5,40 +5,25 @@
   padding: var(--space-6, 1.5rem);
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4, 1rem);
-}
-
-.serverLine {
-  color: var(--color-text-muted, #666);
+.title {
   margin: 0;
-}
-
-.joinButton {
-  margin-left: auto;
-}
-
-.version {
+  font-size: var(--font-size-lg, 1.25rem);
   color: var(--color-text, #111);
+}
+
+.seatLine {
+  margin: 0;
+  color: var(--color-accent, #2563eb);
   font-weight: 600;
 }
 
-.empty {
-  padding: var(--space-6, 1.5rem);
-  text-align: center;
-  color: var(--color-text-muted, #666);
-}
-
-.list {
+.players {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.item {
+.player {
   display: flex;
   align-items: center;
   gap: var(--space-3, 0.75rem);
@@ -46,22 +31,32 @@
   border-bottom: 1px solid var(--color-border, #eee);
 }
 
-.item:last-child {
+.player:last-child {
   border-bottom: none;
 }
 
-.name {
+.seatNum {
   font-weight: 600;
+  color: var(--color-text, #111);
+  min-width: 4.5rem;
+}
+
+.playerName {
   color: var(--color-text, #111);
 }
 
-.options {
-  font-size: var(--font-size-sm, 0.875rem);
+.botTag {
   color: var(--color-text-muted, #666);
+  font-size: var(--font-size-sm, 0.875rem);
 }
 
-.started {
-  margin-left: auto;
-  font-size: var(--font-size-sm, 0.875rem);
+.youTag {
   color: var(--color-accent, #2563eb);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-muted, #666);
+  font-size: var(--font-size-sm, 0.875rem);
 }

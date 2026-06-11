@@ -29,8 +29,32 @@ import {
 export const CLIENT_VERSION_NUMBER = 2700;
 /** Our reported client version display string. */
 export const CLIENT_VERSION_STRING = '2.7.00';
+/**
+ * Our reported build string. Must be non-null whenever {@link CLIENT_FEATURES}
+ * is sent: Java {@code SOCVersion} throws if {@code build == null && feats != null}
+ * (see SOCVersion.java line 105), and the server rejects (drops) the whole
+ * VERSION message on that parse error — leaving the connection feature-limited.
+ */
+export const CLIENT_VERSION_BUILD = 'web';
 /** Locale we report to the server in our SOCVersion handshake. */
 export const CLIENT_LOCALE = 'en_US';
+
+/**
+ * Optional client features we advertise to the server, encoded as a
+ * {@code SOCFeatureSet} list (";feat;feat=val;" — starts and ends with ';').
+ * Mirrors the Swing client (soc/client/ClientNetwork.java), which adds:
+ *   * {@code 6pl}  — CLIENT_6_PLAYERS: can play 6-player games (PL &gt; 4 / PLB).
+ *   * {@code sb}   — CLIENT_SEA_BOARD: can render the sea board (SBL option).
+ *   * {@code sc=<vers>} — CLIENT_SCENARIO_VERSION: supports scenarios up to this
+ *     JSettlers version (and the {@code SC} / {@code _SC_*} options).
+ *
+ * Without these the server marks the connection "feature-limited" and returns
+ * SBL / PLB / scenario options (and a 6-max PL) as OTYPE_UNKNOWN, so the New
+ * Game dialog can't show them. Declaring {@code sc} equal to our version also
+ * clears the limited-features flag entirely (SOCServer.setClientVersSendGamesOrReject
+ * lines 7538-7551). See web/docs/protocol.md.
+ */
+export const CLIENT_FEATURES = `;6pl;sb;sc=${CLIENT_VERSION_NUMBER};`;
 
 /** Default WebSocket host when none is supplied. */
 export const DEFAULT_HOST = 'localhost';
@@ -318,13 +342,16 @@ export class GameConnection {
       this.serverVersionNumber = v.versNum;
       if (!this.handshakeDone) {
         this.handshakeDone = true;
-        // Reply with our SOCVersion (build/feats null, locale en_US).
+        // Reply with our SOCVersion, advertising our client features so the
+        // server doesn't downgrade sea-board / 6-player / scenario options to
+        // OTYPE_UNKNOWN. build MUST be non-null when feats is sent (Java parity;
+        // otherwise the server drops the whole VERSION message).
         this.send(
           new SOCVersion(
             CLIENT_VERSION_NUMBER,
             CLIENT_VERSION_STRING,
-            null,
-            null,
+            CLIENT_VERSION_BUILD,
+            CLIENT_FEATURES,
             CLIENT_LOCALE,
           ),
         );

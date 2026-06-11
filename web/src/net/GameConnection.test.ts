@@ -5,7 +5,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  CLIENT_FEATURES,
   CLIENT_LOCALE,
+  CLIENT_VERSION_BUILD,
   CLIENT_VERSION_NUMBER,
   CLIENT_VERSION_STRING,
   type ConnectionState,
@@ -144,8 +146,11 @@ describe('GameConnection handshake', () => {
     expect(reply).not.toBeNull();
     expect(reply?.versNum).toBe(CLIENT_VERSION_NUMBER);
     expect(reply?.versStr).toBe(CLIENT_VERSION_STRING);
-    expect(reply?.versBuild).toBeNull();
-    expect(reply?.feats).toBeNull();
+    // We advertise a non-null build + client features so the server returns
+    // fully-typed sea-board / 6-player / scenario options (not OTYPE_UNKNOWN).
+    // build MUST be non-null when feats is sent (Java SOCVersion parity).
+    expect(reply?.versBuild).toBe(CLIENT_VERSION_BUILD);
+    expect(reply?.feats).toBe(CLIENT_FEATURES);
     expect(reply?.cliLocale).toBe(CLIENT_LOCALE);
 
     expect(c.getServerVersion()).toBe(2700);
