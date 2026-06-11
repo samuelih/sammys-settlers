@@ -439,11 +439,12 @@ public class TestI18NGameoptScenStrings
         final URL uCli = SOCStringManager.class.getResource(pfullCli);
         assertNotNull("Couldn't find " + pfullCli, uSrv);
 
-        final File ufSrv = new File(uSrv.getPath());
+        // use toURI() not getPath(), so URL-encoded characters (%20 for spaces, etc) are decoded
+        final File ufSrv = new File(uSrv.toURI());
         final File dirSrv = new File(ufSrv.getParent());
         assertTrue("Dir for server strings " + pfullSrv + " should exist", dirSrv.isDirectory());
 
-        final File ufCli = new File(uCli.getPath());
+        final File ufCli = new File(uCli.toURI());
         final File dirCli = new File(ufCli.getParent());
         assertTrue("Dir for client strings " + pfullCli + " should exist", dirCli.isDirectory());
 
