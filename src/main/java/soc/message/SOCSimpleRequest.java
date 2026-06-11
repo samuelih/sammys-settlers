@@ -125,6 +125,37 @@ public class SOCSimpleRequest extends SOCMessageTemplate4i
      */
     public static final int TRADE_PORT_PLACE = 1001;
 
+    /**
+     * The current player wants to buy a Cities &amp; Knights knight (1 sheep + 1 ore;
+     * becomes an inactive basic knight). Sent with {@code value1} = {@code value2} = 0
+     * during their turn in state {@link SOCGame#PLAY1 PLAY1}.
+     *<P>
+     * If allowed, server pays the cost ({@link SOCPlayerElement} LOSE messages) and announces the
+     * player's new knight counts ({@link SOCPlayerElement.PEType#CK_KNIGHTS_LV1 CK_KNIGHTS_LV1} etc, SET).
+     * Otherwise, server responds with the standard denial: (pn = -1, same typecode, 0, 0).
+     *<P>
+     * Used with game option {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI};
+     * see {@code doc/Cities-and-Knights-Implemented.md}.
+     * @since 2.7.00
+     */
+    public static final int CK_BUY_KNIGHT = 1002;
+
+    /**
+     * The current player wants to activate a Cities &amp; Knights knight (1 wheat;
+     * lowest-level inactive knight becomes active). Same message flow and denial
+     * as {@link #CK_BUY_KNIGHT}.
+     * @since 2.7.00
+     */
+    public static final int CK_ACTIVATE_KNIGHT = 1003;
+
+    /**
+     * The current player wants to promote a Cities &amp; Knights knight one level
+     * (1 sheep + 1 ore; promoting to mighty (level 3) requires Politics improvement level &gt;= 3).
+     * Same message flow and denial as {@link #CK_BUY_KNIGHT}.
+     * @since 2.7.00
+     */
+    public static final int CK_PROMOTE_KNIGHT = 1004;
+
     // Reminder: If you add a request type, check client and server code to determine if the new type
     // should be added to methods such as:
     // - SOCGameMessageHandler.handleSIMPLEREQUEST

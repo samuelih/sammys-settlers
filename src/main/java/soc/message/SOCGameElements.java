@@ -178,7 +178,16 @@ public class SOCGameElements extends SOCMessageTemplateMi
          *
          * @since 2.7.00
          */
-        HAS_BUILT_CITY_N7C(10);
+        HAS_BUILT_CITY_N7C(10),
+
+        /**
+         * Cities &amp; Knights barbarian-attack strength counter from {@link SOCGame#getBarbarianStrength()}.
+         * Sent after each dice roll while game option {@link SOCGameOptionSet#K__CK_BARBARIAN _CK_BARB} is set;
+         * the barbarians attack when it reaches {@link SOCGame#CK_BARBARIAN_ATTACK_STRENGTH} and it resets to 0.
+         * See {@code doc/Cities-and-Knights-Implemented.md}.
+         * @since 2.7.00
+         */
+        CK_BARBARIAN_STRENGTH(11);
 
         /**
          * Minimum version (2.7.00) of server and client which send and recognize {@link #SHIP_PLACED_THIS_TURN_EDGE}.

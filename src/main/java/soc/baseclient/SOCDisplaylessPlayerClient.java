@@ -1939,6 +1939,33 @@ public class SOCDisplaylessPlayerClient implements Runnable
             }
             break;
 
+        case CK_CLOTH_COUNT:
+        case CK_COIN_COUNT:
+        case CK_PAPER_COUNT:
+            {
+                final int ctype = SOCPlayer.CK_CLOTH + (etype.getValue() - PEType.CK_CLOTH_COUNT.getValue());
+                pl.setCKCommodity
+                    (ctype,
+                     (action == SOCPlayerElement.GAIN) ? pl.getCKCommodity(ctype) + val
+                     : (action == SOCPlayerElement.LOSE) ? pl.getCKCommodity(ctype) - val
+                     : val);
+            }
+            break;
+
+        case CK_KNIGHTS_LV1:
+        case CK_KNIGHTS_LV2:
+        case CK_KNIGHTS_LV3:
+            pl.setCKKnights
+                (SOCPlayer.CK_KNIGHT_BASIC + (etype.getValue() - PEType.CK_KNIGHTS_LV1.getValue()), val);
+            break;
+
+        case CK_KNIGHTS_ACTIVE_LV1:
+        case CK_KNIGHTS_ACTIVE_LV2:
+        case CK_KNIGHTS_ACTIVE_LV3:
+            pl.setCKActiveKnights
+                (SOCPlayer.CK_KNIGHT_BASIC + (etype.getValue() - PEType.CK_KNIGHTS_ACTIVE_LV1.getValue()), val);
+            break;
+
         default:
             ;  // no action needed, default is only to avoid compiler warning
         }
@@ -2136,6 +2163,10 @@ public class SOCDisplaylessPlayerClient implements Runnable
 
         case HAS_BUILT_CITY_N7C:
             ga.setHasBuiltCity(value != 0);
+            break;
+
+        case CK_BARBARIAN_STRENGTH:
+            ga.setBarbarianStrength(value);
             break;
 
         case UNKNOWN_TYPE:
@@ -3210,6 +3241,16 @@ public class SOCDisplaylessPlayerClient implements Runnable
         {
         case SOCPlayingPiece.SHIP:
             ga.removeShip(new SOCShip(player, pieceCoordinate, null));
+            break;
+
+        case SOCPlayingPiece.CITY:
+            // Cities & Knights barbarian attack: downgrade the city to a settlement.
+            // settlementAtNode returns the city piece if one is at that node.
+            {
+                final SOCPlayingPiece city = ga.getBoard().settlementAtNode(pieceCoordinate);
+                if (city instanceof SOCCity)
+                    ga.ckDowngradeCity((SOCCity) city);
+            }
             break;
 
         default:

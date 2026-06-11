@@ -256,16 +256,18 @@ public class SOCScenario
              "_SC_WOND=t,SBL=t,VP=t10,_SC_SANY=t"));  // win condition: Complete Wonder, or 10 VP _and_ built the most levels
                 // The "all 4 levels" win condition is also stored in SOCSpecialItem.SC_WOND_WIN_LEVEL.
 
-        // Cities & Knights groundwork stub (disabled / not playable; see doc/Cities-and-Knights-Design.md).
-        //   minVersion 2000 keeps ALL_KNOWN_SCENARIOS_MIN_VERSION at 2000 (no behavior change).
-        //   scOpts uses only active base options; the inactive _CK_* options are not referenced here,
-        //   so this stub passes soctest.game.TestScenarioOpts. A later phase ties in the _CK_* rules.
+        // Cities & Knights; rules detailed in doc/Cities-and-Knights-Implemented.md.
+        //   minVersion 2000 keeps ALL_KNOWN_SCENARIOS_MIN_VERSION at 2000.
         allSc.put(K_SC_CK, new SOCScenario
             (K_SC_CK, 2000, 2700,
-             "Cities & Knights (under development)",
-             "Cities & Knights groundwork: this scenario is under development and is not yet playable. "
-             + "See doc/Cities-and-Knights-Design.md.",
-             "SBL=t,VP=t13"));
+             "Cities & Knights",
+             "Cities produce commodities (cloth, coin, paper) which buy city improvements. "
+             + "Improvements let you draw progress cards, and the first to improvement level 4 "
+             + "of a track claims its metropolis (+2 SVP). Buy, activate, and promote knights to "
+             + "defend Catan: the barbarians attack every 7th roll, the strongest sole defender "
+             + "becomes Defender of Catan (+1 SVP), and if the defense fails the weakest defenders "
+             + "each lose a city. 13 VP to win.",
+             "_SC_CK=t,_CK_IMP=t,_CK_KNI=t,_CK_PROG=t,_CK_BARB=t,_CK_METR=t,SBL=t,VP=t13"));
 
         // Uncomment to test scenario sync/negotiation between server and client versions.
         // Update the "2000" and "2001" version numbers here to current and current + 1.

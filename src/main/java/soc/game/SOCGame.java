@@ -630,6 +630,56 @@ public class SOCGame implements Serializable, Cloneable
     public static final int VP_WINNER_STANDARD = 10;
 
     /**
+     * Cities &amp; Knights: Barbarian strength counter value (7) at which the barbarians attack;
+     * see {@link #getBarbarianStrength()} and {@link #ckResolveBarbarianAttack(RollResult)}.
+     * @since 2.7.00
+     */
+    public static final int CK_BARBARIAN_ATTACK_STRENGTH = 7;
+
+    /**
+     * Cities &amp; Knights: Maximum knights (6) a player can have across all levels;
+     * see {@link #canCKBuyKnight(int)}.
+     * @since 2.7.00
+     */
+    public static final int CK_MAX_KNIGHTS = 6;
+
+    /**
+     * Cities &amp; Knights: Maximum playable progress cards (4) a player can hold;
+     * victory-point progress cards are exempt. See {@link #ckDrawProgressCard(int, SOCPlayer)}.
+     * @since 2.7.00
+     */
+    public static final int CK_PROGRESS_HAND_LIMIT = 4;
+
+    /**
+     * Cities &amp; Knights: Improvement-track level (4) which claims that track's metropolis;
+     * see {@link #ckCheckMetropolis(int)}.
+     * @since 2.7.00
+     */
+    public static final int CK_METROPOLIS_LEVEL = 4;
+
+    /**
+     * Cities &amp; Knights: Politics improvement level (3) required to promote a knight to
+     * mighty (level 3); see {@link #canCKPromoteKnight(int)}.
+     * @since 2.7.00
+     */
+    public static final int CK_MIGHTY_POLITICS_LEVEL = 3;
+
+    /**
+     * Cities &amp; Knights: Cost to buy or promote a knight: 1 sheep + 1 ore.
+     * @see #canCKBuyKnight(int)
+     * @see #canCKPromoteKnight(int)
+     * @since 2.7.00
+     */
+    public static final SOCResourceSet CK_COST_KNIGHT = new SOCResourceSet(0, 1, 1, 0, 0, 0);
+
+    /**
+     * Cities &amp; Knights: Cost to activate a knight: 1 wheat.
+     * @see #canCKActivateKnight(int)
+     * @since 2.7.00
+     */
+    public static final SOCResourceSet CK_COST_ACTIVATE_KNIGHT = new SOCResourceSet(0, 0, 0, 1, 0, 0);
+
+    /**
      * Number of development cards (5) which are Victory Point cards.
      * Not used in scenario {@link SOCGameOptionSet#K_SC_PIRI _SC_PIRI}.
      * (If 4 or more players in that scenario, they become {@link SOCDevCardConstants#KNIGHT KNIGHT} cards.)
@@ -1151,16 +1201,53 @@ public class SOCGame implements Serializable, Cloneable
     private boolean hasRolledSeven;
 
     /**
-     * Cities &amp; Knights barbarian-attack strength counter (groundwork; not yet playable).
+     * Cities &amp; Knights barbarian-attack strength counter.
      * Starts at 0 and is advanced by {@link #advanceBarbarianStrength()}, called from
      * {@link #rollDice()} only when game option {@link SOCGameOptionSet#K__CK_BARBARIAN} is set.
-     * Because that option is inactive-hidden, this stays 0 in all normal play.
+     * When it reaches {@link #CK_BARBARIAN_ATTACK_STRENGTH}, the barbarians attack
+     * ({@link #ckResolveBarbarianAttack(RollResult)}) and it resets to 0.
      * Modeled on the {@link SOCGameOptionSet#K_SC_PIRI SC_PIRI} pirate-fleet advancement.
-     * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+     * See {@code doc/Cities-and-Knights-Implemented.md}.
      * @see #getBarbarianStrength()
      * @since 2.7.00
      */
     private int barbarianStrength;
+
+    /**
+     * Cities &amp; Knights metropolis owner player numbers, indexed by improvement track
+     * (0 = Trade, 1 = Politics, 2 = Science); -1 if unclaimed.
+     * Used when game option {@link SOCGameOptionSet#K__CK_METROPOLIS} is set.
+     * @see #ckCheckMetropolis(int)
+     * @since 2.7.00
+     */
+    private final int[] ckMetropolisOwner = { -1, -1, -1 };
+
+    /**
+     * Cities &amp; Knights progress-card decks (Trade, Politics, Science), or null if not yet
+     * initialized; each list's element 0 is the top of the deck. Server only; built lazily by
+     * {@link #ckInitProgressDecks()} when game option {@link SOCGameOptionSet#K__CK_PROGRESS} is set.
+     * @since 2.7.00
+     */
+    private List<List<Integer>> ckProgressDecks;
+
+    /**
+     * Which Cities &amp; Knights monopoly progress card is awaiting the current player's
+     * resource/commodity choice in state {@link #WAITING_FOR_MONOPOLY}:
+     * {@link SOCCKProgressCardConstants#RESOURCE_MONOPOLY},
+     * {@link SOCCKProgressCardConstants#TRADE_MONOPOLY}, or 0 if none
+     * (0 means any {@code WAITING_FOR_MONOPOLY} is the standard Monopoly dev card).
+     * @see #ckDoMonopolyAction(int)
+     * @since 2.7.00
+     */
+    private int ckMonopolyCardInPlay;
+
+    /**
+     * Details of the most recently played Cities &amp; Knights progress card's effect,
+     * set by {@link #playInventoryItem(int)} for the server to announce, or null.
+     * @see #getCKLastCardEffect()
+     * @since 2.7.00
+     */
+    private CKCardEffect ckLastCardEffect;
 
     /**
      * The most recent {@link #moveRobber(int, int)} or {@link #movePirate(int, int)} result.
@@ -2836,10 +2923,10 @@ public class SOCGame implements Serializable, Cloneable
     }
 
     /**
-     * Get the Cities &amp; Knights barbarian-attack strength counter (groundwork; not yet playable).
-     * Stays 0 in all normal play because it's only advanced when game option
-     * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set, and that option is inactive-hidden.
-     * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+     * Get the Cities &amp; Knights barbarian-attack strength counter.
+     * Advanced by each dice roll when game option {@link SOCGameOptionSet#K__CK_BARBARIAN} is set;
+     * the barbarians attack when it reaches {@link #CK_BARBARIAN_ATTACK_STRENGTH} and it resets to 0.
+     * See {@code doc/Cities-and-Knights-Implemented.md}.
      * @return the current barbarian strength counter, 0 or more
      * @see #advanceBarbarianStrength()
      * @since 2.7.00
@@ -2850,19 +2937,25 @@ public class SOCGame implements Serializable, Cloneable
     }
 
     /**
-     * Advance the Cities &amp; Knights barbarian-attack strength counter by one step, and run the
-     * (stubbed) attack-resolution hook (groundwork; not yet playable).
+     * Set the Cities &amp; Knights barbarian-attack strength counter;
+     * for use at client based on messages from server, and in saved-game load.
+     * @param strength  New counter value, 0 or more
+     * @see #getBarbarianStrength()
+     * @since 2.7.00
+     */
+    public void setBarbarianStrength(final int strength)
+    {
+        barbarianStrength = strength;
+    }
+
+    /**
+     * Advance the Cities &amp; Knights barbarian-attack strength counter by one step.
      *<P>
      * Called from {@link #rollDice()} only when game option {@link SOCGameOptionSet#K__CK_BARBARIAN}
-     * is set; that option is inactive-hidden, so this is unreachable in normal play. Modeled on the
-     * {@link SOCGameOptionSet#K_SC_PIRI SC_PIRI} pirate-fleet advancement in {@code rollDice()}.
-     *<P>
-     * Phase 0 scope: this advances {@link #getBarbarianStrength()} and, when a threshold would be
-     * reached, fires a documented log-only hook. Actual attack resolution (city downgrades, knight
-     * defense, resource loss) is deferred until knight semantics exist in a later phase.
-     *<P>
-     * Returns the new counter value so {@link #rollDice()} can copy attack results onto
-     * {@link RollResult}.
+     * is set. Modeled on the {@link SOCGameOptionSet#K_SC_PIRI SC_PIRI} pirate-fleet advancement
+     * in {@code rollDice()}. When the returned strength reaches
+     * {@link #CK_BARBARIAN_ATTACK_STRENGTH}, {@code rollDice()} calls
+     * {@link #ckResolveBarbarianAttack(RollResult)} which resolves the attack and resets the counter.
      *
      * @return the barbarian strength counter after advancing
      * @see #getBarbarianStrength()
@@ -2872,15 +2965,829 @@ public class SOCGame implements Serializable, Cloneable
     {
         ++barbarianStrength;
 
-        // Phase 0 stub: attack resolution is log-only until knight semantics exist.
-        // A later phase resolves the attack (city downgrades, knight defense, resource loss)
-        // and announces it, reusing the SC_PIRI_FORT_ATTACK_RESULT SOCSimpleAction pattern;
-        // see doc/Cities-and-Knights-Design.md section 3.4 and the PROPOSED message sequences.
-        D.ebugPrintlnINFO
-            ("C&K barbarian groundwork: strength advanced to " + barbarianStrength
-             + " in game " + name + " (attack resolution stubbed)");
-
         return barbarianStrength;
+    }
+
+    /**
+     * Resolve a Cities &amp; Knights barbarian attack: called from {@link #rollDice()} when
+     * {@link #getBarbarianStrength()} reaches {@link #CK_BARBARIAN_ATTACK_STRENGTH}.
+     * See {@code doc/Cities-and-Knights-Implemented.md} for the full rules. Summary:
+     *<UL>
+     * <LI> Barbarian strength = all players' total cities; Catan's defense = all players'
+     *      {@link SOCPlayer#getCKTotalKnightStrength()}.
+     * <LI> If defense wins and there's a sole strongest defender, they get +1 Special VP
+     *      (Defender of Catan; sets {@link RollResult#ck_defenderPn}); on a tie each tied player
+     *      instead draws a progress card (appended to {@link RollResult#ck_progressDrawn}).
+     * <LI> If the barbarians win, each player owning at least 1 city with the (joint-)lowest
+     *      defense contribution loses a city, downgraded to a settlement via
+     *      {@link #ckDowngradeCity(SOCCity)} (appended to {@link RollResult#ck_citiesDowngraded}).
+     *      Each metropolis a player owns makes one of their cities immune.
+     * <LI> Afterward all active knights deactivate and the counter resets to 0.
+     *</UL>
+     * Caller should call {@link #checkForWinner()} if {@link RollResult#ck_defenderPn} != -1
+     * or any cards were drawn.
+     *
+     * @param rr  Roll result to update with the attack outcome; not null
+     * @since 2.7.00
+     */
+    public void ckResolveBarbarianAttack(final RollResult rr)
+    {
+        rr.ck_barbarianAttackFired = true;
+
+        int strength = 0, defense = 0;
+        for (int pn = 0; pn < maxPlayers; ++pn)
+        {
+            if (isSeatVacant(pn))
+                continue;
+            strength += players[pn].getCities().size();
+            defense += players[pn].getCKTotalKnightStrength();
+        }
+        rr.ck_attackStrength = strength;
+        rr.ck_attackDefense = defense;
+        rr.ck_defenderPn = -1;
+        rr.ck_citiesDowngraded = new ArrayList<SOCCity>();
+
+        if (defense >= strength)
+        {
+            // Defenders win: sole strongest defender gets +1 SVP, ties each draw a progress card
+            int best = 0, bestPn = -1;
+            boolean tied = false;
+            for (int pn = 0; pn < maxPlayers; ++pn)
+            {
+                if (isSeatVacant(pn))
+                    continue;
+                final int contrib = players[pn].getCKTotalKnightStrength();
+                if (contrib > best)
+                {
+                    best = contrib;
+                    bestPn = pn;
+                    tied = false;
+                }
+                else if ((contrib == best) && (best > 0))
+                {
+                    tied = true;
+                }
+            }
+
+            if ((bestPn != -1) && ! tied)
+            {
+                final SOCPlayer defender = players[bestPn];
+                defender.setSpecialVP(defender.getSpecialVP() + 1);
+                defender.addSpecialVPInfo(1, "event.svp.ck.defender");
+                rr.ck_defenderPn = bestPn;
+            }
+            else if (tied && isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS) && isAtServer)
+            {
+                for (int pn = 0; pn < maxPlayers; ++pn)
+                {
+                    if (isSeatVacant(pn) || (players[pn].getCKTotalKnightStrength() != best))
+                        continue;
+                    final int track = Math.abs(rand.nextInt()) % 3;
+                    final int drawn = ckDrawProgressCard(track, players[pn]);
+                    if (drawn != 0)
+                    {
+                        if (rr.ck_progressDrawn == null)
+                            rr.ck_progressDrawn = new ArrayList<int[]>();
+                        rr.ck_progressDrawn.add(new int[]{ pn, drawn });
+                    }
+                }
+            }
+        } else {
+            // Barbarians win: players with the fewest active knight levels lose a city
+            int worst = Integer.MAX_VALUE;
+            for (int pn = 0; pn < maxPlayers; ++pn)
+            {
+                if (isSeatVacant(pn) || players[pn].getCities().isEmpty())
+                    continue;
+                final int contrib = players[pn].getCKTotalKnightStrength();
+                if (contrib < worst)
+                    worst = contrib;
+            }
+
+            for (int pn = 0; pn < maxPlayers; ++pn)
+            {
+                if (isSeatVacant(pn))
+                    continue;
+                final SOCPlayer pl = players[pn];
+                if (pl.getCities().isEmpty() || (pl.getCKTotalKnightStrength() != worst))
+                    continue;
+
+                int immune = 0;
+                for (int track = 0; track < 3; ++track)
+                    if (ckMetropolisOwner[track] == pn)
+                        ++immune;
+                if (pl.getCities().size() <= immune)
+                    continue;
+
+                final SOCCity city = (SOCCity) pl.getCities().get(0);
+                ckDowngradeCity(city);
+                rr.ck_citiesDowngraded.add(city);
+            }
+        }
+
+        // All active knights stand down after the attack
+        for (int pn = 0; pn < maxPlayers; ++pn)
+            if (! isSeatVacant(pn))
+                for (int lv = SOCPlayer.CK_KNIGHT_BASIC; lv <= SOCPlayer.CK_KNIGHT_MIGHTY; ++lv)
+                    players[pn].setCKActiveKnights(lv, 0);
+
+        barbarianStrength = 0;
+    }
+
+    /**
+     * Downgrade a city to a settlement (Cities &amp; Knights barbarian attack).
+     * Removes the city from the board and puts the owner's settlement at the same node,
+     * updating all players' potentials; calls
+     * {@link #undoPutPieceCommon(SOCPlayingPiece, boolean, boolean) undoPutPieceCommon(city, false, true)}.
+     * Called at server from {@link #ckResolveBarbarianAttack(RollResult)}, and at clients
+     * when they receive the server's {@link soc.message.SOCRemovePiece} for a city.
+     *
+     * @param city  The city to downgrade; not null
+     * @since 2.7.00
+     */
+    public void ckDowngradeCity(final SOCCity city)
+    {
+        undoPutPieceCommon(city, false, true);
+    }
+
+    /**
+     * Get the owner of a Cities &amp; Knights metropolis (game option
+     * {@link SOCGameOptionSet#K__CK_METROPOLIS _CK_METR}).
+     * @param track  Improvement track index: 0 = Trade, 1 = Politics, 2 = Science
+     * @return  owning player number, or -1 if unclaimed
+     * @see #ckCheckMetropolis(int)
+     * @since 2.7.00
+     */
+    public int getCKMetropolisOwner(final int track)
+    {
+        return ckMetropolisOwner[track];
+    }
+
+    /**
+     * Set the owner of a Cities &amp; Knights metropolis;
+     * for use at client based on messages from server.
+     * @param track  Improvement track index: 0 = Trade, 1 = Politics, 2 = Science
+     * @param pn  New owner's player number, or -1
+     * @since 2.7.00
+     */
+    public void setCKMetropolisOwner(final int track, final int pn)
+    {
+        ckMetropolisOwner[track] = pn;
+    }
+
+    /**
+     * Re-evaluate a Cities &amp; Knights metropolis after an improvement-track level change
+     * (game option {@link SOCGameOptionSet#K__CK_METROPOLIS _CK_METR}).
+     * The first player to reach level {@link #CK_METROPOLIS_LEVEL} on a track claims its
+     * metropolis (+2 Special VP); another player steals it only by exceeding the holder's level,
+     * which costs the previous holder their 2 SVP.
+     *<P>
+     * Caller is responsible for {@link #checkForWinner()} and for announcing the change.
+     *
+     * @param track  Improvement track index: 0 = Trade, 1 = Politics, 2 = Science
+     * @return  the new owner's player number if ownership changed, or -1 if unchanged
+     * @since 2.7.00
+     */
+    public int ckCheckMetropolis(final int track)
+    {
+        if (! isGameOptionSet(SOCGameOptionSet.K__CK_METROPOLIS))
+            return -1;
+
+        final String typeKey = SOCSpecialItem.CK_IMPROV_TYPEKEYS[track];
+        final int ownerPn = ckMetropolisOwner[track];
+        final int ownerLevel = (ownerPn != -1) ? ckGetImprovementLevel(ownerPn, typeKey) : -1;
+
+        int maxLevel = -1, maxPn = -1;
+        for (int pn = 0; pn < maxPlayers; ++pn)
+        {
+            if (isSeatVacant(pn))
+                continue;
+            final int lv = ckGetImprovementLevel(pn, typeKey);
+            if (lv > maxLevel)
+            {
+                maxLevel = lv;
+                maxPn = pn;
+            }
+        }
+
+        if ((maxLevel < CK_METROPOLIS_LEVEL) || (maxPn == ownerPn) || (maxLevel <= ownerLevel))
+            return -1;
+
+        ckMetropolisOwner[track] = maxPn;
+        players[maxPn].setSpecialVP(players[maxPn].getSpecialVP() + 2);
+        players[maxPn].addSpecialVPInfo(2, "event.svp.ck.metropolis");
+        if (ownerPn != -1)
+        {
+            players[ownerPn].setSpecialVP(players[ownerPn].getSpecialVP() - 2);
+            players[ownerPn].addSpecialVPInfo(-2, "event.svp.ck.metropolis.lost");
+        }
+
+        return maxPn;
+    }
+
+    /**
+     * Get a player's Cities &amp; Knights improvement-track level.
+     * @param pn  Player number
+     * @param typeKey  Track type key: an element of {@link SOCSpecialItem#CK_IMPROV_TYPEKEYS}
+     * @return  the track's level 0-5, or 0 if the player has no such special item
+     * @since 2.7.00
+     */
+    public int ckGetImprovementLevel(final int pn, final String typeKey)
+    {
+        final SOCSpecialItem itm = players[pn].getSpecialItem(typeKey, 0);
+
+        return (itm != null) ? itm.getLevel() : 0;
+    }
+
+    /**
+     * Can this player buy a Cities &amp; Knights knight now (game option
+     * {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI})?
+     * Must be their turn in state {@link #PLAY1}, have fewer than {@link #CK_MAX_KNIGHTS} knights,
+     * and afford {@link #CK_COST_KNIGHT} (1 sheep + 1 ore).
+     * @param pn  Player number
+     * @return  true if the purchase is allowed now
+     * @see #ckBuyKnight(int)
+     * @since 2.7.00
+     */
+    public boolean canCKBuyKnight(final int pn)
+    {
+        return isGameOptionSet(SOCGameOptionSet.K__CK_KNIGHTS)
+            && (pn == currentPlayerNumber) && (gameState == PLAY1)
+            && (players[pn].getCKTotalKnights() < CK_MAX_KNIGHTS)
+            && players[pn].getResources().contains(CK_COST_KNIGHT);
+    }
+
+    /**
+     * Buy a Cities &amp; Knights knight: pay {@link #CK_COST_KNIGHT} and gain 1 inactive basic knight.
+     * Assumes {@link #canCKBuyKnight(int)} was already checked.
+     * @param pn  Player number
+     * @since 2.7.00
+     */
+    public void ckBuyKnight(final int pn)
+    {
+        final SOCPlayer pl = players[pn];
+        pl.getResources().subtract(CK_COST_KNIGHT);
+        pl.setCKKnights(SOCPlayer.CK_KNIGHT_BASIC, pl.getCKKnights(SOCPlayer.CK_KNIGHT_BASIC) + 1);
+    }
+
+    /**
+     * Can this player activate a Cities &amp; Knights knight now?
+     * Must be their turn in state {@link #PLAY1}, have an inactive knight of some level,
+     * and afford {@link #CK_COST_ACTIVATE_KNIGHT} (1 wheat).
+     * @param pn  Player number
+     * @return  true if activation is allowed now
+     * @see #ckActivateKnight(int)
+     * @since 2.7.00
+     */
+    public boolean canCKActivateKnight(final int pn)
+    {
+        if (! (isGameOptionSet(SOCGameOptionSet.K__CK_KNIGHTS)
+               && (pn == currentPlayerNumber) && (gameState == PLAY1)
+               && players[pn].getResources().contains(CK_COST_ACTIVATE_KNIGHT)))
+            return false;
+
+        final SOCPlayer pl = players[pn];
+        for (int lv = SOCPlayer.CK_KNIGHT_BASIC; lv <= SOCPlayer.CK_KNIGHT_MIGHTY; ++lv)
+            if (pl.getCKKnights(lv) > pl.getCKActiveKnights(lv))
+                return true;
+
+        return false;
+    }
+
+    /**
+     * Activate a Cities &amp; Knights knight: pay {@link #CK_COST_ACTIVATE_KNIGHT} and the player's
+     * lowest-level inactive knight becomes active.
+     * Assumes {@link #canCKActivateKnight(int)} was already checked.
+     * @param pn  Player number
+     * @since 2.7.00
+     */
+    public void ckActivateKnight(final int pn)
+    {
+        final SOCPlayer pl = players[pn];
+        pl.getResources().subtract(CK_COST_ACTIVATE_KNIGHT);
+        for (int lv = SOCPlayer.CK_KNIGHT_BASIC; lv <= SOCPlayer.CK_KNIGHT_MIGHTY; ++lv)
+        {
+            if (pl.getCKKnights(lv) > pl.getCKActiveKnights(lv))
+            {
+                pl.setCKActiveKnights(lv, pl.getCKActiveKnights(lv) + 1);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Can this player promote a Cities &amp; Knights knight now?
+     * Must be their turn in state {@link #PLAY1} and afford {@link #CK_COST_KNIGHT} (1 sheep + 1 ore).
+     * The lowest-level knight is promoted: a basic knight if any, otherwise a strong knight,
+     * which requires Politics improvement level &gt;= {@link #CK_MIGHTY_POLITICS_LEVEL}.
+     * @param pn  Player number
+     * @return  true if promotion is allowed now
+     * @see #ckPromoteKnight(int)
+     * @since 2.7.00
+     */
+    public boolean canCKPromoteKnight(final int pn)
+    {
+        if (! (isGameOptionSet(SOCGameOptionSet.K__CK_KNIGHTS)
+               && (pn == currentPlayerNumber) && (gameState == PLAY1)
+               && players[pn].getResources().contains(CK_COST_KNIGHT)))
+            return false;
+
+        final SOCPlayer pl = players[pn];
+        if (pl.getCKKnights(SOCPlayer.CK_KNIGHT_BASIC) > 0)
+            return true;
+
+        return (pl.getCKKnights(SOCPlayer.CK_KNIGHT_STRONG) > 0)
+            && (ckGetImprovementLevel(pn, SOCSpecialItem.CK_IMPROV_POLITICS) >= CK_MIGHTY_POLITICS_LEVEL);
+    }
+
+    /**
+     * Promote a Cities &amp; Knights knight: pay {@link #CK_COST_KNIGHT} and the player's
+     * lowest-level knight goes up one level, preferring an inactive one;
+     * an active knight stays active when promoted.
+     * Assumes {@link #canCKPromoteKnight(int)} was already checked.
+     * @param pn  Player number
+     * @since 2.7.00
+     */
+    public void ckPromoteKnight(final int pn)
+    {
+        final SOCPlayer pl = players[pn];
+        pl.getResources().subtract(CK_COST_KNIGHT);
+
+        final int fromLv = (pl.getCKKnights(SOCPlayer.CK_KNIGHT_BASIC) > 0)
+            ? SOCPlayer.CK_KNIGHT_BASIC : SOCPlayer.CK_KNIGHT_STRONG;
+        final int toLv = fromLv + 1;
+        final boolean promoteActive = (pl.getCKKnights(fromLv) == pl.getCKActiveKnights(fromLv));
+
+        pl.setCKKnights(fromLv, pl.getCKKnights(fromLv) - 1);
+        pl.setCKKnights(toLv, pl.getCKKnights(toLv) + 1);
+        if (promoteActive)
+        {
+            pl.setCKActiveKnights(fromLv, pl.getCKActiveKnights(fromLv) - 1);
+            pl.setCKActiveKnights(toLv, pl.getCKActiveKnights(toLv) + 1);
+        }
+    }
+
+    /**
+     * Initialize and shuffle the 3 Cities &amp; Knights progress-card decks
+     * (game option {@link SOCGameOptionSet#K__CK_PROGRESS _CK_PROG}); called at server
+     * the first time a deck is needed. Deck composition is in {@link SOCCKProgressCardConstants}.
+     * @since 2.7.00
+     */
+    private void ckInitProgressDecks()
+    {
+        ckProgressDecks = new ArrayList<List<Integer>>(3);
+        final int[][] decks =
+            { SOCCKProgressCardConstants.DECK_TRADE, SOCCKProgressCardConstants.DECK_POLITICS,
+              SOCCKProgressCardConstants.DECK_SCIENCE };
+        for (final int[] deck : decks)
+        {
+            final List<Integer> cards = new ArrayList<Integer>(deck.length);
+            for (final int itype : deck)
+                cards.add(Integer.valueOf(itype));
+            Collections.shuffle(cards, rand);
+            ckProgressDecks.add(cards);
+        }
+    }
+
+    /**
+     * Draw the top card of a Cities &amp; Knights progress deck for a player, at server.
+     * No draw happens if the deck is empty or the player already holds
+     * {@link #CK_PROGRESS_HAND_LIMIT} playable progress cards.
+     *<P>
+     * A victory-point card ({@link SOCCKProgressCardConstants#isVPCard(int)}) is added to the
+     * player's inventory as kept, and immediately scores +1 Special VP; other cards are added
+     * playable (no new-card delay). Caller announces the draw and any SVP change, and should
+     * call {@link #checkForWinner()} after a VP card.
+     *
+     * @param track  Deck index: 0 = Trade, 1 = Politics, 2 = Science
+     * @param pl  Player drawing the card
+     * @return  the drawn card's itype, or 0 if nothing was drawn
+     * @since 2.7.00
+     */
+    public int ckDrawProgressCard(final int track, final SOCPlayer pl)
+    {
+        if (ckProgressDecks == null)
+            ckInitProgressDecks();
+
+        final List<Integer> deck = ckProgressDecks.get(track);
+        if (deck.isEmpty())
+            return 0;
+
+        int handSize = 0;
+        for (SOCInventoryItem item : pl.getInventory().getByState(SOCInventory.PLAYABLE))
+            if (SOCCKProgressCardConstants.isProgressCard(item.itype))
+                ++handSize;
+        if (handSize >= CK_PROGRESS_HAND_LIMIT)
+            return 0;
+
+        final int itype = deck.remove(0).intValue();
+        final boolean isVP = SOCCKProgressCardConstants.isVPCard(itype);
+        pl.getInventory().addItem
+            (SOCInventoryItem.createForScenario(this, itype, ! isVP, isVP, isVP, false));
+        if (isVP)
+        {
+            pl.setSpecialVP(pl.getSpecialVP() + 1);
+            pl.addSpecialVPInfo(1, "event.svp.ck.progress.vp");
+        }
+
+        return itype;
+    }
+
+    /**
+     * Return a played Cities &amp; Knights progress card to the bottom of its deck, at server.
+     * Victory-point cards are never returned (they stay kept in inventory).
+     * @param itype  Progress-card type from {@link SOCCKProgressCardConstants}
+     * @since 2.7.00
+     */
+    private void ckReturnProgressCard(final int itype)
+    {
+        if (ckProgressDecks == null)
+            return;
+
+        final int track;
+        if (itype <= SOCCKProgressCardConstants.MASTER_MERCHANT)
+            track = 0;
+        else if (itype <= SOCCKProgressCardConstants.CONSTITUTION)
+            track = 1;
+        else
+            track = 2;
+        ckProgressDecks.get(track).add(Integer.valueOf(itype));
+    }
+
+    /**
+     * Can this player play a Cities &amp; Knights progress card now?
+     * Must hold a playable card of that type on their turn in state {@link #ROLL_OR_CARD} or
+     * {@link #PLAY1}; {@link SOCCKProgressCardConstants#RESOURCE_MONOPOLY} and
+     * {@link SOCCKProgressCardConstants#TRADE_MONOPOLY} only in {@link #PLAY1}.
+     * Unlike dev cards there is no one-per-turn limit and no new-card delay.
+     * @param pn  Player number
+     * @param itype  Progress-card type from {@link SOCCKProgressCardConstants}
+     * @return  true if the card can be played now
+     * @see #ckPlayProgressCard(int, int)
+     * @since 2.7.00
+     */
+    public boolean canCKPlayProgressCard(final int pn, final int itype)
+    {
+        if (! (isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS)
+               && (pn == currentPlayerNumber)
+               && SOCCKProgressCardConstants.isProgressCard(itype)
+               && ! SOCCKProgressCardConstants.isVPCard(itype)))
+            return false;
+
+        final boolean isMonopoly = (itype == SOCCKProgressCardConstants.RESOURCE_MONOPOLY)
+            || (itype == SOCCKProgressCardConstants.TRADE_MONOPOLY);
+        if (isMonopoly ? (gameState != PLAY1) : ((gameState != PLAY1) && (gameState != ROLL_OR_CARD)))
+            return false;
+
+        return players[pn].getInventory().hasPlayable(itype);
+    }
+
+    /**
+     * Apply a Cities &amp; Knights progress card's effect and return the card to the bottom of
+     * its deck. Caller ({@link #playInventoryItem(int)}) has already removed it from the
+     * player's inventory and stores the returned effect in {@link #getCKLastCardEffect()}.
+     * Assumes {@link #canCKPlayProgressCard(int, int)} was already checked.
+     *<P>
+     * Effects:
+     *<UL>
+     * <LI> {@link SOCCKProgressCardConstants#RESOURCE_MONOPOLY} / {@code TRADE_MONOPOLY}:
+     *      game state becomes {@link #WAITING_FOR_MONOPOLY}; the player then names the
+     *      resource/commodity and the server calls {@link #ckDoMonopolyAction(int)}.
+     * <LI> {@link SOCCKProgressCardConstants#WARLORD}: all the player's inactive knights activate.
+     * <LI> {@link SOCCKProgressCardConstants#MASTER_MERCHANT}, {@code WEDDING},
+     *      {@code IRRIGATION}, {@code MINING}: immediate resource effects; details in the
+     *      returned {@link CKCardEffect}.
+     *</UL>
+     *
+     * @param pn  Player number
+     * @param itype  Progress-card type from {@link SOCCKProgressCardConstants}
+     * @return  the effect details for announcement, or {@code null} if the card type is unknown
+     * @since 2.7.00
+     */
+    public CKCardEffect ckPlayProgressCard(final int pn, final int itype)
+    {
+        final SOCPlayer pl = players[pn];
+        ckReturnProgressCard(itype);
+
+        final CKCardEffect eff = new CKCardEffect(itype);
+
+        switch (itype)
+        {
+        case SOCCKProgressCardConstants.RESOURCE_MONOPOLY:
+        case SOCCKProgressCardConstants.TRADE_MONOPOLY:
+            ckMonopolyCardInPlay = itype;
+            oldGameState = gameState;
+            gameState = WAITING_FOR_MONOPOLY;
+            break;
+
+        case SOCCKProgressCardConstants.WARLORD:
+            for (int lv = SOCPlayer.CK_KNIGHT_BASIC; lv <= SOCPlayer.CK_KNIGHT_MIGHTY; ++lv)
+                pl.setCKActiveKnights(lv, pl.getCKKnights(lv));
+            break;
+
+        case SOCCKProgressCardConstants.MASTER_MERCHANT:
+            {
+                int victimPn = -1, most = 0;
+                for (int opn = 0; opn < maxPlayers; ++opn)
+                {
+                    if ((opn == pn) || isSeatVacant(opn))
+                        continue;
+                    final int total = players[opn].getResources().getTotal();
+                    if (total > most)
+                    {
+                        most = total;
+                        victimPn = opn;
+                    }
+                }
+                eff.victimPn = victimPn;
+                if (victimPn != -1)
+                {
+                    eff.gained = new SOCResourceSet();
+                    for (int i = 0; (i < 2) && (players[victimPn].getResources().getTotal() > 0); ++i)
+                    {
+                        final int rtype = ckPickRandomResource(players[victimPn].getResources());
+                        players[victimPn].getResources().subtract(1, rtype);
+                        pl.getResources().add(1, rtype);
+                        eff.gained.add(1, rtype);
+                    }
+                }
+            }
+            break;
+
+        case SOCCKProgressCardConstants.WEDDING:
+            {
+                eff.transfers = new ArrayList<int[]>();
+                final int myVP = pl.getPublicVP();
+                for (int opn = 0; opn < maxPlayers; ++opn)
+                {
+                    if ((opn == pn) || isSeatVacant(opn))
+                        continue;
+                    final SOCPlayer other = players[opn];
+                    if ((other.getPublicVP() <= myVP) || (other.getResources().getTotal() == 0))
+                        continue;
+                    final int rtype = ckPickRandomResource(other.getResources());
+                    other.getResources().subtract(1, rtype);
+                    pl.getResources().add(1, rtype);
+                    eff.transfers.add(new int[]{ opn, rtype });
+                }
+            }
+            break;
+
+        case SOCCKProgressCardConstants.IRRIGATION:
+            eff.gained = ckGainPerAdjacentHex(pl, SOCBoard.WHEAT_HEX, SOCResourceConstants.WHEAT);
+            break;
+
+        case SOCCKProgressCardConstants.MINING:
+            eff.gained = ckGainPerAdjacentHex(pl, SOCBoard.ORE_HEX, SOCResourceConstants.ORE);
+            break;
+
+        default:
+            return null;
+        }
+
+        return eff;
+    }
+
+    /**
+     * For {@link SOCCKProgressCardConstants#IRRIGATION} / {@code MINING}: gain 2 of a resource per
+     * distinct hex of the given type adjacent to the player's settlements and cities.
+     * @param pl  Player gaining resources
+     * @param hexType  Board hex type ({@link SOCBoard#WHEAT_HEX} or {@link SOCBoard#ORE_HEX})
+     * @param rtype  Resource type gained ({@link SOCResourceConstants#WHEAT} or {@code ORE})
+     * @return  the resources gained (possibly empty), already added to the player
+     * @since 2.7.00
+     */
+    private SOCResourceSet ckGainPerAdjacentHex(final SOCPlayer pl, final int hexType, final int rtype)
+    {
+        final HashSet<Integer> hexes = new HashSet<Integer>();
+        final List<SOCPlayingPiece> pieces = new ArrayList<SOCPlayingPiece>();
+        pieces.addAll(pl.getSettlements());
+        pieces.addAll(pl.getCities());
+        for (final SOCPlayingPiece piece : pieces)
+            for (final Integer hexCoord : board.getAdjacentHexesToNode(piece.getCoordinates()))
+                if (board.getHexTypeFromCoord(hexCoord.intValue()) == hexType)
+                    hexes.add(hexCoord);
+
+        final SOCResourceSet gained = new SOCResourceSet();
+        gained.add(2 * hexes.size(), rtype);
+        pl.getResources().add(gained);
+
+        return gained;
+    }
+
+    /**
+     * Pick a random resource type from a non-empty resource set, weighted by amount held;
+     * used by Cities &amp; Knights card effects at server.
+     * @param rs  Resource set to pick from; total must be &gt; 0
+     * @return  resource type {@link SOCResourceConstants#CLAY} - {@link SOCResourceConstants#WOOD}
+     * @since 2.7.00
+     */
+    private int ckPickRandomResource(final SOCResourceSet rs)
+    {
+        int pick = Math.abs(rand.nextInt()) % rs.getTotal();
+        for (int rtype = SOCResourceConstants.CLAY; rtype <= SOCResourceConstants.WOOD; ++rtype)
+        {
+            pick -= rs.getAmount(rtype);
+            if (pick < 0)
+                return rtype;
+        }
+
+        return SOCResourceConstants.WOOD;
+    }
+
+    /**
+     * Which Cities &amp; Knights monopoly progress card is waiting for the current player
+     * to name a resource or commodity?
+     * @return  {@link SOCCKProgressCardConstants#RESOURCE_MONOPOLY},
+     *     {@link SOCCKProgressCardConstants#TRADE_MONOPOLY}, or 0 if none
+     * @see #ckDoMonopolyAction(int)
+     * @since 2.7.00
+     */
+    public int getCKMonopolyCardInPlay()
+    {
+        return ckMonopolyCardInPlay;
+    }
+
+    /**
+     * Get the details of the most recently played Cities &amp; Knights progress card's effect,
+     * set by {@link #playInventoryItem(int)}; the server announces these and the field
+     * stays set until the next card is played.
+     * @return  the most recent effect, or null if no progress card has been played
+     * @since 2.7.00
+     */
+    public CKCardEffect getCKLastCardEffect()
+    {
+        return ckLastCardEffect;
+    }
+
+    /**
+     * Perform a Cities &amp; Knights monopoly after the player names a resource or commodity,
+     * in game state {@link #WAITING_FOR_MONOPOLY} with {@link #getCKMonopolyCardInPlay()} != 0.
+     *<UL>
+     * <LI> {@link SOCCKProgressCardConstants#RESOURCE_MONOPOLY}: {@code ptype} is a resource type
+     *      {@link SOCResourceConstants#CLAY} - {@link SOCResourceConstants#WOOD}; takes up to 2
+     *      of it from each other player.
+     * <LI> {@link SOCCKProgressCardConstants#TRADE_MONOPOLY}: {@code ptype} is a commodity type
+     *      {@link SOCPlayer#CK_CLOTH} - {@link SOCPlayer#CK_PAPER}; takes 1 of it from each
+     *      other player.
+     *</UL>
+     * Clears the card-in-play marker and restores the pre-card game state.
+     *
+     * @param ptype  Resource or commodity type named by the player
+     * @return  amounts taken, indexed by player number ([currentPlayer] is 0)
+     * @since 2.7.00
+     */
+    public int[] ckDoMonopolyAction(final int ptype)
+    {
+        final int[] taken = new int[maxPlayers];
+        final SOCPlayer cur = players[currentPlayerNumber];
+        final boolean isCommodity = (ckMonopolyCardInPlay == SOCCKProgressCardConstants.TRADE_MONOPOLY);
+        final int maxEach = isCommodity ? 1 : 2;
+
+        for (int pn = 0; pn < maxPlayers; ++pn)
+        {
+            if ((pn == currentPlayerNumber) || isSeatVacant(pn))
+                continue;
+            final SOCPlayer other = players[pn];
+            final int has = isCommodity ? other.getCKCommodity(ptype) : other.getResources().getAmount(ptype);
+            final int take = (has < maxEach) ? has : maxEach;
+            if (take <= 0)
+                continue;
+
+            if (isCommodity)
+            {
+                other.setCKCommodity(ptype, has - take);
+                cur.setCKCommodity(ptype, cur.getCKCommodity(ptype) + take);
+            } else {
+                other.getResources().subtract(take, ptype);
+                cur.getResources().add(take, ptype);
+            }
+            taken[pn] = take;
+        }
+
+        ckMonopolyCardInPlay = 0;
+        gameState = oldGameState;
+
+        return taken;
+    }
+
+    /**
+     * For {@link #rollDice()} in Cities &amp; Knights games, figure out the commodities a player's
+     * cities produce on this roll, and convert half of each affected city's resource yield into
+     * the matching commodity: each city adjacent to a producing pasture / mountain / forest hex
+     * yields 1 resource + 1 commodity instead of 2 resources.
+     *<P>
+     * For each qualifying adjacency this removes 1 sheep/ore/wood from {@code resources}
+     * (which {@link #getResourcesGainedFromRoll(SOCPlayer, int)} computed with 2 per city)
+     * and counts 1 cloth/coin/paper in the returned array.
+     *
+     * @param player  the player
+     * @param roll  the total number rolled on the dice
+     * @param resources  the player's rolled resources, already computed; updated in place
+     * @return  commodity amounts gained, indexed by {@link SOCPlayer#CK_CLOTH} - {@link SOCPlayer#CK_PAPER};
+     *     index 0 unused
+     * @since 2.7.00
+     */
+    public int[] ckGetCommoditiesGainedFromRoll
+        (final SOCPlayer player, final int roll, final SOCResourceSet resources)
+    {
+        final int[] commod = new int[1 + SOCPlayer.CK_PAPER];
+        final int robberHex = board.getRobberHex();
+
+        for (final SOCCity city : player.getCities())
+        {
+            for (final Integer hexInt : board.getAdjacentHexesToNode(city.getCoordinates()))
+            {
+                final int hexCoord = hexInt.intValue();
+                if ((hexCoord == robberHex) || (board.getNumberOnHexFromCoord(hexCoord) != roll))
+                    continue;
+
+                final int ctype, rtype;
+                switch (board.getHexTypeFromCoord(hexCoord))
+                {
+                case SOCBoard.SHEEP_HEX:
+                    ctype = SOCPlayer.CK_CLOTH;  rtype = SOCResourceConstants.SHEEP;
+                    break;
+                case SOCBoard.ORE_HEX:
+                    ctype = SOCPlayer.CK_COIN;   rtype = SOCResourceConstants.ORE;
+                    break;
+                case SOCBoard.WOOD_HEX:
+                    ctype = SOCPlayer.CK_PAPER;  rtype = SOCResourceConstants.WOOD;
+                    break;
+                default:
+                    continue;
+                }
+
+                if (resources.getAmount(rtype) > 0)
+                {
+                    resources.subtract(1, rtype);
+                    ++commod[ctype];
+                }
+            }
+        }
+
+        return commod;
+    }
+
+    /**
+     * For {@link #rollDice()} in Cities &amp; Knights games, draw progress cards from this roll:
+     * {@code die1} selects the deck (1-2 Trade, 3-4 Politics, 5-6 Science) and every seated player
+     * whose matching improvement-track level L &gt;= 1 with {@code die2} &lt;= L+1 draws that deck's
+     * top card via {@link #ckDrawProgressCard(int, SOCPlayer)}. Results are appended to
+     * {@link RollResult#ck_progressDrawn}. Called at server on non-7 rolls only.
+     *
+     * @param rr  Roll result to update
+     * @param die1  First die value (deck selector)
+     * @param die2  Second die value (draw gate)
+     * @since 2.7.00
+     */
+    private void ckDrawProgressCardsFromRoll(final RollResult rr, final int die1, final int die2)
+    {
+        final int track = (die1 <= 2) ? 0 : (die1 <= 4) ? 1 : 2;
+        final String typeKey = SOCSpecialItem.CK_IMPROV_TYPEKEYS[track];
+
+        for (int pn = 0; pn < maxPlayers; ++pn)
+        {
+            if (isSeatVacant(pn))
+                continue;
+            final int lv = ckGetImprovementLevel(pn, typeKey);
+            if ((lv < 1) || (die2 > (lv + 1)))
+                continue;
+
+            final int drawn = ckDrawProgressCard(track, players[pn]);
+            if (drawn != 0)
+            {
+                if (rr.ck_progressDrawn == null)
+                    rr.ck_progressDrawn = new ArrayList<int[]>();
+                rr.ck_progressDrawn.add(new int[]{ pn, drawn });
+            }
+        }
+    }
+
+    /**
+     * Details of a played Cities &amp; Knights progress card's immediate effect,
+     * returned by {@link SOCGame#ckPlayProgressCard(int, int)} for the server to announce.
+     * Which fields are used depends on {@link #itype}.
+     * @since 2.7.00
+     */
+    public static class CKCardEffect
+    {
+        /** The played card's type, from {@link SOCCKProgressCardConstants}. */
+        public final int itype;
+
+        /** Master Merchant: the robbed opponent's player number, or -1 if no opponent had resources. */
+        public int victimPn = -1;
+
+        /** Master Merchant / Irrigation / Mining: resources gained by the player, or null. */
+        public SOCResourceSet gained;
+
+        /** Wedding: list of {@code {fromPlayerNumber, resourceType}} transfers, or null. */
+        public List<int[]> transfers;
+
+        public CKCardEffect(final int itype)
+        {
+            this.itype = itype;
+        }
     }
 
     /**
@@ -5874,6 +6781,18 @@ public class SOCGame implements Serializable, Cloneable
                 players[pn].setUndosRemaining(numUndo);
         }
 
+        if (isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV))
+        {
+            // Cities & Knights: each player gets their own Trade/Politics/Science improvement
+            // track at their special-item index 0, level 0. Runs at server and client.
+            for (int pn = 0; pn < maxPlayers; ++pn)
+                for (final String typeKey : SOCSpecialItem.CK_IMPROV_TYPEKEYS)
+                {
+                    final SOCSpecialItem itm = new SOCSpecialItem(players[pn], -1, null, null);
+                    players[pn].setSpecialItem(typeKey, 0, itm);
+                }
+        }
+
         if (! isGameOptionSet(SOCGameOptionSet.K_SC_WOND))
             return;
 
@@ -6717,13 +7636,17 @@ public class SOCGame implements Serializable, Cloneable
 
         currentRoll.update(die1, die2);  // also clears currentRoll.cloth (SC_CLVI)
 
-        // Cities & Knights barbarian groundwork (not yet playable): advance strength counter.
-        // Guarded by the inactive-hidden _CK_BARB option, so this is unreachable in normal play.
-        // Modeled on the SC_PIRI pirate-fleet advancement below. See doc/Cities-and-Knights-Design.md.
+        // Cities & Knights: advance the barbarians, and resolve their attack at the threshold.
+        // Modeled on the SC_PIRI pirate-fleet advancement below. See doc/Cities-and-Knights-Implemented.md.
         if (isGameOptionSet(SOCGameOptionSet.K__CK_BARBARIAN))
         {
             currentRoll.ck_barbarianStrength = advanceBarbarianStrength();
-            currentRoll.ck_barbarianAttackFired = false;  // resolution stubbed until knight semantics exist
+            if (currentRoll.ck_barbarianStrength >= CK_BARBARIAN_ATTACK_STRENGTH)
+            {
+                ckResolveBarbarianAttack(currentRoll);
+                if ((currentRoll.ck_defenderPn != -1) || (currentRoll.ck_progressDrawn != null))
+                    checkForWinner();
+            }
         }
 
         boolean sc_piri_plGainsGold = false;  // Has a player won against pirate fleet attack? (SC_PIRI)
@@ -6786,17 +7709,42 @@ public class SOCGame implements Serializable, Cloneable
             boolean anyGoldHex = false;
 
             /**
-             * distribute resources
+             * distribute resources;
+             * in Cities & Knights games, cities on pasture/mountain/forest hexes yield
+             * 1 resource + 1 commodity instead of 2 resources
              */
+            final boolean isCKGame = isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV);
+            if (isCKGame)
+                currentRoll.ck_commoditiesGained = new int[maxPlayers][];
+
             for (int i = 0; i < maxPlayers; i++)
             {
                 if (! isSeatVacant(i))
                 {
                     SOCPlayer pl = players[i];
-                    pl.addRolledResources(getResourcesGainedFromRoll(pl, currentDice));
+                    final SOCResourceSet rolled = getResourcesGainedFromRoll(pl, currentDice);
+                    if (isCKGame)
+                    {
+                        final int[] commod = ckGetCommoditiesGainedFromRoll(pl, currentDice, rolled);
+                        currentRoll.ck_commoditiesGained[i] = commod;
+                        for (int ctype = SOCPlayer.CK_CLOTH; ctype <= SOCPlayer.CK_PAPER; ++ctype)
+                            if (commod[ctype] > 0)
+                                pl.setCKCommodity(ctype, pl.getCKCommodity(ctype) + commod[ctype]);
+                    }
+                    pl.addRolledResources(rolled);
                     if (hasSeaBoard && pl.getNeedToPickGoldHexResources() > 0)
                         anyGoldHex = true;
                 }
+            }
+
+            /**
+             * Cities & Knights: draw progress cards (die1 selects deck, die2 gates by track level)
+             */
+            if (isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS))
+            {
+                ckDrawProgressCardsFromRoll(currentRoll, die1, die2);
+                if (currentRoll.ck_progressDrawn != null)
+                    checkForWinner();  // a drawn VP card can win
             }
 
             if (sc_piri_plGainsGold)
@@ -9425,6 +10373,12 @@ public class SOCGame implements Serializable, Cloneable
         if (! players[pn].getInventory().hasPlayable(itype))
             return 1;
 
+        if (isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS)
+            && SOCCKProgressCardConstants.isProgressCard(itype))
+        {
+            return (canCKPlayProgressCard(pn, itype)) ? 0 : 3;
+        }
+
         if (isGameOptionSet(SOCGameOptionSet.K_SC_FTRI))
         {
             if ((pn != currentPlayerNumber) || ((gameState != PLAY1) && (gameState != SPECIAL_BUILDING)))
@@ -9462,6 +10416,14 @@ public class SOCGame implements Serializable, Cloneable
         SOCInventoryItem item = players[currentPlayerNumber].getInventory().removeItem(SOCInventory.PLAYABLE, itype);
         if (item == null)
             return null;
+
+        if (isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS)
+            && SOCCKProgressCardConstants.isProgressCard(itype))
+        {
+            // Apply the progress card's effect; caller announces it via getCKLastCardEffect()
+            ckLastCardEffect = ckPlayProgressCard(currentPlayerNumber, itype);
+            return item;
+        }
 
         if (isGameOptionSet(SOCGameOptionSet.K_SC_FTRI))
         {
@@ -10898,30 +11860,74 @@ public class SOCGame implements Serializable, Cloneable
         public SOCResourceSet sc_piri_fleetAttackRsrcs;
 
         /**
-         * Cities &amp; Knights barbarian-attack strength after this roll (groundwork; not yet playable).
+         * Cities &amp; Knights barbarian-attack strength after this roll.
          * Set from {@link SOCGame#getBarbarianStrength()} when the dice are rolled and game option
-         * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set; that option is inactive-hidden, so this
-         * stays 0 in normal play. Modeled on {@link #sc_piri_fleetAttackRsrcs}.
-         * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+         * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set. Modeled on {@link #sc_piri_fleetAttackRsrcs}.
+         * See {@code doc/Cities-and-Knights-Implemented.md}.
          * @see #ck_barbarianAttackFired
          * @since 2.7.00
          */
         public int ck_barbarianStrength;
 
         /**
-         * Cities &amp; Knights flag: did a barbarian attack fire on this roll (groundwork; not yet playable)?
-         * Always {@code false} in Phase 0: attack resolution is stubbed (log-only) until knight semantics
-         * exist in a later phase. Set when the dice are rolled and game option
-         * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set; that option is inactive-hidden.
-         * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+         * Cities &amp; Knights flag: did a barbarian attack fire on this roll?
+         * If true, see {@link #ck_attackStrength}, {@link #ck_attackDefense},
+         * {@link #ck_defenderPn}, and {@link #ck_citiesDowngraded} for the outcome;
+         * details in {@link SOCGame#ckResolveBarbarianAttack(RollResult)}.
          * @see #ck_barbarianStrength
          * @since 2.7.00
          */
         public boolean ck_barbarianAttackFired;
 
         /**
+         * Cities &amp; Knights commodities gained from this roll, indexed by player number then by
+         * commodity type {@link SOCPlayer#CK_CLOTH} - {@link SOCPlayer#CK_PAPER} (second index 0
+         * unused), or null if game option {@link SOCGameOptionSet#K__CK_IMPROV} isn't set or the
+         * roll was a 7. From {@link SOCGame#ckGetCommoditiesGainedFromRoll(SOCPlayer, int, SOCResourceSet)}.
+         * @since 2.7.00
+         */
+        public int[][] ck_commoditiesGained;
+
+        /**
+         * Cities &amp; Knights progress cards drawn from this roll, each element
+         * {@code {playerNumber, itype}}; null if none. From the roll's draws and from
+         * barbarian-defense tie-break draws; see {@code doc/Cities-and-Knights-Implemented.md}.
+         * @since 2.7.00
+         */
+        public List<int[]> ck_progressDrawn;
+
+        /**
+         * If {@link #ck_barbarianAttackFired}, the barbarians' attack strength (total cities);
+         * see {@link SOCGame#ckResolveBarbarianAttack(RollResult)}.
+         * @since 2.7.00
+         */
+        public int ck_attackStrength;
+
+        /**
+         * If {@link #ck_barbarianAttackFired}, Catan's defense strength (total active knight levels).
+         * @since 2.7.00
+         */
+        public int ck_attackDefense;
+
+        /**
+         * If {@link #ck_barbarianAttackFired} and the defenders won with a sole strongest defender,
+         * that player's number (Defender of Catan, +1 Special VP); otherwise -1.
+         * @since 2.7.00
+         */
+        public int ck_defenderPn = -1;
+
+        /**
+         * If {@link #ck_barbarianAttackFired} and the barbarians won, the cities which were
+         * downgraded to settlements (each piece knows its owner and coordinates); otherwise
+         * null or empty.
+         * @since 2.7.00
+         */
+        public List<SOCCity> ck_citiesDowngraded;
+
+        /**
          * Convenience: Set diceA and diceB; null out {@link #cloth} and {@link #sc_robPossibleVictims};
-         * empty {@link #clothVillages} if not null.
+         * empty {@link #clothVillages} if not null. Also resets the {@code ck_*} Cities &amp; Knights
+         * fields for the new roll.
          */
         public void update(final int dA, final int dB)
         {
@@ -10931,6 +11937,13 @@ public class SOCGame implements Serializable, Cloneable
             if (clothVillages != null)
                 clothVillages.clear();
             sc_robPossibleVictims = null;
+            ck_commoditiesGained = null;
+            ck_progressDrawn = null;
+            ck_barbarianAttackFired = false;
+            ck_attackStrength = 0;
+            ck_attackDefense = 0;
+            ck_defenderPn = -1;
+            ck_citiesDowngraded = null;
         }
 
     }  // nested class RollResult

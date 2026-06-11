@@ -656,30 +656,30 @@ public class SOCGameOptionSet
             (K_PLAY_VPO, 2000, 2500, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
              "Show all VP/dev card info"));
 
-        // Cities & Knights reserved flags (inactive-hidden groundwork);
-        //     see doc/Cities-and-Knights-Design.md.
+        // Cities & Knights rule flags, all set together by the SC_CK scenario;
+        //     see doc/Cities-and-Knights-Implemented.md.
         //     minVersion 2000 matches the existing _SC_* scenario options (keeps ALL_KNOWN_SCENARIOS_MIN_VERSION
-        //     unchanged at 2000); lastModVersion 2700 is the version which adds these reserved keys.
+        //     unchanged at 2000); lastModVersion 2700 is the version which implements these rules.
         //     _SC_CK starts with "_SC_" so its constructor sets clientFeature CLIENT_SCENARIO_VERSION automatically.
 
         opts.add(new SOCGameOption
-            (K__CK_KNIGHTS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Cities & Knights: Knights (under development)"));
+            (K__CK_KNIGHTS, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Knights"));
         opts.add(new SOCGameOption
-            (K__CK_IMPROV, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Cities & Knights: City improvements (under development)"));
+            (K__CK_IMPROV, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: City improvements and commodities"));
         opts.add(new SOCGameOption
-            (K__CK_PROGRESS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Cities & Knights: Progress cards (under development)"));
+            (K__CK_PROGRESS, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Progress cards"));
         opts.add(new SOCGameOption
-            (K__CK_BARBARIAN, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Cities & Knights: Barbarian attacks (under development)"));
+            (K__CK_BARBARIAN, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Barbarian attacks"));
         opts.add(new SOCGameOption
-            (K__CK_METROPOLIS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Cities & Knights: Metropolis VP awards (under development)"));
+            (K__CK_METROPOLIS, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Metropolis VP awards"));
         opts.add(new SOCGameOption
-            (K_SC_CK, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
-             "Scenarios: Cities & Knights (under development)"));
+            (K_SC_CK, 2000, 2700, false, FLAG_DROP_IF_UNUSED,
+             "Scenarios: Cities & Knights"));
 
         // ChangeListeners for client convenience:
         // Remember that a new server version can't update this code at an older client:

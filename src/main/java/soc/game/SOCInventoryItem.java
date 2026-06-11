@@ -174,6 +174,16 @@ public class SOCInventoryItem
                  SOCBoard.getPortDescForType(-type, false), SOCBoard.getPortDescForType(-type, true));
         }
 
+        if (ga.isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS)
+            && SOCCKProgressCardConstants.isProgressCard(type))
+        {
+            // Cities & Knights progress card
+            final String frag = SOCCKProgressCardConstants.keyFragment(type);
+            return new SOCInventoryItem
+                (type, isPlayable, isKept, isVP, canCancel,
+                 "game.ck.progress." + frag, "game.ck.aprogress." + frag);
+        }
+
         // Fallback:
         return new SOCInventoryItem
             (type, isPlayable, isKept, isVP, canCancel, "game.invitem.unknown", "game.aninvitem.unknown");

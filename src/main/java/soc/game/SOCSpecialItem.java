@@ -197,61 +197,16 @@ public class SOCSpecialItem
     public static final String CK_IMPROV_SCIENCE = "_CK_IMP/S";
 
     /**
-     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
-     * for the Trade track ({@link #CK_IMPROV_TRADE}). Index is the level being built (1-5); index 0 unused.
-     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
-     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
-     * (sheep stands in for cloth). Used by {@link #makeKnownItem(String, int)}.
+     * The Cities &amp; Knights improvement-track {@code typeKey}s, indexed by track
+     * (0 = {@link #CK_IMPROV_TRADE}, 1 = {@link #CK_IMPROV_POLITICS}, 2 = {@link #CK_IMPROV_SCIENCE}).
+     * Track <em>i</em> is paid for with commodity type <em>i</em> + 1
+     * ({@link SOCPlayer#CK_CLOTH} / {@link SOCPlayer#CK_COIN} / {@link SOCPlayer#CK_PAPER}):
+     * building level <em>N</em> costs <em>N</em> of that commodity, checked and paid in
+     * {@link #playerPickItem(String, SOCGame, SOCPlayer, int, int)} since commodities aren't part
+     * of {@link SOCResourceSet}. See {@code doc/Cities-and-Knights-Implemented.md}.
      * @since 2.7.00
      */
-    private static final int[][] COST_CK_IMPROV_TRADE =
-    {
-        null,
-        // clay, ore, sheep, wheat, wood
-        { 0, 0, 1, 0, 0 },  // level 1
-        { 0, 0, 2, 0, 0 },  // level 2
-        { 0, 0, 3, 0, 0 },  // level 3
-        { 0, 0, 4, 0, 0 },  // level 4
-        { 0, 0, 5, 0, 0 }   // level 5
-    };
-
-    /**
-     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
-     * for the Politics track ({@link #CK_IMPROV_POLITICS}). Index is the level being built (1-5); index 0 unused.
-     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
-     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
-     * (ore stands in for coin). Used by {@link #makeKnownItem(String, int)}.
-     * @since 2.7.00
-     */
-    private static final int[][] COST_CK_IMPROV_POLITICS =
-    {
-        null,
-        // clay, ore, sheep, wheat, wood
-        { 0, 1, 0, 0, 0 },  // level 1
-        { 0, 2, 0, 0, 0 },  // level 2
-        { 0, 3, 0, 0, 0 },  // level 3
-        { 0, 4, 0, 0, 0 },  // level 4
-        { 0, 5, 0, 0, 0 }   // level 5
-    };
-
-    /**
-     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
-     * for the Science track ({@link #CK_IMPROV_SCIENCE}). Index is the level being built (1-5); index 0 unused.
-     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
-     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
-     * (wheat stands in for paper). Used by {@link #makeKnownItem(String, int)}.
-     * @since 2.7.00
-     */
-    private static final int[][] COST_CK_IMPROV_SCIENCE =
-    {
-        null,
-        // clay, ore, sheep, wheat, wood
-        { 0, 0, 0, 1, 0 },  // level 1
-        { 0, 0, 0, 2, 0 },  // level 2
-        { 0, 0, 0, 3, 0 },  // level 3
-        { 0, 0, 0, 4, 0 },  // level 4
-        { 0, 0, 0, 5, 0 }   // level 5
-    };
+    public static final String[] CK_IMPROV_TYPEKEYS = { CK_IMPROV_TRADE, CK_IMPROV_POLITICS, CK_IMPROV_SCIENCE };
 
     // End of per-scenario static data
 
@@ -343,15 +298,12 @@ public class SOCSpecialItem
         else if (typeKey.equals(CK_IMPROV_TRADE) || typeKey.equals(CK_IMPROV_POLITICS)
                  || typeKey.equals(CK_IMPROV_SCIENCE))
         {
-            // Cities & Knights city-improvement track (groundwork; not yet playable).
-            // idx is the level being built (1-5); item's level starts at 0. No special requirements
-            // or string value yet in Phase 0; per-level interim cost is in standard resources.
+            // Cities & Knights city-improvement track: level starts at 0, no requirements or
+            // string value. Cost is null because levels are paid for in commodities, which aren't
+            // part of SOCResourceSet; playerPickItem checks and pays them. See CK_IMPROV_TYPEKEYS.
             typeReqs = null;
             typeSV = null;
-            typeCosts =
-                typeKey.equals(CK_IMPROV_TRADE) ? COST_CK_IMPROV_TRADE
-                : typeKey.equals(CK_IMPROV_POLITICS) ? COST_CK_IMPROV_POLITICS
-                : COST_CK_IMPROV_SCIENCE;
+            typeCosts = null;
             itemLevel = 0;
             startingCostPiecetype = -1;
         } else {
@@ -430,6 +382,44 @@ public class SOCSpecialItem
         if ((pl.getPlayerNumber() != ga.getCurrentPlayerNumber())
             || ((ga.getGameState() != SOCGame.PLAY1) && (ga.getGameState() != SOCGame.SPECIAL_BUILDING)))
             throw new IllegalStateException();
+
+        if (typeKey.equals(CK_IMPROV_TRADE) || typeKey.equals(CK_IMPROV_POLITICS)
+            || typeKey.equals(CK_IMPROV_SCIENCE))
+        {
+            // _CK_IMP: Build the next level of the player's own improvement track,
+            // paying level-number commodities of the track's type (commodities aren't part of
+            // SOCResourceSet, so cost is checked and paid here; this method returns false).
+            // Afterward the caller re-evaluates the track's metropolis via ga.ckCheckMetropolis
+            // and announces commodity/SVP changes. See doc/Cities-and-Knights-Implemented.md.
+
+            if (! ga.isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV))
+                throw new IllegalStateException("option not set");
+            if (pi != 0)
+                throw new IllegalStateException();
+
+            final SOCSpecialItem track = pl.getSpecialItem(typeKey, 0);
+            if (track == null)
+                throw new IllegalStateException();
+
+            final int nextLevel = track.level + 1;
+            if (nextLevel > CK_IMPROV_MAX_LEVEL)
+                throw new IllegalStateException("at max level");
+
+            final int ctype = typeKey.equals(CK_IMPROV_TRADE) ? SOCPlayer.CK_CLOTH
+                : typeKey.equals(CK_IMPROV_POLITICS) ? SOCPlayer.CK_COIN
+                : SOCPlayer.CK_PAPER;
+            final int held = pl.getCKCommodity(ctype);
+            if (held < nextLevel)
+                throw new IllegalStateException("cost");
+
+            pl.setCKCommodity(ctype, held - nextLevel);
+            track.level = nextLevel;
+
+            if (pl.getTotalVP() >= ga.vp_winner)
+                ga.checkForWinner();
+
+            return false;  // <--- Early return: no SOCResourceSet cost paid ---
+        }
 
         if (! SOCGameOptionSet.K_SC_WOND.equals(typeKey))
             throw new IllegalStateException("unknown typeKey: " + typeKey);
@@ -924,7 +914,8 @@ public class SOCSpecialItem
         throws CloneNotSupportedException
     {
         SOCSpecialItem cl = (SOCSpecialItem) super.clone();
-        cl.cost = cost.copy();
+        if (cost != null)
+            cl.cost = cost.copy();
         return cl;
     }
 

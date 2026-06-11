@@ -3613,6 +3613,19 @@ public class SOCPlayerInterface extends JFrame
             updateAtPiecesChanged();
             break;
 
+        case SOCPlayingPiece.CITY:
+            // Cities & Knights barbarian attack: downgrade the city to a settlement
+            {
+                final SOCPlayingPiece city = game.getBoard().settlementAtNode(pieceCoordinate);
+                if (city instanceof SOCCity)
+                {
+                    game.ckDowngradeCity((SOCCity) city);
+                    boardPanel.setLatestPiecePlacement(null);
+                    updateAtPiecesChanged();
+                }
+            }
+            break;
+
         default:
             System.err.println("PI.updateAtPieceRemoved called for un-handled type " + pieceType);
         }

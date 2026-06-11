@@ -155,6 +155,52 @@ public class SOCPlayer implements SOCDevCardConstants, Serializable, Cloneable
     public static final int TRADE_STATS_INDEX_PLAYER_ALL = 7;
 
     /**
+     * Cities &amp; Knights cloth commodity type, for {@link #getCKCommodity(int)};
+     * pairs with the Trade improvement track. Unrelated to {@code SC_CLVI} cloth ({@link #getCloth()}).
+     * See {@code doc/Cities-and-Knights-Implemented.md}.
+     * @see #CK_COIN
+     * @see #CK_PAPER
+     * @since 2.7.00
+     */
+    public static final int CK_CLOTH = 1;
+
+    /**
+     * Cities &amp; Knights coin commodity type, for {@link #getCKCommodity(int)};
+     * pairs with the Politics improvement track.
+     * @since 2.7.00
+     */
+    public static final int CK_COIN = 2;
+
+    /**
+     * Cities &amp; Knights paper commodity type, for {@link #getCKCommodity(int)};
+     * pairs with the Science improvement track. Also the highest commodity type value.
+     * @since 2.7.00
+     */
+    public static final int CK_PAPER = 3;
+
+    /**
+     * Cities &amp; Knights basic knight level (1), for {@link #getCKKnights(int)}.
+     * @see #CK_KNIGHT_STRONG
+     * @see #CK_KNIGHT_MIGHTY
+     * @since 2.7.00
+     */
+    public static final int CK_KNIGHT_BASIC = 1;
+
+    /**
+     * Cities &amp; Knights strong knight level (2), for {@link #getCKKnights(int)}.
+     * @since 2.7.00
+     */
+    public static final int CK_KNIGHT_STRONG = 2;
+
+    /**
+     * Cities &amp; Knights mighty knight level (3), for {@link #getCKKnights(int)};
+     * also the highest knight level. Promoting to this level requires
+     * Politics improvement level &gt;= 3.
+     * @since 2.7.00
+     */
+    public static final int CK_KNIGHT_MIGHTY = 3;
+
+    /**
      * the name of the player
      */
     private String name;
@@ -395,6 +441,35 @@ public class SOCPlayer implements SOCDevCardConstants, Serializable, Cloneable
      * @since 2.0.00
      */
     private int numCloth;
+
+    /**
+     * Cities &amp; Knights commodity counts (game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP}),
+     * indexed by {@link #CK_CLOTH}, {@link #CK_COIN}, {@link #CK_PAPER}; index 0 unused.
+     * Tracked separately from the 5-resource {@link #getResources()} set;
+     * see {@code doc/Cities-and-Knights-Implemented.md}.
+     * @see #getCKCommodity(int)
+     * @since 2.7.00
+     */
+    private final int[] ckCommodities = new int[1 + CK_PAPER];
+
+    /**
+     * Cities &amp; Knights total knight counts by level (game option
+     * {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI}), indexed by knight level
+     * {@link #CK_KNIGHT_BASIC} (1) to {@link #CK_KNIGHT_MIGHTY} (3); index 0 unused.
+     * Unrelated to {@link #numKnights}, which counts Soldier development cards played.
+     * @see #ckActiveKnights
+     * @see #getCKKnights(int)
+     * @since 2.7.00
+     */
+    private final int[] ckKnights = new int[1 + CK_KNIGHT_MIGHTY];
+
+    /**
+     * Cities &amp; Knights <em>active</em> knight counts by level; same indexing as {@link #ckKnights},
+     * with each element &lt;= the {@link #ckKnights} element.
+     * @see #getCKActiveKnights(int)
+     * @since 2.7.00
+     */
+    private final int[] ckActiveKnights = new int[1 + CK_KNIGHT_MIGHTY];
 
     /**
      * this flag is true if the player needs to discard
@@ -1731,6 +1806,143 @@ public class SOCPlayer implements SOCDevCardConstants, Serializable, Cloneable
     public void setCloth(final int numCloth)
     {
         this.numCloth = numCloth;
+    }
+
+    /**
+     * Get how many of a Cities &amp; Knights commodity this player has
+     * (game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP}).
+     * Unrelated to the {@code SC_CLVI} cloth in {@link #getCloth()}.
+     * @param ctype  Commodity type: {@link #CK_CLOTH}, {@link #CK_COIN}, or {@link #CK_PAPER}
+     * @return  the player's count of that commodity
+     * @throws ArrayIndexOutOfBoundsException if {@code ctype} &lt; 1 or &gt; {@link #CK_PAPER}
+     * @see #setCKCommodity(int, int)
+     * @since 2.7.00
+     */
+    public int getCKCommodity(final int ctype)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (ctype <= 0)
+            throw new ArrayIndexOutOfBoundsException(ctype);
+
+        return ckCommodities[ctype];
+    }
+
+    /**
+     * Set how many of a Cities &amp; Knights commodity this player has; see {@link #getCKCommodity(int)}.
+     * @param ctype  Commodity type: {@link #CK_CLOTH}, {@link #CK_COIN}, or {@link #CK_PAPER}
+     * @param amount  New count, 0 or more
+     * @throws ArrayIndexOutOfBoundsException if {@code ctype} &lt; 1 or &gt; {@link #CK_PAPER}
+     * @since 2.7.00
+     */
+    public void setCKCommodity(final int ctype, final int amount)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (ctype <= 0)
+            throw new ArrayIndexOutOfBoundsException(ctype);
+
+        ckCommodities[ctype] = amount;
+    }
+
+    /**
+     * Get this player's total count of Cities &amp; Knights knights of a level, active or not
+     * (game option {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI}).
+     * Unrelated to {@link #getNumKnights()}, which counts Soldier development cards played.
+     * @param level  Knight level: {@link #CK_KNIGHT_BASIC}, {@link #CK_KNIGHT_STRONG},
+     *     or {@link #CK_KNIGHT_MIGHTY}
+     * @return  count of knights of that level
+     * @throws ArrayIndexOutOfBoundsException if {@code level} &lt; 1 or &gt; {@link #CK_KNIGHT_MIGHTY}
+     * @see #getCKActiveKnights(int)
+     * @see #setCKKnights(int, int)
+     * @since 2.7.00
+     */
+    public int getCKKnights(final int level)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (level <= 0)
+            throw new ArrayIndexOutOfBoundsException(level);
+
+        return ckKnights[level];
+    }
+
+    /**
+     * Set this player's total count of Cities &amp; Knights knights of a level; see {@link #getCKKnights(int)}.
+     * @param level  Knight level: 1 to {@link #CK_KNIGHT_MIGHTY}
+     * @param amount  New count, 0 or more
+     * @throws ArrayIndexOutOfBoundsException if {@code level} &lt; 1 or &gt; {@link #CK_KNIGHT_MIGHTY}
+     * @since 2.7.00
+     */
+    public void setCKKnights(final int level, final int amount)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (level <= 0)
+            throw new ArrayIndexOutOfBoundsException(level);
+
+        ckKnights[level] = amount;
+    }
+
+    /**
+     * Get this player's count of <em>active</em> Cities &amp; Knights knights of a level;
+     * always &lt;= {@link #getCKKnights(int)} for that level.
+     * @param level  Knight level: 1 to {@link #CK_KNIGHT_MIGHTY}
+     * @return  count of active knights of that level
+     * @throws ArrayIndexOutOfBoundsException if {@code level} &lt; 1 or &gt; {@link #CK_KNIGHT_MIGHTY}
+     * @see #getCKTotalKnightStrength()
+     * @since 2.7.00
+     */
+    public int getCKActiveKnights(final int level)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (level <= 0)
+            throw new ArrayIndexOutOfBoundsException(level);
+
+        return ckActiveKnights[level];
+    }
+
+    /**
+     * Set this player's count of active Cities &amp; Knights knights of a level;
+     * see {@link #getCKActiveKnights(int)}.
+     * @param level  Knight level: 1 to {@link #CK_KNIGHT_MIGHTY}
+     * @param amount  New count, 0 or more
+     * @throws ArrayIndexOutOfBoundsException if {@code level} &lt; 1 or &gt; {@link #CK_KNIGHT_MIGHTY}
+     * @since 2.7.00
+     */
+    public void setCKActiveKnights(final int level, final int amount)
+        throws ArrayIndexOutOfBoundsException
+    {
+        if (level <= 0)
+            throw new ArrayIndexOutOfBoundsException(level);
+
+        ckActiveKnights[level] = amount;
+    }
+
+    /**
+     * Get this player's total Cities &amp; Knights defense contribution:
+     * the sum over levels of (level &times; active knights of that level).
+     * @return  total active knight strength, 0 or more
+     * @since 2.7.00
+     */
+    public int getCKTotalKnightStrength()
+    {
+        int strength = 0;
+        for (int lv = CK_KNIGHT_BASIC; lv <= CK_KNIGHT_MIGHTY; ++lv)
+            strength += lv * ckActiveKnights[lv];
+
+        return strength;
+    }
+
+    /**
+     * Get this player's total count of Cities &amp; Knights knights across all levels, active or not.
+     * @return  total knight count, 0 or more
+     * @see #getCKKnights(int)
+     * @since 2.7.00
+     */
+    public int getCKTotalKnights()
+    {
+        int total = 0;
+        for (int lv = CK_KNIGHT_BASIC; lv <= CK_KNIGHT_MIGHTY; ++lv)
+            total += ckKnights[lv];
+
+        return total;
     }
 
     /**

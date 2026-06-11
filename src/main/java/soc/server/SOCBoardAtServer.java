@@ -1510,8 +1510,10 @@ public class SOCBoardAtServer extends SOCBoardLarge
         {
             {
                 final int htype = getHexTypeFromCoord(hex);
-                if ((htype == GOLD_HEX) || (htype == WATER_HEX))
+                if ((htype == GOLD_HEX) || (htype == WATER_HEX) || (htype == DESERT_HEX))
                     continue;
+                    // exclude DESERT_HEX because the swap exchanges hex types but not dice numbers:
+                    // swapping with a desert would leave a desert holding the gold's dice number
             }
 
             final Integer hexInt = Integer.valueOf(hex);

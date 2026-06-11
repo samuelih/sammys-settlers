@@ -386,7 +386,72 @@ public class SOCPlayerElement extends SOCMessage
          * message is sent to their client only after sending their SOCShip piece positions.
          * @since 2.0.00
          */
-        SCENARIO_WARSHIP_COUNT(107);
+        SCENARIO_WARSHIP_COUNT(107),
+
+        /**
+         * For Cities &amp; Knights game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP},
+         * the player's cloth commodity count from {@link SOCPlayer#getCKCommodity(int)}.
+         * {@link #GAIN}ed from city production on a dice roll, otherwise {@link #SET}.
+         * See {@code doc/Cities-and-Knights-Implemented.md}.
+         * @since 2.7.00
+         */
+        CK_CLOTH_COUNT(110),
+
+        /**
+         * For Cities &amp; Knights game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP},
+         * the player's coin commodity count from {@link SOCPlayer#getCKCommodity(int)}.
+         * {@link #GAIN}ed from city production on a dice roll, otherwise {@link #SET}.
+         * @since 2.7.00
+         */
+        CK_COIN_COUNT(111),
+
+        /**
+         * For Cities &amp; Knights game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP},
+         * the player's paper commodity count from {@link SOCPlayer#getCKCommodity(int)}.
+         * {@link #GAIN}ed from city production on a dice roll, otherwise {@link #SET}.
+         * @since 2.7.00
+         */
+        CK_PAPER_COUNT(112),
+
+        /**
+         * For Cities &amp; Knights game option {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI},
+         * the player's total count of basic (level 1) knights, active or not,
+         * from {@link SOCPlayer#getCKKnights(int)}. Always {@link #SET}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_LV1(113),
+
+        /**
+         * Player's total count of strong (level 2) Cities &amp; Knights knights; see {@link #CK_KNIGHTS_LV1}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_LV2(114),
+
+        /**
+         * Player's total count of mighty (level 3) Cities &amp; Knights knights; see {@link #CK_KNIGHTS_LV1}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_LV3(115),
+
+        /**
+         * For Cities &amp; Knights game option {@link SOCGameOptionSet#K__CK_KNIGHTS _CK_KNI},
+         * the player's count of <em>active</em> basic (level 1) knights,
+         * from {@link SOCPlayer#getCKActiveKnights(int)}. Always {@link #SET}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_ACTIVE_LV1(116),
+
+        /**
+         * Player's count of active strong (level 2) Cities &amp; Knights knights; see {@link #CK_KNIGHTS_ACTIVE_LV1}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_ACTIVE_LV2(117),
+
+        /**
+         * Player's count of active mighty (level 3) Cities &amp; Knights knights; see {@link #CK_KNIGHTS_ACTIVE_LV1}.
+         * @since 2.7.00
+         */
+        CK_KNIGHTS_ACTIVE_LV3(118);
 
         private int value;
 

@@ -35,6 +35,7 @@ import soc.game.GameAction;
 import soc.game.ResourceSet;
 import soc.game.SOCBoard;
 import soc.game.SOCBoardLarge;
+import soc.game.SOCCKProgressCardConstants;
 import soc.game.SOCCity;
 import soc.game.SOCDevCard;
 import soc.game.SOCDevCardConstants;
@@ -577,6 +578,14 @@ public class SOCGameMessageHandler
             }
 
             /**
+             * Cities & Knights: announce barbarian advancement / attack results,
+             * commodity production, and progress-card draws.
+             */
+            if (ga.isGameOptionSet(SOCGameOptionSet.K__CK_BARBARIAN)
+                || ga.isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV))
+                handleROLLDICE_sendCKResults(ga, roll);
+
+            /**
              * if the roll is not 7, tell players what they got
              * (if 7, sendGameState already told them what they lost).
              */
@@ -851,6 +860,195 @@ public class SOCGameMessageHandler
         finally
         {
             ga.releaseMonitor();
+        }
+    }
+
+    /**
+     * For {@link #handlePICKRESOURCETYPE(SOCGame, Connection, SOCPickResourceType)}: Perform a
+     * Cities &amp; Knights Resource Monopoly or Trade Monopoly progress-card pick
+     * ({@link SOCGame#getCKMonopolyCardInPlay()} != 0 in state {@link SOCGame#WAITING_FOR_MONOPOLY}).
+     * Calls {@link SOCGame#ckDoMonopolyAction(int)}, announces the transfers
+     * (resource elements like dev-card Monopoly, or commodity-count elements for Trade Monopoly),
+     * then sends the restored game state.
+     *
+     * @param ga  the game
+     * @param c  the current player's connection
+     * @param ptype  named resource type 1-5, or commodity type 1-3, per the card
+     * @since 2.7.00
+     */
+    private void handlePICKRESOURCETYPE_ckMonopoly(SOCGame ga, Connection c, final int ptype)
+    {
+        final String gaName = ga.getName();
+        final int cardType = ga.getCKMonopolyCardInPlay();
+        final boolean isCommodity = (cardType == SOCCKProgressCardConstants.TRADE_MONOPOLY);
+        final int maxType = isCommodity ? SOCPlayer.CK_PAPER : SOCResourceConstants.WOOD;
+        final int cpn = ga.getCurrentPlayerNumber();
+
+        if ((ptype < 1) || (ptype > maxType))
+        {
+            srv.messageToPlayerKeyed
+                (c, gaName, cpn, "reply.pick.gold.cannot.that_many");  // closest existing decline text
+            return;  // <--- Early return: bad type ---
+        }
+
+        final int[] taken = ga.ckDoMonopolyAction(ptype);
+
+        int total = 0;
+        for (int pn = 0; pn < ga.maxPlayers; ++pn)
+        {
+            if (taken[pn] == 0)
+                continue;
+            total += taken[pn];
+
+            if (isCommodity)
+                handler.reportCKCommodityCounts(ga, pn);
+            else
+            {
+                final SOCResourceSet plRes = ga.getPlayer(pn).getResources();
+                srv.messageToGame(gaName, true, new SOCPlayerElement
+                    (gaName, pn, SOCPlayerElement.SET, ptype, plRes.getAmount(ptype), true));
+                srv.messageToGame(gaName, true, new SOCResourceCount
+                    (gaName, pn, plRes.getTotal()));
+            }
+        }
+
+        if (isCommodity)
+            handler.reportCKCommodityCounts(ga, cpn);
+        else
+            srv.messageToGame(gaName, true, new SOCPlayerElement
+                (gaName, cpn, SOCPlayerElement.GAIN, ptype, total, false));
+
+        srv.messageToGameKeyed
+            (ga, true, true,
+             (isCommodity) ? "action.ck.progress.trade_mono" : "action.ck.progress.resource_mono",
+             ga.getPlayer(cpn).getName(), total);
+            // "{0}''s Trade Monopoly took {1} commodities." / "{0}''s Resource Monopoly took {1} resources."
+
+        handler.sendGameState(ga);
+    }
+
+    /**
+     * For {@link #handleROLLDICE(SOCGame, Connection, SOCRollDice)} in a Cities &amp; Knights game,
+     * announce this roll's C&amp;K results, in this order (see {@code doc/Cities-and-Knights-Implemented.md}):
+     *<UL>
+     * <LI> {@link SOCGameElements}({@link GEType#CK_BARBARIAN_STRENGTH CK_BARBARIAN_STRENGTH})
+     * <LI> If the barbarians attacked: {@link SOCSimpleAction}
+     *      ({@link SOCSimpleAction#CK_BARBARIAN_ATTACK_RESULT CK_BARBARIAN_ATTACK_RESULT}), then each
+     *      downgraded city as {@link SOCRemovePiece}(city) (clients downgrade it to a settlement),
+     *      then each seated player's knight counts (all knights deactivated), then if the defenders
+     *      won, the Defender of Catan's SVP element and
+     *      {@link SOCSimpleAction#CK_DEFENDER_OF_CATAN CK_DEFENDER_OF_CATAN}.
+     * <LI> Each player's commodity gains as {@link SOCPlayerElements} GAIN
+     * <LI> Each progress card drawn: VP cards announced to everyone with their real type;
+     *      other draws announced to the drawing player with the type, and to everyone else
+     *      with itemType 0 (hidden hand)
+     *</UL>
+     *
+     * @param ga  the game
+     * @param roll  the completed roll's results
+     * @since 2.7.00
+     */
+    private void handleROLLDICE_sendCKResults(SOCGame ga, final SOCGame.RollResult roll)
+    {
+        final String gn = ga.getName();
+
+        if (ga.isGameOptionSet(SOCGameOptionSet.K__CK_BARBARIAN))
+        {
+            srv.messageToGame(gn, true, new SOCGameElements
+                (gn, GEType.CK_BARBARIAN_STRENGTH, ga.getBarbarianStrength()));
+
+            if (roll.ck_barbarianAttackFired)
+            {
+                srv.messageToGame(gn, true, new SOCSimpleAction
+                    (gn, -1, SOCSimpleAction.CK_BARBARIAN_ATTACK_RESULT,
+                     roll.ck_attackStrength, roll.ck_attackDefense));
+                srv.messageToGameKeyed
+                    (ga, true, true, "action.ck.barbarians.attack",
+                     roll.ck_attackStrength, roll.ck_attackDefense);
+                    // "The barbarians attack with strength {0} against Catan''s defense {1}!"
+
+                if (roll.ck_citiesDowngraded != null)
+                    for (final SOCCity city : roll.ck_citiesDowngraded)
+                    {
+                        final int cpn = city.getPlayerNumber();
+                        srv.messageToGame(gn, true, new SOCRemovePiece
+                            (gn, cpn, SOCPlayingPiece.CITY, city.getCoordinates()));
+                        srv.messageToGameKeyed
+                            (ga, true, true, "action.ck.barbarians.city.lost",
+                             ga.getPlayer(cpn).getName());
+                            // "{0} lost a city to the barbarians."
+                    }
+
+                for (int pn = 0; pn < ga.maxPlayers; ++pn)
+                    if (! ga.isSeatVacant(pn))
+                        handler.reportCKKnightCounts(ga, pn);
+
+                if (roll.ck_defenderPn != -1)
+                {
+                    final SOCPlayer defender = ga.getPlayer(roll.ck_defenderPn);
+                    srv.messageToGame(gn, true, new SOCPlayerElement
+                        (gn, roll.ck_defenderPn, SOCPlayerElement.SET,
+                         PEType.SCENARIO_SVP, defender.getSpecialVP()));
+                    srv.messageToGame(gn, true, new SOCSimpleAction
+                        (gn, roll.ck_defenderPn, SOCSimpleAction.CK_DEFENDER_OF_CATAN,
+                         defender.getSpecialVP(), 0));
+                    srv.messageToGameKeyed
+                        (ga, true, true, "action.ck.defender", defender.getName());
+                        // "{0} is the Defender of Catan: +1 Special Victory Point!"
+                }
+            }
+        }
+
+        if (roll.ck_commoditiesGained != null)
+        {
+            for (int pn = 0; pn < ga.maxPlayers; ++pn)
+            {
+                final int[] commod = roll.ck_commoditiesGained[pn];
+                if ((commod == null)
+                    || ((commod[SOCPlayer.CK_CLOTH] | commod[SOCPlayer.CK_COIN] | commod[SOCPlayer.CK_PAPER]) == 0))
+                    continue;
+
+                srv.messageToGame(gn, true, new SOCPlayerElements
+                    (gn, pn, SOCPlayerElement.GAIN,
+                     new PEType[]{ PEType.CK_CLOTH_COUNT, PEType.CK_COIN_COUNT, PEType.CK_PAPER_COUNT },
+                     new int[]
+                         { commod[SOCPlayer.CK_CLOTH], commod[SOCPlayer.CK_COIN], commod[SOCPlayer.CK_PAPER] }));
+            }
+        }
+
+        if (roll.ck_progressDrawn != null)
+        {
+            for (final int[] draw : roll.ck_progressDrawn)
+            {
+                final int pn = draw[0], itype = draw[1];
+                final SOCPlayer pl = ga.getPlayer(pn);
+
+                if (SOCCKProgressCardConstants.isVPCard(itype))
+                {
+                    srv.messageToGame(gn, true, new SOCInventoryItemAction
+                        (gn, pn, SOCInventoryItemAction.ADD_OTHER, itype, true, true, false));
+                    srv.messageToGame(gn, true, new SOCPlayerElement
+                        (gn, pn, SOCPlayerElement.SET, PEType.SCENARIO_SVP, pl.getSpecialVP()));
+                    srv.messageToGameKeyed
+                        (ga, true, true, "action.ck.progress.drew.vp", pl.getName());
+                        // "{0} drew a Victory Point progress card!"
+                } else {
+                    final Connection plConn = srv.getConnection(pl.getName());
+                    final SOCInventoryItemAction hidden = new SOCInventoryItemAction
+                        (gn, pn, SOCInventoryItemAction.ADD_PLAYABLE, 0);
+                    if (plConn != null)
+                    {
+                        srv.messageToPlayer(plConn, gn, pn, new SOCInventoryItemAction
+                            (gn, pn, SOCInventoryItemAction.ADD_PLAYABLE, itype));
+                        srv.messageToGameExcept(gn, plConn, pn, hidden, true);
+                    } else {
+                        srv.messageToGame(gn, true, hidden);
+                    }
+                    srv.messageToGameKeyed
+                        (ga, true, true, "action.ck.progress.drew", pl.getName());
+                        // "{0} drew a progress card."
+                }
+            }
         }
     }
 
@@ -1608,6 +1806,53 @@ public class SOCGameMessageHandler
                     srv.messageToPlayerKeyed(c, gaName, clientPN, "base.reply.not.your.turn");
                     replyDecline = true;
                 }
+            }
+            break;
+
+        case SOCSimpleRequest.CK_BUY_KNIGHT:
+        case SOCSimpleRequest.CK_ACTIVATE_KNIGHT:
+        case SOCSimpleRequest.CK_PROMOTE_KNIGHT:
+            // Cities & Knights knight actions; see doc/Cities-and-Knights-Implemented.md
+            {
+                if (! (clientIsPN && (clientPN == cpn)))
+                {
+                    srv.messageToPlayerKeyed(c, gaName, clientPN, "base.reply.not.your.turn");
+                    replyDecline = true;
+                    break;
+                }
+
+                final SOCResourceSet cost;
+                if (reqtype == SOCSimpleRequest.CK_BUY_KNIGHT)
+                {
+                    if (! ga.canCKBuyKnight(cpn))
+                    {
+                        replyDecline = true;
+                        break;
+                    }
+                    ga.ckBuyKnight(cpn);
+                    cost = SOCGame.CK_COST_KNIGHT;
+                }
+                else if (reqtype == SOCSimpleRequest.CK_ACTIVATE_KNIGHT)
+                {
+                    if (! ga.canCKActivateKnight(cpn))
+                    {
+                        replyDecline = true;
+                        break;
+                    }
+                    ga.ckActivateKnight(cpn);
+                    cost = SOCGame.CK_COST_ACTIVATE_KNIGHT;
+                } else {
+                    if (! ga.canCKPromoteKnight(cpn))
+                    {
+                        replyDecline = true;
+                        break;
+                    }
+                    ga.ckPromoteKnight(cpn);
+                    cost = SOCGame.CK_COST_KNIGHT;
+                }
+
+                handler.reportRsrcGainLoss(ga, cost, true, false, cpn, -1, null);
+                handler.reportCKKnightCounts(ga, cpn);
             }
             break;
 
@@ -3725,7 +3970,14 @@ public class SOCGameMessageHandler
             final String gaName = ga.getName();
             if (handler.checkTurn(c, ga))
             {
-                if (ga.canDoMonopolyAction())
+                if ((ga.getCKMonopolyCardInPlay() != 0)
+                    && (ga.getGameState() == SOCGame.WAITING_FOR_MONOPOLY))
+                {
+                    // Cities & Knights Resource Monopoly / Trade Monopoly progress card:
+                    // the named type is a resource (1-5) or commodity (1-3) per the card.
+                    handlePICKRESOURCETYPE_ckMonopoly(ga, c, mes.getResourceType());
+                }
+                else if (ga.canDoMonopolyAction())
                 {
                     final int rsrc = mes.getResourceType();
 
@@ -3903,9 +4155,91 @@ public class SOCGameMessageHandler
                 (gaName, pn, SOCInventoryItemAction.PLAYED, item.itype,
                  item.isKept(), item.isVPItem(), item.canCancelPlay));
 
+        if (SOCCKProgressCardConstants.isProgressCard(item.itype)
+            && ga.isGameOptionSet(SOCGameOptionSet.K__CK_PROGRESS))
+            handleINVENTORYITEMACTION_ckEffects(ga, pn, ga.getCKLastCardEffect());
+
         final int gstate = ga.getGameState();
         if (gstate != oldGameState)
             handler.sendGameState(ga);
+    }
+
+    /**
+     * Announce the effects of a just-played Cities &amp; Knights progress card
+     * for {@link #handleINVENTORYITEMACTION(SOCGame, Connection, SOCInventoryItemAction)}:
+     * resource/commodity element changes, knight-count updates (Warlord), and text.
+     * The monopoly cards have no immediate effects to announce here; their game-state change to
+     * {@link SOCGame#WAITING_FOR_MONOPOLY} is sent by the caller, and effects are announced from
+     * {@link #handlePICKRESOURCETYPE_ckMonopoly(SOCGame, Connection, int)}.
+     *
+     * @param ga  the game
+     * @param pn  player who played the card
+     * @param eff  the card's effect details from {@link SOCGame#getCKLastCardEffect()}; does nothing if null
+     * @since 2.7.00
+     */
+    private void handleINVENTORYITEMACTION_ckEffects(SOCGame ga, final int pn, final SOCGame.CKCardEffect eff)
+    {
+        if (eff == null)
+            return;
+
+        final String gaName = ga.getName();
+        final String plName = ga.getPlayer(pn).getName();
+
+        switch (eff.itype)
+        {
+        case SOCCKProgressCardConstants.WARLORD:
+            handler.reportCKKnightCounts(ga, pn);
+            srv.messageToGameKeyed(ga, true, true, "action.ck.progress.warlord", plName);
+                // "{0} played Warlord: all their knights are now active."
+            break;
+
+        case SOCCKProgressCardConstants.MASTER_MERCHANT:
+            if ((eff.victimPn != -1) && (eff.gained != null) && (eff.gained.getTotal() > 0))
+            {
+                handler.reportRsrcGainLoss(ga, eff.gained, true, true, eff.victimPn, pn, null);
+                srv.messageToGameKeyed
+                    (ga, true, true, "action.ck.progress.master_merchant",
+                     plName, eff.gained.getTotal(), ga.getPlayer(eff.victimPn).getName());
+                    // "{0} played Master Merchant and took {1} resources from {2}."
+            } else {
+                srv.messageToGameKeyed(ga, true, true, "action.ck.progress.no_effect", plName);
+                    // "{0} played a progress card, but it had no effect."
+            }
+            break;
+
+        case SOCCKProgressCardConstants.WEDDING:
+            if ((eff.transfers != null) && ! eff.transfers.isEmpty())
+            {
+                for (final int[] tr : eff.transfers)
+                {
+                    final SOCResourceSet given = new SOCResourceSet();
+                    given.add(1, tr[1]);
+                    handler.reportRsrcGainLoss(ga, given, true, true, tr[0], pn, null);
+                }
+                srv.messageToGameKeyed(ga, true, true, "action.ck.progress.wedding", plName);
+                    // "{0} played Wedding: players with more victory points each gave them a resource."
+            } else {
+                srv.messageToGameKeyed(ga, true, true, "action.ck.progress.no_effect", plName);
+            }
+            break;
+
+        case SOCCKProgressCardConstants.IRRIGATION:
+        case SOCCKProgressCardConstants.MINING:
+            if ((eff.gained != null) && (eff.gained.getTotal() > 0))
+            {
+                handler.reportRsrcGainLoss(ga, eff.gained, false, true, pn, -1, null);
+                srv.messageToGameKeyedSpecial
+                    (ga, true, true, "action.ck.progress.gained.rsrcs", plName, eff.gained);
+                    // "{0}''s progress card gained them {1,rsrcs}."
+            } else {
+                srv.messageToGameKeyed(ga, true, true, "action.ck.progress.no_effect", plName);
+            }
+            break;
+
+        default:
+            // RESOURCE_MONOPOLY / TRADE_MONOPOLY: nothing immediate; caller sends the new game state
+            break;
+        }
     }
 
     /**
@@ -3978,6 +4312,11 @@ public class SOCGameMessageHandler
                     // if cost paid, send resource-loss first
                     if (paidCost && (itm != null))
                         handler.reportRsrcGainLoss(ga, itm.getCost(), true, false, pn, -1, null);
+
+                    // Cities & Knights improvement: announce the commodity payment first
+                    final boolean isCKImprov = typeKey.startsWith(SOCGameOptionSet.K__CK_IMPROV + "/");
+                    if (isCKImprov)
+                        handler.reportCKCommodityCounts(ga, pn);
 
                     // Next, send SET/CLEAR before sending PICK announcement
 
@@ -4073,6 +4412,35 @@ public class SOCGameMessageHandler
                                 (gaName, pn, SOCPlayerElement.SET,
                                  SOCPlayerElement.elementTypeForPieceType(startCostPType),
                                  pl.getNumPieces(startCostPType)));
+                    }
+
+                    // Cities & Knights improvement: re-evaluate the track's metropolis after the level-up
+                    if (isCKImprov)
+                    {
+                        final int track =
+                            typeKey.equals(SOCSpecialItem.CK_IMPROV_TRADE) ? 0
+                            : typeKey.equals(SOCSpecialItem.CK_IMPROV_POLITICS) ? 1
+                            : 2;
+                        final int prevOwner = ga.getCKMetropolisOwner(track);
+                        final int newOwner = ga.ckCheckMetropolis(track);
+                        if (newOwner != -1)
+                        {
+                            srv.messageToGame(gaName, true, new SOCPlayerElement
+                                (gaName, newOwner, SOCPlayerElement.SET,
+                                 PEType.SCENARIO_SVP, ga.getPlayer(newOwner).getSpecialVP()));
+                            if (prevOwner != -1)
+                                srv.messageToGame(gaName, true, new SOCPlayerElement
+                                    (gaName, prevOwner, SOCPlayerElement.SET,
+                                     PEType.SCENARIO_SVP, ga.getPlayer(prevOwner).getSpecialVP()));
+                            srv.messageToGame(gaName, true, new SOCSimpleAction
+                                (gaName, newOwner, SOCSimpleAction.CK_METROPOLIS_CLAIMED, track, 0));
+                            srv.messageToGameKeyed
+                                (ga, true, true, "action.ck.metropolis.claimed",
+                                 ga.getPlayer(newOwner).getName());
+                                // "{0} claimed a metropolis: +2 Special Victory Points!"
+
+                            ga.checkForWinner();
+                        }
                     }
 
                 } else {

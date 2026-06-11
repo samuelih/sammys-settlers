@@ -183,6 +183,48 @@ public class SOCSimpleAction extends SOCMessageTemplate4i
      */
     public static final int SC_CLVI_VILLAGE_PLAYER_REMOVED = 1003;
 
+    /**
+     * This message from server announces a Cities &amp; Knights barbarian attack and its outcome.
+     * Sent to the entire game after the dice roll's data messages, <B>before</B> the per-player
+     * consequences (city downgrades as {@link SOCRemovePiece} + {@link SOCPutPiece}, knight
+     * deactivations as {@link SOCPlayerElement}, Defender of Catan as {@link #CK_DEFENDER_OF_CATAN}).
+     *<P>
+     * {@code value1}: The barbarians' attack strength (total cities) <br>
+     * {@code value2}: Catan's defense strength (total active knight levels);
+     * the defenders won if {@code value2 >= value1}.
+     *<P>
+     * Used with game option {@link SOCGameOptionSet#K__CK_BARBARIAN _CK_BARB};
+     * see {@code doc/Cities-and-Knights-Implemented.md}.
+     * @since 2.7.00
+     */
+    public static final int CK_BARBARIAN_ATTACK_RESULT = 1004;
+
+    /**
+     * This message from server announces a Cities &amp; Knights metropolis claim or steal.
+     * Sent after the {@link SOCPlayerElement.PEType#SCENARIO_SVP SCENARIO_SVP} updates for the
+     * affected players (+2 SVP new owner, -2 SVP previous owner if stolen).
+     *<P>
+     * {@code value1}: Improvement track index: 0 = Trade, 1 = Politics, 2 = Science <br>
+     * {@code value2}: unused (0); {@link #getPlayerNumber()} is the new owner
+     *<P>
+     * Used with game option {@link SOCGameOptionSet#K__CK_METROPOLIS _CK_METR}.
+     * @since 2.7.00
+     */
+    public static final int CK_METROPOLIS_CLAIMED = 1005;
+
+    /**
+     * This message from server announces the Defender of Catan award (+1 Special VP) after the
+     * defenders win a Cities &amp; Knights barbarian attack with a sole strongest defender.
+     * Sent after that player's {@link SOCPlayerElement.PEType#SCENARIO_SVP SCENARIO_SVP} update.
+     *<P>
+     * {@code value1}: That player's new total Special VP <br>
+     * {@code value2}: unused (0); {@link #getPlayerNumber()} is the defender
+     *<P>
+     * Used with game option {@link SOCGameOptionSet#K__CK_BARBARIAN _CK_BARB}.
+     * @since 2.7.00
+     */
+    public static final int CK_DEFENDER_OF_CATAN = 1006;
+
     // Reminder: If you add an action type, check client and server code to determine if the new type
     // should be added to methods such as:
     // - SOCGameHandler.handleSIMPLEACTION

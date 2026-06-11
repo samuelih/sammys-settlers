@@ -1303,6 +1303,29 @@ public class SOCGameHandler extends GameHandler
         }
 
         /**
+         * Cities & Knights game-level state: barbarian strength, metropolis owners.
+         * Per-player commodities/knights/improvements are sent in the per-player loop below.
+         */
+        if (gameState >= SOCGame.ROLL_OR_CARD)
+        {
+            if (gameData.isGameOptionSet(SOCGameOptionSet.K__CK_BARBARIAN)
+                && (gameData.getBarbarianStrength() > 0))
+                srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
+                    new SOCGameElements
+                        (gameName, GEType.CK_BARBARIAN_STRENGTH, gameData.getBarbarianStrength()));
+
+            if (gameData.isGameOptionSet(SOCGameOptionSet.K__CK_METROPOLIS))
+                for (int track = 0; track < 3; ++track)
+                {
+                    final int ownerPn = gameData.getCKMetropolisOwner(track);
+                    if (ownerPn != -1)
+                        srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
+                            new SOCSimpleAction
+                                (gameName, ownerPn, SOCSimpleAction.CK_METROPOLIS_CLAIMED, track, 0));
+                }
+        }
+
+        /**
          * Send the current player number.
          * Before v2.0.00, this wasn't sent so early; was sent
          * just before SOCGameState and the "joined the game" text.
@@ -1462,6 +1485,45 @@ public class SOCGameHandler extends GameHandler
                 srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
                     new SOCPlayerElement
                         (gameName, i, SOCPlayerElement.SET, PEType.SCENARIO_CLOTH_COUNT, itm));
+
+            // Cities & Knights: commodities, knights, improvement-track levels
+            if (gameData.isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV))
+            {
+                if ((pl.getCKCommodity(SOCPlayer.CK_CLOTH) | pl.getCKCommodity(SOCPlayer.CK_COIN)
+                     | pl.getCKCommodity(SOCPlayer.CK_PAPER)) != 0)
+                    srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
+                        new SOCPlayerElements
+                            (gameName, i, SOCPlayerElement.SET,
+                             new PEType[]{ PEType.CK_CLOTH_COUNT, PEType.CK_COIN_COUNT, PEType.CK_PAPER_COUNT },
+                             new int[]
+                                 { pl.getCKCommodity(SOCPlayer.CK_CLOTH), pl.getCKCommodity(SOCPlayer.CK_COIN),
+                                   pl.getCKCommodity(SOCPlayer.CK_PAPER) }));
+
+                for (final String typeKey : SOCSpecialItem.CK_IMPROV_TYPEKEYS)
+                {
+                    final SOCSpecialItem track = pl.getSpecialItem(typeKey, 0);
+                    if ((track != null) && (track.getLevel() > 0))
+                        srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
+                            new SOCSetSpecialItem
+                                (gameData, SOCSetSpecialItem.OP_SET, typeKey, -1, 0, track));
+                }
+            }
+
+            if (gameData.isGameOptionSet(SOCGameOptionSet.K__CK_KNIGHTS)
+                && (pl.getCKTotalKnights() > 0))
+                srv.messageToPlayer(c, gameName, SOCServer.PN_OBSERVER,
+                    new SOCPlayerElements
+                        (gameName, i, SOCPlayerElement.SET,
+                         new PEType[]
+                             { PEType.CK_KNIGHTS_LV1, PEType.CK_KNIGHTS_LV2, PEType.CK_KNIGHTS_LV3,
+                               PEType.CK_KNIGHTS_ACTIVE_LV1, PEType.CK_KNIGHTS_ACTIVE_LV2,
+                               PEType.CK_KNIGHTS_ACTIVE_LV3 },
+                         new int[]
+                             { pl.getCKKnights(SOCPlayer.CK_KNIGHT_BASIC), pl.getCKKnights(SOCPlayer.CK_KNIGHT_STRONG),
+                               pl.getCKKnights(SOCPlayer.CK_KNIGHT_MIGHTY),
+                               pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_BASIC),
+                               pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_STRONG),
+                               pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_MIGHTY) }));
 
             // Send piece info even if player has left the game (pl.getName() == null).
             // This lets them see "their" pieces before srv.sitDown(), if they rejoin at same position.
@@ -3692,6 +3754,49 @@ public class SOCGameHandler extends GameHandler
     {
         reportRsrcGainLossForVersions
             (ga, resourceSet, isLoss, isNews, mainPlayer, tradingPlayer, playerConn, 0);
+    }
+
+    /**
+     * Announce a player's current Cities &amp; Knights knight counts (total and active, by level)
+     * to the entire game, as one {@link SOCPlayerElements} SET message with
+     * {@link PEType#CK_KNIGHTS_LV1 CK_KNIGHTS_LV1} - {@link PEType#CK_KNIGHTS_ACTIVE_LV3 CK_KNIGHTS_ACTIVE_LV3}.
+     * See {@code doc/Cities-and-Knights-Implemented.md}.
+     * @param ga  the game
+     * @param pn  player number whose counts to announce
+     * @since 2.7.00
+     */
+    void reportCKKnightCounts(final SOCGame ga, final int pn)
+    {
+        final SOCPlayer pl = ga.getPlayer(pn);
+        srv.messageToGame(ga.getName(), true, new SOCPlayerElements
+            (ga.getName(), pn, SOCPlayerElement.SET,
+             new PEType[]
+                 { PEType.CK_KNIGHTS_LV1, PEType.CK_KNIGHTS_LV2, PEType.CK_KNIGHTS_LV3,
+                   PEType.CK_KNIGHTS_ACTIVE_LV1, PEType.CK_KNIGHTS_ACTIVE_LV2, PEType.CK_KNIGHTS_ACTIVE_LV3 },
+             new int[]
+                 { pl.getCKKnights(SOCPlayer.CK_KNIGHT_BASIC), pl.getCKKnights(SOCPlayer.CK_KNIGHT_STRONG),
+                   pl.getCKKnights(SOCPlayer.CK_KNIGHT_MIGHTY),
+                   pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_BASIC), pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_STRONG),
+                   pl.getCKActiveKnights(SOCPlayer.CK_KNIGHT_MIGHTY) }));
+    }
+
+    /**
+     * Announce a player's current Cities &amp; Knights commodity counts (cloth, coin, paper)
+     * to the entire game, as one {@link SOCPlayerElements} SET message with
+     * {@link PEType#CK_CLOTH_COUNT CK_CLOTH_COUNT} - {@link PEType#CK_PAPER_COUNT CK_PAPER_COUNT}.
+     * @param ga  the game
+     * @param pn  player number whose counts to announce
+     * @since 2.7.00
+     */
+    void reportCKCommodityCounts(final SOCGame ga, final int pn)
+    {
+        final SOCPlayer pl = ga.getPlayer(pn);
+        srv.messageToGame(ga.getName(), true, new SOCPlayerElements
+            (ga.getName(), pn, SOCPlayerElement.SET,
+             new PEType[]{ PEType.CK_CLOTH_COUNT, PEType.CK_COIN_COUNT, PEType.CK_PAPER_COUNT },
+             new int[]
+                 { pl.getCKCommodity(SOCPlayer.CK_CLOTH), pl.getCKCommodity(SOCPlayer.CK_COIN),
+                   pl.getCKCommodity(SOCPlayer.CK_PAPER) }));
     }
 
     /**
