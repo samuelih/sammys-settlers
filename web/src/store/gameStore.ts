@@ -13,33 +13,56 @@ import { create } from 'zustand';
 import {
   EMPTYSTR,
   GAME_STATE_MIN_STARTED,
+  GameElementType,
   GameState,
   MessageType,
+  PlayerElementAction,
+  PlayerElementType,
   SeatLockState,
   type SeatLockStateValue,
   type SOCMessage,
+  SOCBoardLayout2,
   SOCChannels,
   SOCDeleteGame,
+  SOCDiceResult,
+  SOCDiceResultResources,
+  SOCGameElements,
   SOCGameMembers,
   SOCGameOptionGetDefaults,
   SOCGameOptionGetInfos,
   SOCGameOptionInfo,
   SOCGames,
+  SOCGameServerText,
   SOCGameState,
   SOCGamesWithOptions,
+  SOCGameTextMsg,
   SOCJoinGame,
   SOCJoinGameAuth,
+  SOCLargestArmy,
   SOCLeaveGame,
+  SOCLongestRoad,
+  SOCMovePiece,
   SOCNewGame,
   SOCNewGameWithOptions,
   SOCNewGameWithOptionsRequest,
+  SOCPlayerElement,
+  SOCPlayerElements,
+  SOCPotentialSettlements,
+  SOCPutPiece,
+  SOCRollDice,
+  SOCBuildRequest,
+  SOCCancelBuildRequest,
+  SOCEndTurn,
   SOCScenarioInfo,
   type ScenarioDetails,
   SOCSetSeatLock,
+  SOCSetTurn,
   SOCSitDown,
   SOCStartGame,
   SOCStatusMessage,
+  SOCTurn,
   SOCVersion,
+  PieceTypeConst,
   StatusValue,
   type GameOptionDescriptor,
   descriptorFromInfo,
@@ -48,11 +71,26 @@ import {
   serializeOptions,
 } from '../protocol';
 import {
+  type BoardModel,
+  type BoardPiece,
+  PIECE_SETTLEMENT,
+  PIECE_SHIP,
+} from '../board/types';
+import { boardFromLayout2 } from '../board/boardModel';
+import {
+  type PlayerView,
+  type ResourceCounts,
+  colorForSeat,
+  makePlayerView,
+} from './types';
+import {
   type ConnectionState,
   DEFAULT_HOST,
   DEFAULT_PORT,
   GameConnection,
 } from '../net/GameConnection';
+
+export { PLAYER_COLORS, type PlayerView, type ResourceCounts } from './types';
 
 /**
  * One game as shown in the lobby list. The web client only needs the name, a
@@ -111,7 +149,42 @@ export interface CurrentGame {
   maxPlayers: number;
   /** True once the local client has received SOCJoinGameAuth for this game. */
   iJoined: boolean;
+
+  // --- In-game state (Phase 3); populated once setup/play begins ---
+
+  /** Decoded board model for the SVG renderer, or null until BOARDLAYOUT2. */
+  board: BoardModel | null;
+  /** Pieces placed on the board (roads/ships at edges, settlements/cities at nodes). */
+  pieces: BoardPiece[];
+  /** Legal/potential settlement node coords (from POTENTIALSETTLEMENTS). */
+  potentialNodes: number[];
+  /** Per-seat render view, indexed by seat number. Length maxPlayers. */
+  playerViews: PlayerView[];
+  /** Current player's seat number, or -1 if none yet. */
+  currentPlayerNumber: number;
+  /** Last dice roll, or null before the first roll / after a clear. */
+  lastDice: DiceRoll | null;
+  /**
+   * Node coord of the settlement the local player most recently placed during
+   * initial placement, used to constrain the following initial-road highlight.
+   * Null outside initial placement.
+   */
+  lastInitSettlement: number | null;
+  /** Number of dev cards left in the deck (from GAMEELEMENTS). */
+  deckDevCardCount: number;
+  /** Rolling chat/announcement log (server text + chat), newest last. */
+  gameLog: string[];
 }
+
+/** A resolved dice roll. d1/d2 are 0 when only the total is known. */
+export interface DiceRoll {
+  d1: number;
+  d2: number;
+  total: number;
+}
+
+/** Cap the game log so it doesn't grow without bound. */
+const GAME_LOG_MAX = 200;
 
 /** Default max players when a game's "PL" option is unknown. */
 const DEFAULT_MAX_PLAYERS = 4;
@@ -219,6 +292,37 @@ export interface GameStoreState {
   setGameState: (gameName: string, state: number) => void;
   /** Clear the joined-game room if it matches `gameName` (LEAVE / DELETE). */
   clearCurrentGame: (gameName: string) => void;
+
+  // --- In-game reducers (Phase 3) ---
+
+  /** Decode + store the board layout (from SOCBoardLayout2). */
+  applyBoardLayout: (msg: SOCBoardLayout2) => void;
+  /** Store the legal/potential settlement nodes (from SOCPotentialSettlements). */
+  applyPotentialSettlements: (msg: SOCPotentialSettlements) => void;
+  /** Add a placed piece to the board (from SOCPutPiece). */
+  applyPutPiece: (msg: SOCPutPiece) => void;
+  /** Move an existing piece (ship) to a new edge (from SOCMovePiece). */
+  applyMovePiece: (msg: SOCMovePiece) => void;
+  /** Apply a single player-element change (from SOCPlayerElement). */
+  applyPlayerElement: (msg: SOCPlayerElement) => void;
+  /** Apply a batch of player-element changes (from SOCPlayerElements). */
+  applyPlayerElements: (msg: SOCPlayerElements) => void;
+  /** Apply a batch of game-element changes (from SOCGameElements). */
+  applyGameElements: (msg: SOCGameElements) => void;
+  /** Record a dice result total (from SOCDiceResult). */
+  applyDiceResult: (msg: SOCDiceResult) => void;
+  /** Record dice gains + per-player resource totals (from SOCDiceResultResources). */
+  applyDiceResultResources: (msg: SOCDiceResultResources) => void;
+  /** Advance the turn (current player + optional new state) (from SOCTurn). */
+  applyTurn: (msg: SOCTurn) => void;
+  /** Set the current player number (from SOCSetTurn). */
+  applySetTurn: (msg: SOCSetTurn) => void;
+  /** Set the Longest Road holder (from SOCLongestRoad), -1 = none. */
+  applyLongestRoad: (gameName: string, playerNumber: number) => void;
+  /** Set the Largest Army holder (from SOCLargestArmy), -1 = none. */
+  applyLargestArmy: (gameName: string, playerNumber: number) => void;
+  /** Append a line to the rolling game log. */
+  appendGameLog: (gameName: string, line: string) => void;
 }
 
 /**
@@ -274,6 +378,15 @@ function resizeArray<T>(arr: readonly T[], length: number, fill: T): T[] {
   return out;
 }
 
+/** Build a per-seat {@link PlayerView} array sized to `maxPlayers`. */
+function makePlayerViews(maxPlayers: number): PlayerView[] {
+  const out: PlayerView[] = [];
+  for (let pn = 0; pn < maxPlayers; ++pn) {
+    out.push(makePlayerView(pn));
+  }
+  return out;
+}
+
 /** Build a fresh, all-empty {@link CurrentGame} for a just-joined game. */
 function makeCurrentGame(
   gameName: string,
@@ -292,7 +405,98 @@ function makeCurrentGame(
     gameState: GameState.NEW,
     maxPlayers,
     iJoined: true,
+    board: null,
+    pieces: [],
+    potentialNodes: [],
+    playerViews: makePlayerViews(maxPlayers),
+    currentPlayerNumber: -1,
+    lastDice: null,
+    lastInitSettlement: null,
+    deckDevCardCount: 0,
+    gameLog: [],
   };
+}
+
+/**
+ * Map a {@link PlayerElementType} resource value (CLAY..WOOD) to its
+ * {@link ResourceCounts} field name, or null for a non-resource type.
+ */
+function resourceField(elementType: number): keyof ResourceCounts | null {
+  switch (elementType) {
+    case PlayerElementType.CLAY:
+      return 'clay';
+    case PlayerElementType.ORE:
+      return 'ore';
+    case PlayerElementType.SHEEP:
+      return 'sheep';
+    case PlayerElementType.WHEAT:
+      return 'wheat';
+    case PlayerElementType.WOOD:
+      return 'wood';
+    default:
+      return null;
+  }
+}
+
+/** Apply a SET/GAIN/LOSE action to a current value, clamping at 0. */
+function applyElementAction(current: number, action: number, amount: number): number {
+  switch (action) {
+    case PlayerElementAction.SET:
+      return amount;
+    case PlayerElementAction.GAIN:
+      return current + amount;
+    case PlayerElementAction.LOSE:
+      return Math.max(0, current - amount);
+    default:
+      return current;
+  }
+}
+
+/**
+ * Apply one player-element change to a {@link PlayerView}, returning a new view
+ * (immutable). Handles resource counts, piece-supply counts, knights, and the
+ * authoritative total/unknown-resource count. Unknown element types are ignored.
+ *
+ * Resource semantics mirror the server: the local player receives per-resource
+ * CLAY..WOOD updates; opponents receive only a single UNKNOWN_RESOURCE or
+ * RESOURCE_COUNT total. We update {@link PlayerView.resources} for the typed
+ * resources and recompute {@link PlayerView.resourceTotal} from them, but a
+ * RESOURCE_COUNT/UNKNOWN_RESOURCE update overrides the total directly (used for
+ * opponents whose per-resource breakdown we never see).
+ */
+function applyElementToView(
+  view: PlayerView,
+  elementType: number,
+  action: number,
+  amount: number,
+): PlayerView {
+  const resField = resourceField(elementType);
+  if (resField !== null) {
+    const resources: ResourceCounts = { ...view.resources };
+    resources[resField] = applyElementAction(resources[resField], action, amount);
+    const resourceTotal =
+      resources.clay + resources.ore + resources.sheep + resources.wheat + resources.wood;
+    return { ...view, resources, resourceTotal };
+  }
+
+  switch (elementType) {
+    case PlayerElementType.RESOURCE_COUNT:
+    case PlayerElementType.UNKNOWN_RESOURCE:
+      // Authoritative total for opponents (we never see their breakdown).
+      return { ...view, resourceTotal: applyElementAction(view.resourceTotal, action, amount) };
+    case PlayerElementType.ROADS:
+      return { ...view, roads: applyElementAction(view.roads, action, amount) };
+    case PlayerElementType.SETTLEMENTS:
+      return { ...view, settlements: applyElementAction(view.settlements, action, amount) };
+    case PlayerElementType.CITIES:
+      return { ...view, cities: applyElementAction(view.cities, action, amount) };
+    case PlayerElementType.SHIPS:
+      return { ...view, ships: applyElementAction(view.ships, action, amount) };
+    case PlayerElementType.NUMKNIGHTS:
+      return { ...view, knights: applyElementAction(view.knights, action, amount) };
+    default:
+      return view; // flags / scenario / not-shown element types: ignore
+  }
 }
 
 /**
@@ -449,7 +653,18 @@ export const useGameStore = create<GameStoreState>((set) => ({
       players[playerNumber] = { name, isRobot };
       const mySeat =
         name === s.nickname && !isRobot ? playerNumber : cg.mySeat;
-      return { currentGame: { ...cg, players, mySeat } };
+      // Mirror the seating into the in-game player view (name/robot/seated),
+      // assigning the seat's palette color.
+      const playerViews = cg.playerViews.slice();
+      const pv = playerViews[playerNumber] ?? makePlayerView(playerNumber);
+      playerViews[playerNumber] = {
+        ...pv,
+        name,
+        isRobot,
+        seated: true,
+        color: colorForSeat(playerNumber),
+      };
+      return { currentGame: { ...cg, players, mySeat, playerViews } };
     }),
 
   applySeatLock: (msg) =>
@@ -469,8 +684,20 @@ export const useGameStore = create<GameStoreState>((set) => ({
             ? cg.players.slice()
             : resizeArray<RoomPlayer | null>(cg.players, count, null);
         const seatLocks = [...msg.states];
+        // Keep the in-game player views in lockstep with the authoritative
+        // seat count, seeding any newly-revealed seats with a fresh view.
+        const playerViews =
+          count === cg.playerViews.length
+            ? cg.playerViews
+            : (() => {
+                const out: PlayerView[] = [];
+                for (let pn = 0; pn < count; ++pn) {
+                  out.push(cg.playerViews[pn] ?? makePlayerView(pn));
+                }
+                return out;
+              })();
         return {
-          currentGame: { ...cg, players, seatLocks, maxPlayers: count },
+          currentGame: { ...cg, players, seatLocks, maxPlayers: count, playerViews },
         };
       }
       const seatLocks = cg.seatLocks.slice();
@@ -504,7 +731,390 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       return { currentGame: null };
     }),
+
+  // --- In-game reducers (Phase 3) ---
+
+  applyBoardLayout: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      return { currentGame: { ...cg, board: boardFromLayout2(msg) } };
+    }),
+
+  applyPotentialSettlements: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const potentialNodes = potentialNodesOf(msg);
+      return { currentGame: { ...cg, potentialNodes } };
+    }),
+
+  applyPutPiece: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const piece = pieceFromPutPiece(msg);
+      if (piece === null) {
+        return {}; // non-rendered piece type (fortress/village); ignore
+      }
+      // Avoid duplicates: a city upgrade replaces the settlement at that node.
+      const pieces = cg.pieces.filter(
+        (p) => !(isNodePiece(p.ptype) && isNodePiece(piece.ptype) && p.coord === piece.coord),
+      );
+      pieces.push(piece);
+      // VP is NOT sent over the wire as a player element (the Java client derives
+      // public VP locally). Recompute the owner's VP from their pieces + awards.
+      const playerViews = recomputeVp(cg.playerViews, pieces, piece.playerNumber);
+      // Remember our own initial settlement so the following initial-road
+      // highlight can be limited to edges touching it.
+      let lastInitSettlement = cg.lastInitSettlement;
+      if (
+        piece.playerNumber === cg.mySeat &&
+        piece.ptype === PIECE_SETTLEMENT &&
+        isInitialPlacementState(cg.gameState)
+      ) {
+        lastInitSettlement = piece.coord;
+      }
+      return { currentGame: { ...cg, pieces, playerViews, lastInitSettlement } };
+    }),
+
+  applyMovePiece: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      // Move the matching ship (type+from+owner) to its new edge.
+      const pieces = cg.pieces.map((p) =>
+        p.ptype === PIECE_SHIP &&
+        p.coord === msg.fromCoord &&
+        p.playerNumber === msg.playerNumber
+          ? { ...p, coord: msg.toCoord }
+          : p,
+      );
+      return { currentGame: { ...cg, pieces } };
+    }),
+
+  applyPlayerElement: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) =>
+        applyElementToView(v, msg.elementType, msg.actionType, msg.amount),
+      );
+      if (playerViews === cg.playerViews) {
+        return {};
+      }
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  applyPlayerElements: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) => {
+        let next = v;
+        for (let i = 0; i < msg.elementTypes.length; ++i) {
+          next = applyElementToView(next, msg.elementTypes[i], msg.actionType, msg.amounts[i]);
+        }
+        return next;
+      });
+      if (playerViews === cg.playerViews) {
+        return {};
+      }
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  applyGameElements: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      let currentPlayerNumber = cg.currentPlayerNumber;
+      let deckDevCardCount = cg.deckDevCardCount;
+      let playerViews = cg.playerViews;
+      for (let i = 0; i < msg.elementTypes.length; ++i) {
+        const et = msg.elementTypes[i];
+        const val = msg.values[i];
+        switch (et) {
+          case GameElementType.CURRENT_PLAYER:
+            currentPlayerNumber = val;
+            break;
+          case GameElementType.DEV_CARD_COUNT:
+            deckDevCardCount = val;
+            break;
+          case GameElementType.LONGEST_ROAD_PLAYER:
+            playerViews = recomputeVpAll(
+              setExclusiveFlag(playerViews, val, 'longestRoad'),
+              cg.pieces,
+            );
+            break;
+          case GameElementType.LARGEST_ARMY_PLAYER:
+            playerViews = recomputeVpAll(
+              setExclusiveFlag(playerViews, val, 'largestArmy'),
+              cg.pieces,
+            );
+            break;
+          default:
+            break; // ROUND_COUNT / FIRST_PLAYER / scenario fields: not shown
+        }
+      }
+      return {
+        currentGame: { ...cg, currentPlayerNumber, deckDevCardCount, playerViews },
+      };
+    }),
+
+  applyDiceResult: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const lastDice = msg.result > 0 ? { d1: 0, d2: 0, total: msg.result } : null;
+      return { currentGame: { ...cg, lastDice } };
+    }),
+
+  applyDiceResultResources: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      // Update each gaining player's authoritative total; per-resource gains for
+      // the local player arrive separately as SOCPlayerElement(GAIN), so we set
+      // the total here and let those refine the local breakdown.
+      let playerViews = cg.playerViews;
+      for (const p of msg.players) {
+        playerViews = updateView(playerViews, p.playerNumber, (v) => ({
+          ...v,
+          resourceTotal: p.total,
+        }));
+      }
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  applyTurn: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const gameState = msg.gameState > 0 ? msg.gameState : cg.gameState;
+      return {
+        currentGame: {
+          ...cg,
+          currentPlayerNumber: msg.playerNumber,
+          gameState,
+          // A new turn clears the previous turn's dice display.
+          lastDice: null,
+        },
+      };
+    }),
+
+  applySetTurn: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      return { currentGame: { ...cg, currentPlayerNumber: msg.playerNumber } };
+    }),
+
+  applyLongestRoad: (gameName, playerNumber) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      const playerViews = recomputeVpAll(
+        setExclusiveFlag(cg.playerViews, playerNumber, 'longestRoad'),
+        cg.pieces,
+      );
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  applyLargestArmy: (gameName, playerNumber) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      const playerViews = recomputeVpAll(
+        setExclusiveFlag(cg.playerViews, playerNumber, 'largestArmy'),
+        cg.pieces,
+      );
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  appendGameLog: (gameName, line) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null || line === '') {
+        return {};
+      }
+      const gameLog = [...cg.gameLog, line];
+      if (gameLog.length > GAME_LOG_MAX) {
+        gameLog.splice(0, gameLog.length - GAME_LOG_MAX);
+      }
+      return { currentGame: { ...cg, gameLog } };
+    }),
 }));
+
+/**
+ * Return the current game iff it matches `gameName` (after marker stripping),
+ * else null. Centralizes the "is this our joined game" guard the in-game
+ * reducers share.
+ */
+function guardGame(cg: CurrentGame | null, gameName: string): CurrentGame | null {
+  if (cg === null || cg.gameName !== cleanGameName(gameName)) {
+    return null;
+  }
+  return cg;
+}
+
+/** True for piece types that sit on a node (settlement/city) vs an edge (road/ship). */
+function isNodePiece(ptype: number): boolean {
+  return ptype === 1 /* settlement */ || ptype === 2 /* city */;
+}
+
+/**
+ * Build a {@link BoardPiece} from a {@link SOCPutPiece}, or null for piece types
+ * the core renderer doesn't draw (fortress=4, village=5). Roads(0)/ships(3) sit
+ * on edges; settlements(1)/cities(2) sit on nodes.
+ */
+function pieceFromPutPiece(msg: SOCPutPiece): BoardPiece | null {
+  if (msg.pieceType > 3) {
+    return null; // fortress/village: not rendered in the core loop
+  }
+  return {
+    ptype: msg.pieceType as BoardPiece['ptype'],
+    coord: msg.coordinates,
+    playerNumber: msg.playerNumber,
+  };
+}
+
+/**
+ * Extract the legal/potential settlement node coords from a
+ * {@link SOCPotentialSettlements}: the per-player psNodes when present, else the
+ * de-duplicated union of all land-area legal nodes (sea board, pn -1 before start).
+ */
+function potentialNodesOf(msg: SOCPotentialSettlements): number[] {
+  if (msg.psNodes !== null && msg.psNodes.length > 0) {
+    return [...msg.psNodes];
+  }
+  const lan = msg.landAreasLegalNodes;
+  if (lan !== null) {
+    const seen = new Set<number>();
+    for (let i = 1; i < lan.length; ++i) {
+      const nodes = lan[i];
+      if (nodes !== null) {
+        for (const n of nodes) {
+          seen.add(n);
+        }
+      }
+    }
+    return Array.from(seen);
+  }
+  return msg.psNodes !== null ? [...msg.psNodes] : [];
+}
+
+/**
+ * Return a new player-views array with seat `pn` transformed by `fn`, or the
+ * same array reference (no-op) if `pn` is out of range. Immutable: only the one
+ * changed view is a new object.
+ */
+function updateView(
+  views: readonly PlayerView[],
+  pn: number,
+  fn: (v: PlayerView) => PlayerView,
+): PlayerView[] {
+  if (pn < 0 || pn >= views.length) {
+    return views as PlayerView[];
+  }
+  const out = views.slice();
+  out[pn] = fn(out[pn]);
+  return out;
+}
+
+/**
+ * Set a boolean award flag (longestRoad/largestArmy) exclusively on seat
+ * `playerNumber` (or clear it on all if -1). Returns a new array.
+ */
+function setExclusiveFlag(
+  views: readonly PlayerView[],
+  playerNumber: number,
+  flag: 'longestRoad' | 'largestArmy',
+): PlayerView[] {
+  return views.map((v) => {
+    const should = v.playerNumber === playerNumber;
+    if (v[flag] === should) {
+      return v;
+    }
+    return { ...v, [flag]: should };
+  });
+}
+
+/**
+ * Derive a player's public victory points: 1 per settlement, 2 per city on the
+ * board, plus 2 each for Longest Road and Largest Army. The Java server does NOT
+ * send VP as a player element (it's computed by each client; see
+ * SOCPlayerElement, which has no VP type), so the store derives it the same way.
+ * Special VP and dev-card VP aren't visible in the core loop and are omitted.
+ */
+function deriveVp(view: PlayerView, pieces: readonly BoardPiece[]): number {
+  let vp = 0;
+  for (const p of pieces) {
+    if (p.playerNumber !== view.playerNumber) {
+      continue;
+    }
+    if (p.ptype === 1 /* settlement */) {
+      vp += 1;
+    } else if (p.ptype === 2 /* city */) {
+      vp += 2;
+    }
+  }
+  if (view.longestRoad) {
+    vp += 2;
+  }
+  if (view.largestArmy) {
+    vp += 2;
+  }
+  return vp;
+}
+
+/** Recompute one seat's VP from `pieces` + its award flags. */
+function recomputeVp(
+  views: readonly PlayerView[],
+  pieces: readonly BoardPiece[],
+  playerNumber: number,
+): PlayerView[] {
+  return updateView(views, playerNumber, (v) => {
+    const vp = deriveVp(v, pieces);
+    return vp === v.vp ? v : { ...v, vp };
+  });
+}
+
+/** Recompute every seat's VP (used after an award changes hands). */
+function recomputeVpAll(
+  views: readonly PlayerView[],
+  pieces: readonly BoardPiece[],
+): PlayerView[] {
+  return views.map((v) => {
+    const vp = deriveVp(v, pieces);
+    return vp === v.vp ? v : { ...v, vp };
+  });
+}
 
 /** True if a {@link CurrentGame}'s state means setup/play has begun. */
 export function isGameStarted(cg: CurrentGame | null): boolean {
@@ -719,6 +1329,76 @@ export function connectStore(
     }
   });
 
+  // --- In-game core-loop messages (Phase 3) ---
+
+  conn.on(MessageType.BOARDLAYOUT2, (msg: SOCMessage) => {
+    useGameStore.getState().applyBoardLayout(msg as SOCBoardLayout2);
+  });
+
+  conn.on(MessageType.POTENTIALSETTLEMENTS, (msg: SOCMessage) => {
+    useGameStore.getState().applyPotentialSettlements(msg as SOCPotentialSettlements);
+  });
+
+  conn.on(MessageType.PUTPIECE, (msg: SOCMessage) => {
+    useGameStore.getState().applyPutPiece(msg as SOCPutPiece);
+  });
+
+  conn.on(MessageType.MOVEPIECE, (msg: SOCMessage) => {
+    useGameStore.getState().applyMovePiece(msg as SOCMovePiece);
+  });
+
+  conn.on(MessageType.PLAYERELEMENT, (msg: SOCMessage) => {
+    useGameStore.getState().applyPlayerElement(msg as SOCPlayerElement);
+  });
+
+  conn.on(MessageType.PLAYERELEMENTS, (msg: SOCMessage) => {
+    useGameStore.getState().applyPlayerElements(msg as SOCPlayerElements);
+  });
+
+  conn.on(MessageType.GAMEELEMENTS, (msg: SOCMessage) => {
+    useGameStore.getState().applyGameElements(msg as SOCGameElements);
+  });
+
+  conn.on(MessageType.DICERESULT, (msg: SOCMessage) => {
+    useGameStore.getState().applyDiceResult(msg as SOCDiceResult);
+  });
+
+  conn.on(MessageType.DICERESULTRESOURCES, (msg: SOCMessage) => {
+    useGameStore.getState().applyDiceResultResources(msg as SOCDiceResultResources);
+  });
+
+  conn.on(MessageType.TURN, (msg: SOCMessage) => {
+    useGameStore.getState().applyTurn(msg as SOCTurn);
+  });
+
+  conn.on(MessageType.SETTURN, (msg: SOCMessage) => {
+    useGameStore.getState().applySetTurn(msg as SOCSetTurn);
+  });
+
+  conn.on(MessageType.LONGESTROAD, (msg: SOCMessage) => {
+    const lr = msg as SOCLongestRoad;
+    useGameStore.getState().applyLongestRoad(lr.game, lr.playerNumber);
+  });
+
+  conn.on(MessageType.LARGESTARMY, (msg: SOCMessage) => {
+    const la = msg as SOCLargestArmy;
+    useGameStore.getState().applyLargestArmy(la.game, la.playerNumber);
+  });
+
+  conn.on(MessageType.GAMESERVERTEXT, (msg: SOCMessage) => {
+    const t = msg as SOCGameServerText;
+    useGameStore.getState().appendGameLog(t.game, t.text);
+  });
+
+  conn.on(MessageType.GAMETEXTMSG, (msg: SOCMessage) => {
+    const t = msg as SOCGameTextMsg;
+    // Prefix chat lines with the sender (server text uses "Server"/":"); the
+    // log is plain strings so the UI stays simple.
+    const line =
+      t.nickname === '' || t.nickname === '-' ? t.text : `${t.nickname}: ${t.text}`;
+    useGameStore.getState().appendGameLog(t.game, line);
+  });
+
   conn.connect();
   return conn;
 }
@@ -916,3 +1596,96 @@ export function leaveGame(): void {
   }
   useGameStore.getState().clearCurrentGame(cg.gameName);
 }
+
+/**
+ * True if {@code state} is one of the initial-placement states (START1A..START3B),
+ * during which pieces are placed for free by sending SOCPutPiece directly.
+ */
+export function isInitialPlacementState(state: number): boolean {
+  return (
+    state === GameState.START1A ||
+    state === GameState.START1B ||
+    state === GameState.START2A ||
+    state === GameState.START2B ||
+    state === GameState.START3A ||
+    state === GameState.START3B
+  );
+}
+
+/** True if it is the local player's turn in the currently-joined game. */
+export function isMyTurn(cg: CurrentGame | null): boolean {
+  return cg !== null && cg.mySeat >= 0 && cg.mySeat === cg.currentPlayerNumber;
+}
+
+/**
+ * Roll the dice on the local player's turn. Sends SOCRollDice; the server replies
+ * with the dice result and any resource gains, then advances to PLAY1.
+ */
+export function rollDice(): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCRollDice(cg.gameName));
+}
+
+/**
+ * Place a piece at a node (settlement/city) or edge (road/ship) coordinate.
+ * Used both for free initial placement and after a build request has moved the
+ * game into a PLACING_* state. Sends SOCPutPiece for the local player.
+ *
+ * @param pieceType  a {@link PieceTypeConst} value (ROAD/SETTLEMENT/CITY/SHIP)
+ * @param coord      0xRRCC node or edge coordinate
+ */
+export function putPiece(pieceType: number, coord: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated in a game ---
+  }
+  conn.send(new SOCPutPiece(cg.gameName, cg.mySeat, pieceType, coord));
+}
+
+/**
+ * Request to build a piece during PLAY1. Sends SOCBuildRequest; if the player can
+ * afford it the server moves the game into the matching PLACING_* state, after
+ * which {@link putPiece} completes the placement.
+ *
+ * @param pieceType  a {@link PieceTypeConst} value (ROAD/SETTLEMENT/CITY/SHIP)
+ */
+export function buildRequest(pieceType: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCBuildRequest(cg.gameName, pieceType));
+}
+
+/**
+ * Cancel an in-progress build/placement, returning the game to PLAY1.
+ * Sends SOCCancelBuildRequest with the piece type currently being placed.
+ *
+ * @param pieceType  a {@link PieceTypeConst} value being cancelled
+ */
+export function cancelBuild(pieceType: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCCancelBuildRequest(cg.gameName, pieceType));
+}
+
+/** End the local player's turn. Sends SOCEndTurn. */
+export function endTurn(): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCEndTurn(cg.gameName));
+}
+
+export { PieceTypeConst, GameState };

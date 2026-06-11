@@ -204,6 +204,119 @@ Exposed as `StatusValue` in `constants.ts`. Full list: `SV_OK` (0),
     unrecognized marker where `"S"` is expected, or a `vs` array shorter than 2,
     is garbled → `null`.
 
+## Ported messages (in-game core loop — Phase 3)
+
+All wire strings below are **verified against the live Java server on WS 8888**:
+in a sea-board practice game every captured frame of these types decoded and
+re-encoded **byte-identically** through the TS codec (`1009`, `1024`, `1025`,
+`1026`, `1028`, `1057`, `1084`, `1086`, `1096`). `<C1>` = `(char)1`, `<C0>` =
+`(char)0` (special separators).
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1009 | `SOCPutPiece` | both | `1009` SEP `game` SEP2 `pn` SEP2 `pieceType` SEP2 `coord` | `1009\|ga,3,1,1543` | `SOCPutPiece.java` |
+| 1010 | `SOCGameTextMsg` | both | `1010` SEP `game` `<C0>` `nick` `<C0>` `text` | `1010\|ga<C0>debug<C0>hi` | `SOCGameTextMsg.java` |
+| 1024 | `SOCPlayerElement` | S→C | `1024` SEP `game` SEP2 `pn` SEP2 `action` SEP2 `elemType` SEP2 `amount` [SEP2 `Y`] | `1024\|ga,-1,100,19,0` | `SOCPlayerElement.java` |
+| 1026 | `SOCTurn` | S→C | `1026` SEP `game` SEP2 `pn` [SEP2 `gameState`] | `1026\|ga,3,5` | `SOCTurn.java` |
+| 1028 | `SOCDiceResult` | S→C | `1028` SEP `game` SEP2 `result` | `1028\|ga,8` / `1028\|ga,-1` | `SOCDiceResult.java` |
+| 1031 | `SOCRollDice` | C→S | `1031` SEP `game` | `1031\|ga` | `SOCRollDice.java` |
+| 1032 | `SOCEndTurn` | C→S | `1032` SEP `game` | `1032\|ga` | `SOCEndTurn.java` |
+| 1043 | `SOCBuildRequest` | C→S | `1043` SEP `game` SEP2 `pieceType` (−1 = Special Building) | `1043\|ga,0` | `SOCBuildRequest.java` |
+| 1044 | `SOCCancelBuildRequest` | both | `1044` SEP `game` SEP2 `pieceType` (−2 CARD, −3 inv-item) | `1044\|ga,-2` | `SOCCancelBuildRequest.java` |
+| 1054 | `SOCFirstPlayer` | S→C | `1054` SEP `game` SEP2 `pn` | `1054\|ga,2` | `SOCFirstPlayer.java` |
+| 1055 | `SOCSetTurn` | S→C | `1055` SEP `game` SEP2 `pn` | `1055\|ga,1` | `SOCSetTurn.java` |
+| 1057 | `SOCPotentialSettlements` | S→C | `1057` SEP `game` SEP2 `pn` { SEP2 `psNode` }* [ SEP2 `NA` SEP2 `n` SEP2 `PAN` SEP2 `pan` { SEP2 `LA#` … }* { SEP2 `SE` … }* ] | `1057\|ga,-1,NA,4,PAN,1,LA1,2050,…` | `SOCPotentialSettlements.java` |
+| 1063 | `SOCResourceCount` | S→C | `1063` SEP `game` SEP2 `pn` SEP2 `count` | `1063\|ga,2,7` | `SOCResourceCount.java` |
+| 1066 | `SOCLongestRoad` | S→C | `1066` SEP `game` SEP2 `pn` (−1 = none) | `1066\|ga,-1` | `SOCLongestRoad.java` |
+| 1067 | `SOCLargestArmy` | S→C | `1067` SEP `game` SEP2 `pn` (−1 = none) | `1067\|ga,0` | `SOCLargestArmy.java` |
+| 1084 | `SOCBoardLayout2` | S→C | `1084` SEP `game` SEP2 `bef` { SEP2 `key` SEP2 `value` }* where value is an int or `[`len {SEP2 int}* | `1084\|ga,3,RH,2823,LH,[99,…,PL,[39,…,VS,[4,…` | `SOCBoardLayout2.java` |
+| 1086 | `SOCPlayerElements` | S→C | **multi** `1086` SEP `game` SEP `pn` SEP `action` SEP `et0` SEP `amt0` … | `1086\|ga\|0\|100\|1\|0\|2\|0…` | `SOCPlayerElements.java` (multi) |
+| 1091 | `SOCGameServerText` | S→C | `1091` SEP `game` `<C1>` `text` | `1091\|ga<C1>It is your turn.` | `SOCGameServerText.java` |
+| 1092 | `SOCDiceResultResources` | S→C | **multi** `1092` SEP `game` SEP `n` SEP `pn` SEP `total` SEP (`amt` SEP `type`)+ SEP `0` … | `1092\|ga\|2\|0\|5\|3\|3\|0\|2\|7\|1\|1\|2\|5` | `SOCDiceResultResources.java` (multi) |
+| 1093 | `SOCMovePiece` | both | `1093` SEP `game` SEP2 `pn` SEP2 `ptype` SEP2 `fromCoord` SEP2 `toCoord` | `1093\|ga,2,3,2051,2309` | `SOCMovePiece.java` |
+| 1096 | `SOCGameElements` | S→C | **multi** `1096` SEP `game` SEP `et0` SEP `val0` SEP `et1` SEP `val1` … | `1096\|ga\|4\|-1` | `SOCGameElements.java` (multi) |
+
+### Board model (`board/boardModel.ts`)
+
+`boardFromLayout2(SOCBoardLayout2, {width?, height?})` → `BoardModel`. It decodes
+the v3 (`SOCBoardLarge`) parts: **LH** into `BoardHex[]` (3 ints per hex:
+coord 0xRRCC, hexType, diceNum — water/desert are **not** remapped for LH),
+**PL** into `BoardPort[]` (the array is THREE blocks — `[types(P) | edges(P) |
+facings(P)]`, not interleaved; ports with edge < 0 are skipped), **RH**→
+`robberHex`, **PH**→`pirateHex`. Width/height come from the optional dims
+(from `SOCJoinGameAuth`); otherwise the standard large-board size `0x10`,
+expanded to contain every seen coordinate. `parsePotentialSettlements(msg)`
+returns `{ playerNumber, potentialNodes, startingLandArea, landAreasLegalNodes,
+legalNodes }`, where `legalNodes` is the de-duplicated union of all land areas
+(sea board) or the player's `psNodes`.
+
+### In-game element enums (`constants.ts`)
+
+`GameState` (full set, NEW=0 … OVER=1000), `Resource` (CLAY=1…UNKNOWN=6),
+`PlayerElementAction` (SET=100, GAIN=101, LOSE=102), `PlayerElementType`
+(CLAY=1…WOOD=5, UNKNOWN_RESOURCE=6, ROADS=10, SETTLEMENTS=11, CITIES=12,
+SHIPS=13, NUMKNIGHTS=15, RESOURCE_COUNT=17, PLAYED_DEV_CARD_FLAG=19,
+NUM_PICK_GOLD_HEX_RESOURCES=101, SCENARIO_SVP=102, …), and `GameElementType`
+(ROUND_COUNT=1, DEV_CARD_COUNT=2, FIRST_PLAYER=3, CURRENT_PLAYER=4,
+LARGEST_ARMY_PLAYER=5, LONGEST_ROAD_PLAYER=6, …). All values verified against
+the Java enums.
+
+## Phase-3 format subtleties to preserve (verified against Java)
+
+15. **`SOCBoardLayout2` parts are base-10 on the wire**, in a stable key order.
+    `toCmd` uses `Integer.toString` for scalar parts and `[<len>,v0,v1,…` for
+    array parts. The hexadecimal seen in `toString()`/logs is display-only.
+    Array parts whose declared `[<len>` exceeds the remaining tokens are garbled
+    → `null`. The web port preserves the parts list in insertion order so a
+    captured `1084` re-encodes byte-for-byte (verified live).
+
+16. **`LH` does NOT remap water/desert** (only the legacy `HL` part did, in the
+    Java constructor). LH hexType uses the v3 numbering directly (WATER=6,
+    DESERT=0, GOLD=7, FOG=8), so the board model passes hexType through unchanged.
+
+17. **`PL` (large board) stores ports in three blocks, not interleaved.** For
+    `P` ports the array is `[type0..typeP-1, edge0..edgeP-1, facing0..facingP-1]`
+    (length 3·P). Reconstructing each port reads index `i`, `i+P`, `i+2P`. A
+    port with `edge < 0` is a movable port not currently placed and is skipped.
+    Facings are `SOCBoard.FACING_*` (NE=1, E=2, SE=3, SW=4, W=5, NW=6) — note
+    the pre-existing `web/src/board/types.ts` had these reversed; corrected to
+    match the Java source (the wire uses the Java values).
+
+18. **`SOCPlayerElement` news flag rides a trailing `Y`.** On the wire the action
+    is always SET/GAIN/LOSE (100/101/102); the Java `*_NEWS` pseudo-actions
+    (−100…) are internal and never serialized. `isNews` is carried by an optional
+    6th token `Y`. Parsing accepts 5 or 6 SEP2 tokens.
+
+19. **Mi-style multi-messages (`1086`, `1092`, `1096`) use `SEP` between every
+    field**, with the game name first and the rest base-10 ints (not SEP2). The
+    data portion handed to the parser is `game|p0|p1|…`. `SOCPlayerElements`
+    needs ≥1 (type,amount) pair (param count after game even and ≥4);
+    `SOCGameElements` needs ≥1 (type,value) pair (even and ≥2). An odd/short
+    count is garbled → `null`.
+
+20. **`SOCDiceResultResources` (`1092`) int packing.** `pa[0]` = number of
+    gaining players; then per player `pn, newTotal, (amount, resType)+`, with a
+    `0` separator before each subsequent player (none after the last). Amounts
+    are positive; resTypes are 1..5. A `pa[0]` that disagrees with the number of
+    decoded players is garbled → `null`.
+
+21. **`SOCGameServerText` (`1091`) / `SOCGameTextMsg` (`1010`) use special
+    separators**, not SEP2: `(char)1` (`GAMESERVERTEXT`) and `(char)0`
+    (`GAMETEXTMSG`), chosen so commas in the text need no escaping. The text is
+    everything after that single separator; an empty game or text portion is
+    garbled → `null`.
+
+22. **`SOCTurn` (`1026`) optional state field.** `gameState` is emitted only when
+    `> 0` (the Java constructor clamps values ≤ 0 to 0). So `1026|ga,2` (no
+    state) and `1026|ga,3,5` (with state) are both valid; the port reproduces the
+    omit-when-0 behavior, making the round-trip byte-faithful.
+
+23. **`SOCBuildRequest` vs `SOCCancelBuildRequest` validation.** `SOCBuildRequest`
+    rejects `pieceType < -1` (−1 = Special Building). `SOCCancelBuildRequest`
+    accepts the special negatives CARD (−2) and INV_ITEM_PLACE_CANCEL (−3) and
+    does **not** validate. `SOCPutPiece`/`SOCMovePiece` reject negative piece
+    types / coordinates (the Java constructor throws → parse returns `null`).
+
 ## Lobby & game-setup flow (verified against the live server, WS 8888)
 
 The Phase-2 client implements this create→sit→start sequence (captured live;

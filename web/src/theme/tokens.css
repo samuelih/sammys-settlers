@@ -32,6 +32,38 @@
   --color-resource-desert: #d8c79a; /* desert hex — sand */
   --color-resource-gold: #f2d35a;   /* gold hex (sea board) */
 
+  /* ---- Hex fills (one per HexKind; consumed by BoardSVG) ------------ */
+  --hex-fill-clay: var(--color-resource-clay);
+  --hex-fill-ore: var(--color-resource-ore);
+  --hex-fill-sheep: var(--color-resource-sheep);
+  --hex-fill-wheat: var(--color-resource-wheat);
+  --hex-fill-wood: var(--color-resource-wood);
+  --hex-fill-desert: var(--color-resource-desert);
+  --hex-fill-gold: var(--color-resource-gold);
+  --hex-fill-water: var(--color-sea-blue);
+  --hex-fill-fog: #b9c2c8;          /* fog hex — neutral grey-blue */
+  --hex-fill-unknown: #c9c2b4;
+  --hex-stroke: rgba(20, 18, 14, 0.35);     /* hex outline */
+  --hex-coast-stroke: var(--color-coast);   /* land/water boundary tint */
+
+  /* Dice-number token (the circle on a resource hex) */
+  --dice-token-bg: #f6efdd;
+  --dice-token-text: #20211f;
+  --dice-token-hot: #c0392b;        /* 6 & 8 — high-probability numbers */
+  --dice-pip: #20211f;
+
+  /* Board piece + overlay accents */
+  --robber-fill: #2a2a2a;
+  --robber-stroke: #f4f1ea;
+  --pirate-fill: #1b1b2e;
+  --pirate-stroke: #e6e2d8;
+  --port-fill: #ece3cc;
+  --port-stroke: #8a7a52;
+  --port-text: #4a3f24;
+  --piece-stroke: rgba(20, 18, 14, 0.65);   /* outline around player pieces */
+  --board-highlight: var(--color-accent);   /* clickable node/edge targets */
+  --board-highlight-ring: rgba(31, 120, 194, 0.9);
+
   /* ---- Player seat colors ------------------------------------------ */
   --color-player-blue: #2a6fd6;
   --color-player-red: #d63a3a;

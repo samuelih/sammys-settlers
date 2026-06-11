@@ -1,0 +1,144 @@
+/*
+ * Styles for the SVG board renderer. Colors come exclusively from CSS custom
+ * properties (theme/tokens.css) so light/dark/color-blind themes apply without
+ * touching component code. Player colors are passed as inline `fill` via props.
+ */
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* ---- Hex tile ------------------------------------------------------ */
+.hex {
+  stroke: var(--hex-stroke, rgba(0, 0, 0, 0.35));
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.hexClay {
+  fill: var(--hex-fill-clay, #b85c38);
+}
+.hexOre {
+  fill: var(--hex-fill-ore, #7d8794);
+}
+.hexSheep {
+  fill: var(--hex-fill-sheep, #9cce6a);
+}
+.hexWheat {
+  fill: var(--hex-fill-wheat, #e9c45a);
+}
+.hexWood {
+  fill: var(--hex-fill-wood, #4f7a3a);
+}
+.hexDesert {
+  fill: var(--hex-fill-desert, #d8c79a);
+}
+.hexGold {
+  fill: var(--hex-fill-gold, #f2d35a);
+}
+.hexWater {
+  fill: var(--hex-fill-water, #2f7fb5);
+}
+.hexFog {
+  fill: var(--hex-fill-fog, #b9c2c8);
+}
+.hexUnknown {
+  fill: var(--hex-fill-unknown, #c9c2b4);
+}
+.hexClickable {
+  cursor: pointer;
+}
+
+/* ---- Dice-number token -------------------------------------------- */
+.diceToken {
+  fill: var(--dice-token-bg, #f6efdd);
+  stroke: var(--hex-stroke, rgba(0, 0, 0, 0.35));
+  stroke-width: 0.75;
+}
+.diceNum {
+  fill: var(--dice-token-text, #20211f);
+  font-weight: var(--font-weight-bold, 700);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.diceNumHot {
+  fill: var(--dice-token-hot, #c0392b);
+}
+.dicePip {
+  fill: var(--dice-pip, #20211f);
+}
+.dicePipHot {
+  fill: var(--dice-token-hot, #c0392b);
+}
+
+/* ---- Ports --------------------------------------------------------- */
+.portMarker {
+  fill: var(--port-fill, #ece3cc);
+  stroke: var(--port-stroke, #8a7a52);
+  stroke-width: 1;
+}
+.portLabel {
+  fill: var(--port-text, #4a3f24);
+  font-weight: var(--font-weight-semibold, 600);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* ---- Robber / pirate ---------------------------------------------- */
+.robber {
+  fill: var(--robber-fill, #2a2a2a);
+  stroke: var(--robber-stroke, #f4f1ea);
+  stroke-width: 1.5;
+}
+.pirate {
+  fill: var(--pirate-fill, #1b1b2e);
+  stroke: var(--pirate-stroke, #e6e2d8);
+  stroke-width: 1.5;
+}
+
+/* ---- Pieces -------------------------------------------------------- */
+.road {
+  stroke-linecap: round;
+}
+.roadOutline {
+  stroke: var(--piece-stroke, rgba(0, 0, 0, 0.65));
+  stroke-linecap: round;
+}
+.shipDash {
+  stroke-dasharray: 5 4;
+  stroke-linecap: butt;
+}
+.settlement,
+.city {
+  stroke: var(--piece-stroke, rgba(0, 0, 0, 0.65));
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+/* ---- Interactive highlight targets -------------------------------- */
+.nodeTarget,
+.edgeTarget {
+  cursor: pointer;
+  fill: var(--board-highlight, #2f7fb5);
+  fill-opacity: 0.35;
+  stroke: var(--board-highlight-ring, rgba(31, 120, 194, 0.9));
+  stroke-width: 1.5;
+  transition: fill-opacity var(--transition-fast, 120ms ease);
+}
+.nodeTarget:hover,
+.edgeTarget:hover {
+  fill-opacity: 0.7;
+}
+
+/* Visible highlight drawn along a candidate edge; the sibling .edgeTarget circle
+   is the actual click target. */
+.edgeHighlight {
+  fill: none;
+  stroke: var(--board-highlight, #2f7fb5);
+  stroke-opacity: 0.55;
+  stroke-linecap: round;
+  pointer-events: none;
+}

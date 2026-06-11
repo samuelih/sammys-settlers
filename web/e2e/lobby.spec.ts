@@ -82,14 +82,15 @@ test('create a 4-player game, sit, start, and get 3 bots', async ({
   });
 
   // Three bot players become seated (1 human + 3 bots = 4 players). Wait until
-  // exactly three player rows are flagged as robots.
+  // at least three player panels are flagged as robots.
   const botRows = page.locator(
-    '[data-testid^="game-started-player-"][data-robot="true"]',
+    '[data-testid^="player-panel-"][data-robot="true"]',
   );
   await expect
     .poll(async () => botRows.count(), { timeout: 30_000 })
     .toBeGreaterThanOrEqual(3);
 
-  // The local player's seat summary is shown.
-  await expect(page.getByTestId('game-started-seat')).toContainText('seat 1');
+  // The local player occupies seat 0 (panel 0 is seated and flagged "you").
+  await expect(page.getByTestId('player-panel-0')).toHaveAttribute('data-seated', 'true');
+  await expect(page.getByTestId('player-name-0')).toContainText('you');
 });

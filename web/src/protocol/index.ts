@@ -54,6 +54,44 @@ export {
   MARKER_KEY_UNKNOWN,
 } from './messages/SOCScenarioInfo';
 
+// In-game core loop (Phase 3). Each self-registers its parser on import.
+export { SOCBoardLayout2, type LayoutPart } from './messages/SOCBoardLayout2';
+export { SOCPotentialSettlements } from './messages/SOCPotentialSettlements';
+export { SOCTurn } from './messages/SOCTurn';
+export { SOCSetTurn } from './messages/SOCSetTurn';
+export { SOCFirstPlayer } from './messages/SOCFirstPlayer';
+export { SOCLongestRoad } from './messages/SOCLongestRoad';
+export { SOCLargestArmy } from './messages/SOCLargestArmy';
+export { SOCPlayerElement } from './messages/SOCPlayerElement';
+export { SOCPlayerElements } from './messages/SOCPlayerElements';
+export { SOCGameElements } from './messages/SOCGameElements';
+export { SOCDiceResult } from './messages/SOCDiceResult';
+export {
+  SOCDiceResultResources,
+  type DiceResultPlayer,
+} from './messages/SOCDiceResultResources';
+export { SOCPutPiece } from './messages/SOCPutPiece';
+export { SOCMovePiece } from './messages/SOCMovePiece';
+export { SOCRollDice } from './messages/SOCRollDice';
+export { SOCEndTurn } from './messages/SOCEndTurn';
+export { SOCBuildRequest } from './messages/SOCBuildRequest';
+export {
+  SOCCancelBuildRequest,
+  CANCEL_CARD,
+  CANCEL_INV_ITEM_PLACE,
+} from './messages/SOCCancelBuildRequest';
+export { SOCResourceCount } from './messages/SOCResourceCount';
+export {
+  SOCGameServerText,
+  UNLIKELY_CHAR1,
+} from './messages/SOCGameServerText';
+export {
+  SOCGameTextMsg,
+  SEP2_ALT,
+  SERVERNAME,
+  SERVER_FOR_CHAT,
+} from './messages/SOCGameTextMsg';
+
 // Game-option model (descriptor type + (de)serialization helpers).
 export {
   type GameOptType,
