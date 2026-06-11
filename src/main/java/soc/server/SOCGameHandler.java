@@ -168,6 +168,14 @@ public class SOCGameHandler extends GameHandler
         = "dev: #typ player";
 
     /**
+     * Used by {@link #SOC_DEBUG_COMMANDS_HELP}, etc; gives Cities &amp; Knights commodities.
+     * @see #DEBUG_COMMANDS_HELP_PLAYER
+     * @since 2.7.00
+     */
+    private static final String DEBUG_COMMANDS_HELP_CKCOMM
+        = "ckcomm: #cloth #coin #paper player";
+
+    /**
      * Used by {@link #SOC_DEBUG_COMMANDS_HELP}, etc.
      * @see #DEBUG_COMMANDS_HELP_DEV_TYPES
      * @since 2.5.00
@@ -227,6 +235,7 @@ public class SOCGameHandler extends GameHandler
         "9 robber",
         "--- Scenario Debugging ---",  // see processDebugCommand_scenario(..)
         "For SC_FTRI: *scen* giveport #typenum #placeflag player",
+        "For SC_CK: " + DEBUG_COMMANDS_HELP_CKCOMM,
         };
 
     /**
@@ -328,6 +337,11 @@ public class SOCGameHandler extends GameHandler
         else if (dcmdU.startsWith("DEVNEXT:"))
         {
             debugSetNextDevCard(debugCli, dcmd, ga);
+            return true;
+        }
+        else if (dcmdU.startsWith("CKCOMM:"))
+        {
+            debugGiveCKCommodities(debugCli, dcmd, ga);
             return true;
         }
         else if (dcmd.charAt(0) != '*')
@@ -4681,6 +4695,80 @@ public class SOCGameHandler extends GameHandler
         reportRsrcGainLoss(game, rset, false, false, pl.getPlayerNumber(), -1, null);
         srv.messageToGameKeyedSpecial
             (game, true, true, "game.playername.gets.resources.common", pl.getName(), rset);  // "Lily gets 3 wheat and 1 stone."
+    }
+
+    /**
+     * Give Cities &amp; Knights commodities to a player, and announce the new counts.
+     * Format: {@code ckcomm: #cloth #coin #paper playername}.
+     * Requires game option {@link SOCGameOptionSet#K__CK_IMPROV _CK_IMP}; otherwise prints an error.
+     * @param c  Connection of the debug player
+     * @param mes  Debug command text
+     * @param game  Game to debug
+     * @since 2.7.00
+     */
+    private final void debugGiveCKCommodities(Connection c, String mes, SOCGame game)
+    {
+        final String gaName = game.getName();
+
+        if (! game.isGameOptionSet(SOCGameOptionSet.K__CK_IMPROV))
+        {
+            srv.messageToPlayer(c, gaName, SOCServer.PN_NON_EVENT, "### ckcomm requires a Cities & Knights game");
+
+            return;  // <--- early return ---
+        }
+
+        StringTokenizer st = new StringTokenizer(mes.substring(7));
+        final int[] amounts = new int[1 + SOCPlayer.CK_PAPER];
+        int ctypeIdx = SOCPlayer.CK_CLOTH;
+        String name = "";
+        boolean parseError = false;
+
+        while (st.hasMoreTokens())
+        {
+            if (ctypeIdx <= SOCPlayer.CK_PAPER)
+            {
+                String token = st.nextToken();
+                try
+                {
+                    int amt = Integer.parseInt(token);
+                    if (amt < 0)
+                        parseError = true;
+                    amounts[ctypeIdx] = amt;
+                    ++ctypeIdx;
+                }
+                catch (NumberFormatException e)
+                {
+                    parseError = true;
+                    break;
+                }
+            }
+            else
+            {
+                name = st.nextToken(Character.toString( (char) 1 )).trim();
+                break;
+            }
+        }
+
+        SOCPlayer pl = null;
+        if (! parseError)
+        {
+            pl = debug_getPlayer(c, game, name);
+            if (pl == null)
+                parseError = true;
+        }
+
+        if (parseError)
+        {
+            srv.messageToPlayer(c, gaName, SOCServer.PN_NON_EVENT, "### Usage: " + DEBUG_COMMANDS_HELP_CKCOMM);
+            srv.messageToPlayer(c, gaName, SOCServer.PN_NON_EVENT, DEBUG_COMMANDS_HELP_PLAYER);
+
+            return;  // <--- early return ---
+        }
+
+        for (int ctype = SOCPlayer.CK_CLOTH; ctype <= SOCPlayer.CK_PAPER; ++ctype)
+            if (amounts[ctype] > 0)
+                pl.setCKCommodity(ctype, pl.getCKCommodity(ctype) + amounts[ctype]);
+        reportCKCommodityCounts(game, pl.getPlayerNumber());
     }
 
     /** this is a debugging command that gives a dev card to a player.
