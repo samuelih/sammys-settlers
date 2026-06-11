@@ -61,6 +61,7 @@ import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.Transparency;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -81,7 +82,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Timer;
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.InputMap;
 import javax.swing.JComponent;
+import javax.swing.KeyStroke;
 
 /**
  * This is a component that can display a Settlers of Catan Board.
@@ -1698,6 +1702,32 @@ import javax.swing.JComponent;
     private SOCPlayingPiece latestPiecePlacement;
 
     /**
+     * For the left-click confirm-to-build flow during normal play ({@link #mode} == {@link #NONE}):
+     * the board coordinate (edge or node) of the build target the client player has selected
+     * with a first left-click, or 0 if none is pending. A second left-click on this same target
+     * sends the build request; clicking elsewhere, pressing Escape, or right-clicking clears it.
+     * The piece type to build is {@link #leftClickBuildPieceType}.
+     *<P>
+     * This flow only fires when no placement {@link #mode} is active, so it can't change the
+     * behavior of initial placement, robber/pirate movement, ship movement, free-road placement,
+     * or the right-click build menu.
+     *
+     * @see #setLeftClickBuildTarget(int, int)
+     * @see #clearLeftClickBuildTarget()
+     * @since 2.7.00
+     */
+    private int leftClickBuildTarget;
+
+    /**
+     * For the left-click confirm-to-build flow: piece type of {@link #leftClickBuildTarget}
+     * ({@link SOCPlayingPiece#ROAD}, {@link SOCPlayingPiece#SETTLEMENT SETTLEMENT},
+     * {@link SOCPlayingPiece#CITY CITY}, or {@link SOCPlayingPiece#SHIP SHIP}),
+     * or 0 when no target is pending.
+     * @since 2.7.00
+     */
+    private int leftClickBuildPieceType;
+
+    /**
      * Edge or node being pointed to. When placing a road/settlement/city,
      * used for coordinate of "ghost" piece under the mouse pointer.
      * 0 when nothing is hilighted. -1 for a road at edge 0x00.
@@ -2070,9 +2100,27 @@ import javax.swing.JComponent;
         // set mode of interaction
         mode = NONE;
 
+        // init left-click confirm-to-build state
+        leftClickBuildTarget = 0;
+        leftClickBuildPieceType = 0;
+
         // Set up mouse listeners
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
+
+        // Bind Escape to cancel a pending left-click build target (no-op when none pending)
+        {
+            final InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+            im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancelLeftClickBuild");
+            getActionMap().put("cancelLeftClickBuild", new AbstractAction()
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    if (leftClickBuildTarget != 0)
+                        clearLeftClickBuildTarget();
+                }
+            });
+        }
 
         // Cached colors to be determined later
         robberGhostFill = new Color [1 + board.max_robber_hextype];
@@ -5161,6 +5209,29 @@ import javax.swing.JComponent;
             drawBoard_SC_FTRI_placePort(g);
             break;
 
+        case NONE:
+            // Draw the pending left-click confirm-to-build target, if any.
+            // (Regular hover ghost pieces are drawn separately by BoardToolTip.paint().)
+            if (leftClickBuildTarget != 0)
+            {
+                switch (leftClickBuildPieceType)
+                {
+                case SOCPlayingPiece.ROAD:
+                    drawRoadOrShip(g, leftClickBuildTarget, playerNumber, HilightStyle.HOVER, true, false);
+                    break;
+                case SOCPlayingPiece.SHIP:
+                    drawRoadOrShip(g, leftClickBuildTarget, playerNumber, HilightStyle.HOVER, false, false);
+                    break;
+                case SOCPlayingPiece.SETTLEMENT:
+                    drawSettlement(g, leftClickBuildTarget, playerNumber, HilightStyle.HOVER, false);
+                    break;
+                case SOCPlayingPiece.CITY:
+                    drawCity(g, leftClickBuildTarget, playerNumber, HilightStyle.HOVER);
+                    break;
+                }
+            }
+            break;
+
         }  // switch
 
         if (xlat)
@@ -6172,6 +6243,9 @@ import javax.swing.JComponent;
      */
     public void updateMode()
     {
+        // Clear any pending left-click build target: game state may be changing
+        clearLeftClickBuildTarget();
+
         final int cpn = game.getCurrentPlayerNumber();
         String topText = null;  // assume not Special Building Phase
 
@@ -6432,7 +6506,68 @@ import javax.swing.JComponent;
             moveShip_fromEdge = 0;
             repaint();
         }
+        clearLeftClickBuildTarget();
         updateHoverTipToMode();
+    }
+
+    /**
+     * Select a build target for the left-click confirm-to-build flow during normal play,
+     * setting {@link #leftClickBuildTarget} and {@link #leftClickBuildPieceType}, drawing the
+     * ghost hilight at {@code coord}, and printing a status-line prompt telling the player to
+     * click again to build or to cancel. The actual build is not sent until the second click;
+     * see {@link #mouseClicked(MouseEvent)}.
+     *<P>
+     * Should be called only when {@link #mode} is {@link #NONE} and it's the client player's turn.
+     *
+     * @param coord  Edge or node coordinate of the build target (never 0)
+     * @param ptype  Piece type to build: {@link SOCPlayingPiece#ROAD}, {@link SOCPlayingPiece#SETTLEMENT SETTLEMENT},
+     *     {@link SOCPlayingPiece#CITY CITY}, or {@link SOCPlayingPiece#SHIP SHIP}
+     * @see #clearLeftClickBuildTarget()
+     * @since 2.7.00
+     */
+    private void setLeftClickBuildTarget(final int coord, final int ptype)
+    {
+        leftClickBuildTarget = coord;
+        leftClickBuildPieceType = ptype;
+
+        final String promptKey;
+        switch (ptype)
+        {
+        case SOCPlayingPiece.ROAD:
+            promptKey = "board.leftclick.confirm.road";  // "Click again to build a road here, or right-click / press Escape to cancel."
+            break;
+        case SOCPlayingPiece.SETTLEMENT:
+            promptKey = "board.leftclick.confirm.stlmt";  // "Click again to build a settlement here, or right-click / press Escape to cancel."
+            break;
+        case SOCPlayingPiece.CITY:
+            promptKey = "board.leftclick.confirm.city";  // "Click again to upgrade to a city here, or right-click / press Escape to cancel."
+            break;
+        case SOCPlayingPiece.SHIP:
+            promptKey = "board.leftclick.confirm.ship";  // "Click again to build a ship here, or right-click / press Escape to cancel."
+            break;
+        default:
+            promptKey = null;
+        }
+        if (promptKey != null)
+            playerInterface.printKeyed(promptKey);
+
+        repaint();
+    }
+
+    /**
+     * Clear any pending left-click confirm-to-build target set by
+     * {@link #setLeftClickBuildTarget(int, int)}, repainting if one was pending.
+     * Safe to call when no target is pending. Does not change {@link #mode}.
+     * @since 2.7.00
+     */
+    private void clearLeftClickBuildTarget()
+    {
+        if (leftClickBuildTarget == 0)
+            return;  // <--- Early return: nothing pending ---
+
+        leftClickBuildTarget = 0;
+        leftClickBuildPieceType = 0;
+        repaint();
     }
 
     /**
@@ -7120,6 +7255,7 @@ import javax.swing.JComponent;
 
             if (evt.isPopupTrigger())
             {
+                clearLeftClickBuildTarget();  // right-click cancels any pending left-click build
                 popupMenuSystime = evt.getWhen();
                 evt.consume();
                 doBoardMenuPopup(x, y);
@@ -7173,26 +7309,82 @@ import javax.swing.JComponent;
                     }
                 }
                 else if (((evt.getButton() & MouseEvent.BUTTON1) != 0)
-                    && (player != null) && (game.getCurrentPlayerNumber() == playerNumber)
-                    && (player.getPublicVP() == 2) && (hintShownCount_RightClickToBuild < 2)
-                    && (evt.getWhen() - popupMenuSystime > 5000))
+                    && (player != null) && (game.getCurrentPlayerNumber() == playerNumber))
                 {
-                    // To help during the start of the game, display a hint message
-                    // reminding new users to right-click to build (OSX: control-click).
-                    // Show it at most twice to avoid annoying the user.
-                    // Don't show if they've just shown the right-click build menu,
-                    // because they might be clicking to dismiss that.
+                    // Left-click confirm-to-build flow during normal play (mode == NONE):
+                    // First click selects a buildable target shown by the hover logic and prompts;
+                    // a second click on the same target sends the build request.
+                    // If no buildable target is here, cancel any pending one and fall back to the
+                    // right-click hint message for new users.
 
-                    ++hintShownCount_RightClickToBuild;
-                    final String prompt =
-                        (SOCPlayerClient.IS_PLATFORM_MAC_OSX)
-                        ? "board.popup.hint_build_click.osx"
-                            // "To build pieces, hold Control while clicking the build location."
-                        : "board.popup.hint_build_click";  // "To build pieces, right-click the build location."
-                    NotifyDialog.createAndShow
-                        (playerInterface.getMainDisplay(), playerInterface,
-                         "\n" + strings.get(prompt), null, true);
-                        // start prompt with \n to prevent it being a lengthy popup-dialog title
+                    int targetCoord = 0, targetPType = 0;
+                    if (hoverTip.hoverSettlementID != 0)
+                    {
+                        targetCoord = hoverTip.hoverSettlementID;
+                        targetPType = SOCPlayingPiece.SETTLEMENT;
+                    }
+                    else if (hoverTip.hoverCityID != 0)
+                    {
+                        targetCoord = hoverTip.hoverCityID;
+                        targetPType = SOCPlayingPiece.CITY;
+                    }
+                    else if ((hoverTip.hoverRoadID != 0) && ! hoverTip.hoverIsShipMovable)
+                    {
+                        targetCoord = hoverTip.hoverRoadID;
+                        targetPType = SOCPlayingPiece.ROAD;
+                    }
+                    else if ((hoverTip.hoverShipID != 0) && ! hoverTip.hoverIsShipMovable)
+                    {
+                        targetCoord = hoverTip.hoverShipID;
+                        targetPType = SOCPlayingPiece.SHIP;
+                    }
+
+                    if (targetCoord != 0)
+                    {
+                        if ((targetCoord == leftClickBuildTarget) && (targetPType == leftClickBuildPieceType))
+                        {
+                            // Second click on the same target: build it via the same request path
+                            // as the right-click popup menu, then clear the pending target.
+                            final int ptype = targetPType, coord = targetCoord;
+                            clearLeftClickBuildTarget();
+                            popupMenu.tryBuildFromLeftClick(ptype, coord);
+                        }
+                        else
+                        {
+                            // First click (or different target): select and prompt for confirmation.
+                            setLeftClickBuildTarget(targetCoord, targetPType);
+                        }
+
+                        evt.consume();
+                        return;  // <--- Handled left-click build target ---
+                    }
+                    else if (leftClickBuildTarget != 0)
+                    {
+                        // Clicked elsewhere with a target pending: cancel back to normal.
+                        clearLeftClickBuildTarget();
+                        evt.consume();
+                        return;  // <--- Canceled pending left-click build target ---
+                    }
+                    else if ((player.getPublicVP() == 2) && (hintShownCount_RightClickToBuild < 2)
+                        && (evt.getWhen() - popupMenuSystime > 5000))
+                    {
+                        // To help during the start of the game, display a hint message
+                        // reminding new users to right-click to build (OSX: control-click).
+                        // Show it at most twice to avoid annoying the user.
+                        // Don't show if they've just shown the right-click build menu,
+                        // because they might be clicking to dismiss that.
+
+                        ++hintShownCount_RightClickToBuild;
+                        final String prompt =
+                            (SOCPlayerClient.IS_PLATFORM_MAC_OSX)
+                            ? "board.popup.hint_build_click.osx"
+                                // "To build pieces, hold Control while clicking the build location."
+                            : "board.popup.hint_build_click";  // "To build pieces, right-click the build location."
+                        NotifyDialog.createAndShow
+                            (playerInterface.getMainDisplay(), playerInterface,
+                             "\n" + strings.get(prompt), null, true);
+                            // start prompt with \n to prevent it being a lengthy popup-dialog title
+                    }
                 }
             }
 
@@ -7458,6 +7650,7 @@ import javax.swing.JComponent;
                 // No hilight. But, they clicked the board, expecting something.
                 // It's possible the mode is incorrect.
                 // Update and wait for the next click.
+                // (updateMode also cancels any pending left-click build target.)
                 updateMode();
                 ptrOldX = 0;
                 ptrOldY = 0;
@@ -10189,6 +10382,59 @@ import javax.swing.JComponent;
           // Now that we're expecting that, use buttons to send the first message
           playerInterface.getBuildingPanel().clickBuildingButton
               (game, btarget, true);
+      }
+
+      /**
+       * Build a piece selected by the board's left-click confirm-to-build flow, using the same
+       * request path as the right-click menu by setting up this menu's hover fields and calling
+       * {@link #tryBuild(int)}. For ships in scenario {@link SOCGameOptionSet#K_SC_FTRI _SC_FTRI}
+       * where placing would remove a port, shows the same confirm dialog the menu uses instead.
+       *<P>
+       * Assumes it's the client player's normal-play turn and {@code coord} is a currently
+       * buildable target for {@code ptype}, as already determined by the board's hover logic.
+       *
+       * @param ptype  Piece type to build: {@link SOCPlayingPiece#ROAD}, {@link SOCPlayingPiece#SETTLEMENT SETTLEMENT},
+       *     {@link SOCPlayingPiece#CITY CITY}, or {@link SOCPlayingPiece#SHIP SHIP}
+       * @param coord  Edge or node coordinate of the build target
+       * @see SOCBoardPanel#setLeftClickBuildTarget(int, int)
+       * @since 2.7.00
+       */
+      void tryBuildFromLeftClick(final int ptype, final int coord)
+      {
+          // Set the same fields tryBuild reads, as showBuild would for normal play.
+          wantsCancel = false;
+          isInitialPlacement = false;
+          hoverRoadID = 0;
+          hoverSettlementID = 0;
+          hoverCityID = 0;
+          hoverShipID = 0;
+
+          switch (ptype)
+          {
+          case SOCPlayingPiece.ROAD:
+              hoverRoadID = coord;
+              break;
+          case SOCPlayingPiece.SETTLEMENT:
+              hoverSettlementID = coord;
+              break;
+          case SOCPlayingPiece.CITY:
+              hoverCityID = coord;
+              break;
+          case SOCPlayingPiece.SHIP:
+              hoverShipID = coord;
+              if (game.isGameOptionSet(SOCGameOptionSet.K_SC_FTRI)
+                  && ((SOCBoardLarge) board).canRemovePort(coord))
+              {
+                  // Same special case as the right-click menu's Build Ship item
+                  java.awt.EventQueue.invokeLater(new ConfirmPlaceShipDialog(coord, true, -1));
+                  return;  // <--- Early return: confirm dialog will request the build ---
+              }
+              break;
+          default:
+              return;  // <--- Early return: unsupported piece type ---
+          }
+
+          tryBuild(ptype);
       }
 
       /**
