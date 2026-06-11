@@ -256,6 +256,17 @@ public class SOCScenario
              "_SC_WOND=t,SBL=t,VP=t10,_SC_SANY=t"));  // win condition: Complete Wonder, or 10 VP _and_ built the most levels
                 // The "all 4 levels" win condition is also stored in SOCSpecialItem.SC_WOND_WIN_LEVEL.
 
+        // Cities & Knights groundwork stub (disabled / not playable; see doc/Cities-and-Knights-Design.md).
+        //   minVersion 2000 keeps ALL_KNOWN_SCENARIOS_MIN_VERSION at 2000 (no behavior change).
+        //   scOpts uses only active base options; the inactive _CK_* options are not referenced here,
+        //   so this stub passes soctest.game.TestScenarioOpts. A later phase ties in the _CK_* rules.
+        allSc.put(K_SC_CK, new SOCScenario
+            (K_SC_CK, 2000, 2700,
+             "Cities & Knights (under development)",
+             "Cities & Knights groundwork: this scenario is under development and is not yet playable. "
+             + "See doc/Cities-and-Knights-Design.md.",
+             "SBL=t,VP=t13"));
+
         // Uncomment to test scenario sync/negotiation between server and client versions.
         // Update the "2000" and "2001" version numbers here to current and current + 1.
         // Assumptions for testing:
@@ -431,6 +442,23 @@ public class SOCScenario
     public static final String K_SC_WOND = "SC_WOND";
 
     /**
+     * Scenario key {@code SC_CK} for the disabled Cities &amp; Knights scenario stub (groundwork only).
+     * Main scenario flag is {@link SOCGameOptionSet#K_SC_CK "_SC_CK"}.
+     *<P>
+     * <B>Not yet playable.</B> This stub exists to reserve the {@code SC_CK} key, anchor documentation
+     * and tests, and gate version negotiation, as part of the Phase 0 Cities &amp; Knights groundwork.
+     * The reserved {@code _CK_*} game options ({@link SOCGameOptionSet#K__CK_KNIGHTS}, etc.) are
+     * inactive-hidden, so this scenario cannot be selected in normal play.
+     *<P>
+     * The scenario's {@link #scOpts} string reserves only the active base options ({@code SBL=t,VP=t13});
+     * the {@code _CK_*} rules are not yet tied into the scenario string because they are inactive
+     * (and would fail {@code soctest.game.TestScenarioOpts}). A later phase will add them once those
+     * options are activated. See {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K_SC_CK = "SC_CK";
+
+    /**
      * Scenario's {@link SOCGameOption}s, as a formatted string
      * from {@link SOCGameOption#packOptionsToString(Map, boolean, boolean)}.
      * Never {@code null} or empty; {@code "-"} if scenario has no game options.
@@ -557,6 +585,7 @@ public class SOCScenario
      *<LI> {@link #K_SC_PIRI SC_PIRI}  Pirate Islands and {@link SOCFortress fortresses}
      *<LI> {@link #K_SC_FTRI SC_FTRI}  The Forgotten Tribe
      *<LI> {@link #K_SC_WOND SC_WOND}  Wonders
+     *<LI> {@link #K_SC_CK   SC_CK}    Cities &amp; Knights (groundwork stub; not yet playable)
      *</UL>
      *  (See each scenario name field's javadoc for more details.)
      *

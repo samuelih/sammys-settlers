@@ -854,6 +854,11 @@ public class TradePanel extends ShadowedBox
                 btns[b].setBounds(buttonX, buttonY, buttonW, buttonH);
                 buttonY += buttonH + buttonMar;
             }
+
+            // Place the countdown text below whichever is lower: the squares (current y)
+            // or the bottom of the stacked button column, so it never overlaps the buttons.
+            if (buttonY > y)
+                y = buttonY;
         }
         else if (buttonRowVis)
         {
@@ -870,10 +875,13 @@ public class TradePanel extends ShadowedBox
                 buttonX += pix5 + buttonW;
             }
 
-            y += lineSpace + (BUTTON_HEIGHT * displayScale);
+            // Advance past the button row plus a blank gap, so the countdown text
+            // below always sits on its own line and never overlaps the buttons.
+            y += (BUTTON_HEIGHT * displayScale) + (2 * lineSpace);
         }
 
-        // - txt below; field is hidden if blank
+        // - countdown / text below: on its own line beneath the button row
+        //   (or beneath the stacked buttons in compact mode); field is hidden if blank
         lineBelow.setBounds(inset, y, dim.width - (2 * inset), lineHeight);
     }
 

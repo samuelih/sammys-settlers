@@ -188,6 +188,62 @@ public class SOCGameOptionSet
      */
     public static final String K_PLAY_VPO = "PLAY_VPO";
 
+    // -- Cities & Knights reserved flag keynames --
+    //    Inactive-hidden groundwork for future Cities & Knights support; see doc/Cities-and-Knights-Design.md.
+    //    Each is registered in getAllKnownOptions() with FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+    //    so it's hidden from the New Game UI and from normal play until activated at server startup.
+
+    /**
+     * Inactive boolean game option {@code "_CK_KNI"} reserving the Cities &amp; Knights
+     * knights mechanic (city-linked knight state). Groundwork only; not playable.
+     * See {@link SOCScenario#K_SC_CK} and {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K__CK_KNIGHTS = "_CK_KNI";
+
+    /**
+     * Inactive boolean game option {@code "_CK_IMP"} reserving the Cities &amp; Knights
+     * city improvement tracks (Trade / Politics / Science). Groundwork only; not playable.
+     * Improvement-track {@link SOCSpecialItem}s use this key as their option name.
+     * See {@link SOCScenario#K_SC_CK} and {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K__CK_IMPROV = "_CK_IMP";
+
+    /**
+     * Inactive boolean game option {@code "_CK_PROG"} reserving the Cities &amp; Knights
+     * progress-card decks (in place of standard development cards). Groundwork only; not playable.
+     * See {@link SOCScenario#K_SC_CK} and {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K__CK_PROGRESS = "_CK_PROG";
+
+    /**
+     * Inactive boolean game option {@code "_CK_BARB"} reserving the Cities &amp; Knights
+     * barbarian attack state machine. Groundwork only; not playable.
+     * When set, {@link SOCGame#rollDice()} advances {@link SOCGame#getBarbarianStrength()}.
+     * See {@link SOCScenario#K_SC_CK} and {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K__CK_BARBARIAN = "_CK_BARB";
+
+    /**
+     * Inactive boolean game option {@code "_CK_METR"} reserving the Cities &amp; Knights
+     * metropolis VP awards to improvement-track leaders. Groundwork only; not playable.
+     * See {@link SOCScenario#K_SC_CK} and {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K__CK_METROPOLIS = "_CK_METR";
+
+    /**
+     * Inactive boolean scenario flag {@code "_SC_CK"} for the disabled Cities &amp; Knights scenario stub.
+     * Main scenario key is {@link SOCScenario#K_SC_CK}.
+     * Groundwork only; the scenario cannot be selected in normal play because its constituent
+     * {@code _CK_*} options are inactive-hidden. See {@code doc/Cities-and-Knights-Design.md}.
+     * @since 2.7.00
+     */
+    public static final String K_SC_CK = "_SC_CK";
+
     // -- Extra option keynames --
 
     /**
@@ -322,6 +378,7 @@ public class SOCGameOptionSet
      *<LI> {@link #K_SC_FTRI _SC_FTRI}  The Forgotten Tribe: See {@link SOCScenario#K_SC_FTRI}
      *<LI> {@link #K_SC_PIRI _SC_PIRI}  Pirate Islands and {@link SOCFortress fortresses}: See {@link SOCScenario#K_SC_PIRI}
      *<LI> {@link #K_SC_WOND _SC_WOND}  Wonders: See {@link SOCScenario#K_SC_WOND}
+     *<LI> {@link #K_SC_CK   _SC_CK}    Cities &amp; Knights groundwork stub (inactive-hidden): See {@link SOCScenario#K_SC_CK}
      *</UL>
      *
      * <h3>Options for quick tests/prototyping:</h3>
@@ -598,6 +655,31 @@ public class SOCGameOptionSet
         opts.add(new SOCGameOption
             (K_PLAY_VPO, 2000, 2500, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
              "Show all VP/dev card info"));
+
+        // Cities & Knights reserved flags (inactive-hidden groundwork);
+        //     see doc/Cities-and-Knights-Design.md.
+        //     minVersion 2000 matches the existing _SC_* scenario options (keeps ALL_KNOWN_SCENARIOS_MIN_VERSION
+        //     unchanged at 2000); lastModVersion 2700 is the version which adds these reserved keys.
+        //     _SC_CK starts with "_SC_" so its constructor sets clientFeature CLIENT_SCENARIO_VERSION automatically.
+
+        opts.add(new SOCGameOption
+            (K__CK_KNIGHTS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Knights (under development)"));
+        opts.add(new SOCGameOption
+            (K__CK_IMPROV, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: City improvements (under development)"));
+        opts.add(new SOCGameOption
+            (K__CK_PROGRESS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Progress cards (under development)"));
+        opts.add(new SOCGameOption
+            (K__CK_BARBARIAN, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Barbarian attacks (under development)"));
+        opts.add(new SOCGameOption
+            (K__CK_METROPOLIS, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Cities & Knights: Metropolis VP awards (under development)"));
+        opts.add(new SOCGameOption
+            (K_SC_CK, 2000, 2700, false, SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED,
+             "Scenarios: Cities & Knights (under development)"));
 
         // ChangeListeners for client convenience:
         // Remember that a new server version can't update this code at an older client:

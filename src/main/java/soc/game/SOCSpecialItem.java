@@ -161,6 +161,98 @@ public class SOCSpecialItem
      */
     private static final String[] SV_SC_WOND = { null, "w1", "w2", "w3", "w4", "w5", "w1", "w2" };
 
+    // _CK_IMP: Cities & Knights city-improvement tracks (groundwork; not yet playable).
+    //     See doc/Cities-and-Knights-Design.md section 3.2.
+
+    /**
+     * Highest Cities &amp; Knights city-improvement level (5) for any track
+     * ({@link #CK_IMPROV_TRADE}, {@link #CK_IMPROV_POLITICS}, {@link #CK_IMPROV_SCIENCE}).
+     * Groundwork only; not yet playable.
+     * @since 2.7.00
+     */
+    public static final int CK_IMPROV_MAX_LEVEL = 5;
+
+    /**
+     * Special-item {@code typeKey} for the Cities &amp; Knights Trade improvement track (groundwork).
+     * Per the {@link SOCSpecialItem} convention {@code optionName + "/" + shortKey}, this is
+     * {@link SOCGameOptionSet#K__CK_IMPROV} + {@code "/T"}. Not yet playable.
+     * @since 2.7.00
+     */
+    public static final String CK_IMPROV_TRADE = "_CK_IMP/T";
+
+    /**
+     * Special-item {@code typeKey} for the Cities &amp; Knights Politics improvement track (groundwork).
+     * Per the {@link SOCSpecialItem} convention {@code optionName + "/" + shortKey}, this is
+     * {@link SOCGameOptionSet#K__CK_IMPROV} + {@code "/P"}. Not yet playable.
+     * @since 2.7.00
+     */
+    public static final String CK_IMPROV_POLITICS = "_CK_IMP/P";
+
+    /**
+     * Special-item {@code typeKey} for the Cities &amp; Knights Science improvement track (groundwork).
+     * Per the {@link SOCSpecialItem} convention {@code optionName + "/" + shortKey}, this is
+     * {@link SOCGameOptionSet#K__CK_IMPROV} + {@code "/S"}. Not yet playable.
+     * @since 2.7.00
+     */
+    public static final String CK_IMPROV_SCIENCE = "_CK_IMP/S";
+
+    /**
+     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
+     * for the Trade track ({@link #CK_IMPROV_TRADE}). Index is the level being built (1-5); index 0 unused.
+     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
+     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
+     * (sheep stands in for cloth). Used by {@link #makeKnownItem(String, int)}.
+     * @since 2.7.00
+     */
+    private static final int[][] COST_CK_IMPROV_TRADE =
+    {
+        null,
+        // clay, ore, sheep, wheat, wood
+        { 0, 0, 1, 0, 0 },  // level 1
+        { 0, 0, 2, 0, 0 },  // level 2
+        { 0, 0, 3, 0, 0 },  // level 3
+        { 0, 0, 4, 0, 0 },  // level 4
+        { 0, 0, 5, 0, 0 }   // level 5
+    };
+
+    /**
+     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
+     * for the Politics track ({@link #CK_IMPROV_POLITICS}). Index is the level being built (1-5); index 0 unused.
+     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
+     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
+     * (ore stands in for coin). Used by {@link #makeKnownItem(String, int)}.
+     * @since 2.7.00
+     */
+    private static final int[][] COST_CK_IMPROV_POLITICS =
+    {
+        null,
+        // clay, ore, sheep, wheat, wood
+        { 0, 1, 0, 0, 0 },  // level 1
+        { 0, 2, 0, 0, 0 },  // level 2
+        { 0, 3, 0, 0, 0 },  // level 3
+        { 0, 4, 0, 0, 0 },  // level 4
+        { 0, 5, 0, 0, 0 }   // level 5
+    };
+
+    /**
+     * Phase 0 interim costs (in standard resources) to build each Cities &amp; Knights improvement level
+     * for the Science track ({@link #CK_IMPROV_SCIENCE}). Index is the level being built (1-5); index 0 unused.
+     * Each 5-element array is { clay, ore, sheep, wheat, wood }: per the interim house rule
+     * (design doc section 3.2 / Phase 1), level <em>N</em> costs <em>N</em> of the track's resource
+     * (wheat stands in for paper). Used by {@link #makeKnownItem(String, int)}.
+     * @since 2.7.00
+     */
+    private static final int[][] COST_CK_IMPROV_SCIENCE =
+    {
+        null,
+        // clay, ore, sheep, wheat, wood
+        { 0, 0, 0, 1, 0 },  // level 1
+        { 0, 0, 0, 2, 0 },  // level 2
+        { 0, 0, 0, 3, 0 },  // level 3
+        { 0, 0, 0, 4, 0 },  // level 4
+        { 0, 0, 0, 5, 0 }   // level 5
+    };
+
     // End of per-scenario static data
 
     /**
@@ -216,6 +308,9 @@ public class SOCSpecialItem
      * Currently known {@code typeKey}s:
      *<UL>
      *<LI> {@link SOCGameOptionSet#K_SC_WOND _SC_WOND}: Wonders
+     *<LI> {@link #CK_IMPROV_TRADE _CK_IMP/T}, {@link #CK_IMPROV_POLITICS _CK_IMP/P},
+     *     {@link #CK_IMPROV_SCIENCE _CK_IMP/S}: Cities &amp; Knights improvement tracks
+     *     (groundwork; not yet playable). Here {@code idx} is the level being built (1-5).
      *</UL>
      * If {@code typeKey} is unknown, the item will be created with {@code null} cost and requirements,
      * equivalent to calling {@link #SOCSpecialItem(SOCPlayer, int, SOCResourceSet, String) new SOCSpecialItem}
@@ -244,6 +339,21 @@ public class SOCSpecialItem
             itemLevel = 0;
             startingCostPiecetype = SOCPlayingPiece.SHIP;
                 // note: client SOCSpecialItemDialog assumes all items have same startingCostPiecetype; true for SC_WOND
+        }
+        else if (typeKey.equals(CK_IMPROV_TRADE) || typeKey.equals(CK_IMPROV_POLITICS)
+                 || typeKey.equals(CK_IMPROV_SCIENCE))
+        {
+            // Cities & Knights city-improvement track (groundwork; not yet playable).
+            // idx is the level being built (1-5); item's level starts at 0. No special requirements
+            // or string value yet in Phase 0; per-level interim cost is in standard resources.
+            typeReqs = null;
+            typeSV = null;
+            typeCosts =
+                typeKey.equals(CK_IMPROV_TRADE) ? COST_CK_IMPROV_TRADE
+                : typeKey.equals(CK_IMPROV_POLITICS) ? COST_CK_IMPROV_POLITICS
+                : COST_CK_IMPROV_SCIENCE;
+            itemLevel = 0;
+            startingCostPiecetype = -1;
         } else {
             return new SOCSpecialItem(null, -1, null, null);  // <--- Early return: Unknown typeKey ---
         }

@@ -68,6 +68,7 @@ import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -76,6 +77,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Properties;
 import java.util.Set;
 import java.util.Timer;
 import javax.imageio.ImageIO;
@@ -609,6 +611,72 @@ import javax.swing.JComponent;
     };
 
     /**
+     * Resource-bundle base path for per-graphics-set theme color files
+     * (<tt>theme.properties</tt> within each set's subdirectory of {@link #IMAGEDIR}).
+     * Loaded by {@link #loadThemeColors(int, Class)}.
+     * @since 2.7.00
+     */
+    private static final String THEME_FILENAME = "theme.properties";
+
+    /**
+     * Active (theme-resolved) non-water hex border colors for the current graphics set,
+     * un-rotated boards. Defaults to a copy of {@link #HEX_BORDER_COLORS}; overridden per key by
+     * the set's {@code theme.properties} when present. Refreshed by {@link #loadThemeColors(int, Class)}.
+     * Read in {@link #rescaleBoard(int, int)}.
+     * @since 2.7.00
+     */
+    private static Color[] activeHexBorderColors = HEX_BORDER_COLORS.clone();
+
+    /**
+     * Active (theme-resolved) non-water hex border colors for the current graphics set,
+     * 6-player rotated boards. Defaults to a copy of {@link #ROTAT_HEX_BORDER_COLORS}; overridden per key by
+     * the set's {@code theme.properties} when present. Refreshed by {@link #loadThemeColors(int, Class)}.
+     * Read in {@link #rescaleBoard(int, int)}.
+     * @since 2.7.00
+     */
+    private static Color[] activeRotatHexBorderColors = ROTAT_HEX_BORDER_COLORS.clone();
+
+    /**
+     * Active (theme-resolved) water-hex border color for the current graphics set.
+     * Defaults to {@link #HEX_GRAPHICS_SET_BORDER_WATER_COLORS}[{@link #hexesGraphicsSetIndex}];
+     * overridden by the set's {@code theme.properties} key {@code border.water} when present.
+     * Refreshed by {@link #loadThemeColors(int, Class)}.
+     * @since 2.7.00
+     */
+    private static Color activeWaterBorderColor = HEX_GRAPHICS_SET_BORDER_WATER_COLORS[0];
+
+    /**
+     * Active (theme-resolved) pirate-path dotted-line color for the current graphics set
+     * (scenario {@code _SC_PIRI}). Defaults to
+     * {@link #HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS}[{@link #hexesGraphicsSetIndex}];
+     * overridden by the set's {@code theme.properties} key {@code piri.path} when present.
+     * Refreshed by {@link #loadThemeColors(int, Class)}.
+     * @since 2.7.00
+     */
+    private static Color activePiriPathColor = HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS[0];
+
+    /**
+     * Cached value of user preference
+     * {@link UserPreferences.PreferenceDescriptor#KEY_RENDER_ANTIALIASING renderAntialiasing}.
+     * Read cheaply (not per frame) by {@link #refreshRenderingHintPrefs()}, which is called from
+     * {@link #rescaleBoard(int, int)}; consumed by {@link #setRenderingHints(Graphics)}.
+     * @since 2.7.00
+     */
+    private static boolean renderAntialiasPref = true;
+
+    /**
+     * Cached interpolation {@link RenderingHints} value derived from user preference
+     * {@link UserPreferences.PreferenceDescriptor#KEY_RENDER_INTERPOLATION renderInterpolation}:
+     * one of {@link RenderingHints#VALUE_INTERPOLATION_NEAREST_NEIGHBOR},
+     * {@link RenderingHints#VALUE_INTERPOLATION_BILINEAR}, or
+     * {@link RenderingHints#VALUE_INTERPOLATION_BICUBIC} (the default).
+     * Read cheaply by {@link #refreshRenderingHintPrefs()}; consumed by {@link #setRenderingHints(Graphics)}
+     * and {@link #getScaledImageUp(Image, int, int)}.
+     * @since 2.7.00
+     */
+    private static Object renderInterpolationHint = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+
+    /**
      * For repaint when retrying a failed rescale-image,
      * the 3-second delay (in millis) before which {@link DelayedRepaint} will call repaint().
      *<P>
@@ -885,6 +953,56 @@ import javax.swing.JComponent;
           new Color(255,  84, 0),
           Color.RED
         };
+
+    /**
+     * Active (theme-resolved) dice-number circle fill colors for the current graphics set.
+     * Defaults to a copy of {@link #DICE_NUMBER_CIRCLE_COLORS}; overridden per key by the set's
+     * {@code theme.properties} keys {@code dice.circle.0}..{@code dice.circle.4}, and by the color-blind
+     * override, when present. Refreshed by {@link #loadThemeColors(int, Class)}.
+     * Read in {@link #drawHex(Graphics, int, int, int, int, int)} via {@link #getDiceNumberCircleImage(int, int)}.
+     * @since 2.7.00
+     */
+    private static Color[] activeDiceNumberCircleColors = DICE_NUMBER_CIRCLE_COLORS.clone();
+
+    /**
+     * Color-blind alternate {@link #DICE_NUMBER_CIRCLE_COLORS} dice-circle palettes, keyed by mode name
+     * ("deuteranopia", "protanopia", "tritanopia"). Each value is a 5-element {@code 0xRRGGBB} array
+     * indexed by rarity (0 = 2/12 rarest .. 4 = 6/8 most common).
+     *<P>
+     * The default dice colors run yellow&rarr;red, which is exactly the red-green confusion axis.
+     * The red-green palettes here run on a light-to-dark blue/orange scale that stays distinguishable;
+     * the tritanopia palette avoids blue-yellow by using a light-grey&rarr;dark-red scale.
+     * Applied on top of theme/defaults in {@link #loadThemeColors(int, Class)} when the
+     * {@code colorBlindMode} preference is active. Same color-table mechanism as the themes.
+     * @see ColorSquare#applyColorBlindPalette()
+     * @since 2.7.00
+     */
+    private static final Map<String, int[]> DICE_NUMBER_CIRCLE_COLORBLIND = makeDiceColorBlindPalettes();
+
+    /**
+     * Build the {@link #DICE_NUMBER_CIRCLE_COLORBLIND} table.
+     * @return the populated palette map (rarity index 0..4 of {@code 0xRRGGBB} values)
+     * @since 2.7.00
+     */
+    private static Map<String, int[]> makeDiceColorBlindPalettes()
+    {
+        final Map<String, int[]> m = new HashMap<String, int[]>();
+
+        // Red-green (deuteranopia/protanopia): light blue (rare) -> orange -> dark (common),
+        // avoiding the yellow-vs-red contrast. Each step differs in both hue and lightness.
+        final int[] redGreen =
+            { 0xA6CEE3, 0x6BAED6, 0xFDB863, 0xE08214, 0x8C510A };
+        m.put("deuteranopia", redGreen);
+        m.put("protanopia", redGreen);
+
+        // Blue-yellow (tritanopia): pale grey (rare) -> pink -> dark red (common),
+        // avoiding blue-vs-yellow; relies on lightness plus red/pink which trit. vision keeps.
+        final int[] blueYellow =
+            { 0xE0E0E0, 0xF4A6B0, 0xE06377, 0xC03245, 0x8B1A2B };
+        m.put("tritanopia", blueYellow);
+
+        return m;
+    }
 
     /**
      * Minimum required unscaled width and height, as determined by options and {@link #isRotated}.
@@ -1174,6 +1292,16 @@ import javax.swing.JComponent;
      * @since 1.1.08
      */
     private FontMetrics diceNumberCircleFM;
+
+    /**
+     * Cache of pre-rendered dice-number circle images (filled oval, darker outline, centered number),
+     * keyed by dice number (2-12), to avoid re-rendering with {@link FontMetrics} every repaint.
+     * Built lazily in {@link #drawHex(Graphics, int, int, int, int, int)} and cleared in
+     * {@link #rescaleBoard(int, int)} (diameter, colors, and font change on rescale or theme change).
+     * Each cached image is sized {@code dia x dia} where {@code dia} is the current scaled circle diameter.
+     * @since 2.7.00
+     */
+    private final Map<Integer, BufferedImage> diceNumberCircleCache = new HashMap<Integer, BufferedImage>();
 
     /**
      * Translate hex ID to hex number to get coords.
@@ -2885,6 +3013,10 @@ import javax.swing.JComponent;
         }
         diceNumberCircleFont = null;
         diceNumberCircleFM = null;
+        diceNumberCircleCache.clear();  // diameter, colors, and font change on rescale; rebuild lazily
+
+        // Re-read rendering-quality preferences once per rescale (cheap; not per frame).
+        refreshRenderingHintPrefs();
 
         /**
          * Scale coordinate arrays for drawing pieces,
@@ -2902,12 +3034,12 @@ import javax.swing.JComponent;
         if (isRotated)
         {
             staticHex = rotatHexes;
-            BC = ROTAT_HEX_BORDER_COLORS;
+            BC = activeRotatHexBorderColors;
         } else {
             staticHex = hexes;
-            BC = HEX_BORDER_COLORS;
+            BC = activeHexBorderColors;
         }
-        waterBC = HEX_GRAPHICS_SET_BORDER_WATER_COLORS[hexesGraphicsSetIndex];
+        waterBC = activeWaterBorderColor;
 
         if (! (isScaled || isHexesAlwaysScaled))
         {
@@ -2971,9 +3103,9 @@ import javax.swing.JComponent;
         final BufferedImage bHex = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g = bHex.createGraphics();
 
+        setRenderingHints(g);
         g.drawImage(hex, 0, 0, w, h, null);
 
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setStroke(new BasicStroke(scaleToActual(13) / 10f));  // border line width 1.3px
         g.setColor(borderColor);
         if (isRotated)
@@ -3037,8 +3169,8 @@ import javax.swing.JComponent;
         BufferedImage portBase = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         {
             Graphics2D g = portBase.createGraphics();
+            setRenderingHints(g);
             g.drawImage(water, 0, 0, w, h, null);
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             // white circular border
             g.setColor(Color.WHITE);
@@ -3056,9 +3188,8 @@ import javax.swing.JComponent;
         {
             BufferedImage bufi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = bufi.createGraphics();
+            setRenderingHints(g);
             g.drawImage(portBase, 0, 0, w, h, null);
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
             // arrows
             g.setColor(Color.WHITE);
@@ -3246,11 +3377,63 @@ import javax.swing.JComponent;
     }
 
     /**
+     * Re-read the rendering-quality user preferences into the cached static fields
+     * {@link #renderAntialiasPref} and {@link #renderInterpolationHint}, so per-frame and per-rescale
+     * drawing can apply them cheaply without touching {@link UserPreferences} on every call.
+     *<P>
+     * Reads {@link UserPreferences.PreferenceDescriptor#KEY_RENDER_ANTIALIASING renderAntialiasing}
+     * (boolean, default {@code true}) and
+     * {@link UserPreferences.PreferenceDescriptor#KEY_RENDER_INTERPOLATION renderInterpolation}
+     * ("nearest"/"bilinear"/"bicubic", default "bicubic"). Called from {@link #rescaleBoard(int, int)}.
+     * @since 2.7.00
+     */
+    private static void refreshRenderingHintPrefs()
+    {
+        renderAntialiasPref = UserPreferences.getPref
+            (UserPreferences.PreferenceDescriptor.KEY_RENDER_ANTIALIASING, true);
+
+        final String interp = UserPreferences.getPref
+            (UserPreferences.PreferenceDescriptor.KEY_RENDER_INTERPOLATION, "bicubic");
+        if ("nearest".equals(interp))
+            renderInterpolationHint = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
+        else if ("bilinear".equals(interp))
+            renderInterpolationHint = RenderingHints.VALUE_INTERPOLATION_BILINEAR;
+        else
+            renderInterpolationHint = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+    }
+
+    /**
+     * Apply the cached rendering-quality hints ({@link #renderAntialiasPref},
+     * {@link #renderInterpolationHint}) to a graphics context, honoring the user's
+     * {@code renderAntialiasing} and {@code renderInterpolation} preferences.
+     * Sets both the antialiasing and image-interpolation hints. No-op if {@code g} isn't a
+     * {@link Graphics2D}. Call from every drawing/scaling site so quality is consistent everywhere.
+     *<P>
+     * The preference values are read once per rescale by {@link #refreshRenderingHintPrefs()},
+     * not per call, so this method is cheap enough to call on every frame.
+     *
+     * @param g  Graphics context to configure; may be a {@link Graphics} or {@link Graphics2D}
+     * @since 2.7.00
+     */
+    static void setRenderingHints(final Graphics g)
+    {
+        if (! (g instanceof Graphics2D))
+            return;  // <--- Early return: non-Graphics2D has no rendering hints ---
+
+        final Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint
+            (RenderingHints.KEY_ANTIALIASING,
+             renderAntialiasPref ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, renderInterpolationHint);
+    }
+
+    /**
      * Scale up an image with decent quality.
      * Convenience method to call instead of obsolete {@link Image#getScaledInstance(int, int, int)}.
      * Calls <code>
      * {@link Graphics2D#drawImage(Image, int, int, int, int, java.awt.image.ImageObserver) Graphics2D.drawImage}
-     * (src, 0, 0, w, h, null)</code> using {@link RenderingHints#VALUE_INTERPOLATION_BICUBIC}.
+     * (src, 0, 0, w, h, null)</code> using the interpolation quality from user preference
+     * {@code renderInterpolation} (default {@link RenderingHints#VALUE_INTERPOLATION_BICUBIC}).
      *<P>
      * For more info see the Java2D team blog 2007 post "The Perils of Image.getScaledInstance()" by ChrisAdamson.
      *
@@ -3267,7 +3450,7 @@ import javax.swing.JComponent;
             // use PI instead of this.getGraphicsConfiguration(),
             // which is null during early call by PI constructor through initUIElements/rescaleBoard
         Graphics2D g = bufi.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        setRenderingHints(g);
         g.drawImage(src, 0, 0, w, h, null);
         g.dispose();
 
@@ -3703,29 +3886,12 @@ import javax.swing.JComponent;
                     dia = scaleToActual(dia);
                 ++dia;
 
-                // Get color from rarity, fill dice circle, outline with darker shade
-                {
-                    int colorIdx;
-                    if (hnl < 7)
-                        colorIdx = hnl - 2;
-                    else
-                        colorIdx = 12 - hnl;
-                    Color cc = DICE_NUMBER_CIRCLE_COLORS[colorIdx];
-
-                    g.setColor(cc);
-                    g.fillOval(x, y, dia, dia);
-                    g.setColor(cc.darker().darker());
-                    g.drawOval(x, y, dia, dia);
-                }
-
-                final String numstr = Integer.toString(hnl);
-                x += (dia - (diceNumberCircleFM.stringWidth(numstr) - scaleToActual(1))) / 2;
-                    // -1 removes unwanted advance spacing after digit string;
-                    // if more precison needed, see java.awt.font.TextLayout.getBounds
-                y += (dia + diceNumberCircleFM.getAscent() - diceNumberCircleFM.getDescent()) / 2;
-                g.setFont(diceNumberCircleFont);
-                g.setColor(Color.BLACK);
-                g.drawString(numstr, x, y);
+                // Use a cached pre-rendered image of the circle+number, built once per dice
+                // number per rescale (cache cleared in rescaleBoard); avoids re-running FontMetrics
+                // and oval/text rendering on every repaint. Same visual output as before, since
+                // diameter, colors, and font are constant within a rescale.
+                final BufferedImage circImg = getDiceNumberCircleImage(hnl, dia);
+                g.drawImage(circImg, x, y, this);
 
             } else {
                 missedDraw = true;
@@ -3737,6 +3903,60 @@ import javax.swing.JComponent;
             // drawBoard will check this field after all hexes are drawn.
             scaledMissedImage = true;
         }
+    }
+
+    /**
+     * Get the pre-rendered dice-number circle image for a dice number, building and caching it if needed.
+     * The image is a {@code dia x dia} translucent ARGB bitmap containing the filled circle (color by rarity
+     * from {@link #activeDiceNumberCircleColors}), a darker outline, and the centered dice number, rendered with
+     * the current {@link #diceNumberCircleFont} and rendering-quality hints. Cached in
+     * {@link #diceNumberCircleCache} keyed by dice number, since diameter, colors, and font are constant within
+     * a rescale; the cache is cleared by {@link #rescaleBoard(int, int)}.
+     *<P>
+     * Drawing the result with {@link Graphics#drawImage(Image, int, int, java.awt.image.ImageObserver)} over the
+     * hex produces output identical to the previous direct {@code fillOval}/{@code drawOval}/{@code drawString},
+     * because antialiased edges keep partial alpha and blend the same way.
+     *
+     * @param hnl  Dice number on the hex, 2-12
+     * @param dia  Circle diameter in actual (scaled) pixels, as computed in {@link #drawHex(Graphics, int, int, int, int, int)}
+     * @return the cached or newly built circle image
+     * @since 2.7.00
+     */
+    private BufferedImage getDiceNumberCircleImage(final int hnl, final int dia)
+    {
+        final Integer key = Integer.valueOf(hnl);
+        BufferedImage img = diceNumberCircleCache.get(key);
+        if (img != null)
+            return img;  // <--- Early return: already cached for this rescale ---
+
+        // Image is dia+1 square so the drawOval outline (which can reach the +dia pixel) isn't clipped,
+        // matching the previous direct draw onto the board buffer.
+        img = new BufferedImage(dia + 1, dia + 1, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g = img.createGraphics();
+        setRenderingHints(g);
+
+        // Color from rarity, fill circle, outline with darker shade
+        final int colorIdx = (hnl < 7) ? (hnl - 2) : (12 - hnl);
+        final Color cc = activeDiceNumberCircleColors[colorIdx];
+        g.setColor(cc);
+        g.fillOval(0, 0, dia, dia);
+        g.setColor(cc.darker().darker());
+        g.drawOval(0, 0, dia, dia);
+
+        // Centered dice number (same offset math as the previous in-place drawString)
+        final String numstr = Integer.toString(hnl);
+        final int tx = (dia - (diceNumberCircleFM.stringWidth(numstr) - scaleToActual(1))) / 2;
+            // -1 removes unwanted advance spacing after digit string;
+            // if more precison needed, see java.awt.font.TextLayout.getBounds
+        final int ty = (dia + diceNumberCircleFM.getAscent() - diceNumberCircleFM.getDescent()) / 2;
+        g.setFont(diceNumberCircleFont);
+        g.setColor(Color.BLACK);
+        g.drawString(numstr, tx, ty);
+
+        g.dispose();
+
+        diceNumberCircleCache.put(key, img);
+        return img;
     }
 
     /**
@@ -3755,6 +3975,8 @@ import javax.swing.JComponent;
     private final void drawRobber
         (Graphics g, final int hexID, final boolean fullNotGhost, final boolean fillNotOutline)
     {
+        setRenderingHints(g);
+
         int hx, hy;
         if (isLargeBoard)
         {
@@ -3863,6 +4085,8 @@ import javax.swing.JComponent;
         (Graphics g, int edgeNum, final int pn, HilightStyle hilightStyle,
          final boolean isRoadNotShip, final boolean isWarship)
     {
+        setRenderingHints(g);
+
         // Draw a road or ship
         int roadX[], roadY[];
         int hx, hy;
@@ -4076,6 +4300,8 @@ import javax.swing.JComponent;
         (Graphics g, final int nodeNum, final int pn,
          HilightStyle hilightStyle, final boolean outlineOnly, final boolean isCity)
     {
+        setRenderingHints(g);
+
         final int hx, hy;
         {
             final int[] nodexy = nodeToXY(nodeNum);
@@ -4199,7 +4425,7 @@ import javax.swing.JComponent;
             return;
 
         if ((co == null) && (playerNumber == 0) && (hexesGraphicsSetIndex == 0))
-            co = HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS[hexesGraphicsSetIndex];  // avoid cyan-on-light-blue
+            co = activePiriPathColor;  // avoid cyan-on-light-blue
 
         final Stroke prevStroke;
         if (g instanceof Graphics2D)
@@ -4266,6 +4492,8 @@ import javax.swing.JComponent;
         if (strength == 0)
             return;
 
+        setRenderingHints(g);
+
         if (doTranslate)
             g.translate(panelMarginX, panelMarginY);
 
@@ -4325,6 +4553,8 @@ import javax.swing.JComponent;
      */
     private final void drawMarker(Graphics g, final int x, final int y, final Color color, final int val)
     {
+        setRenderingHints(g);
+
         g.translate(x, y);
 
         g.setColor(color);
@@ -4369,6 +4599,8 @@ import javax.swing.JComponent;
     {
         if (pnum < 0)
             return;
+
+        setRenderingHints(g);
 
         int aX, aY, diceX, diceY;  // diceY is always aY + 5
         boolean arrowLeft;
@@ -4682,9 +4914,8 @@ import javax.swing.JComponent;
         g.setPaintMode();
         g.drawImage(ebb, 0, 0, this);
 
-        // ask for antialiasing if available
-        if (g instanceof Graphics2D)
-            ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // apply rendering-quality hints (antialiasing, interpolation) per user preference
+        setRenderingHints(g);
 
         final boolean xlat = (panelMarginX != 0) || (panelMarginY != 0);
         if (xlat)
@@ -5028,8 +5259,7 @@ import javax.swing.JComponent;
      */
     private void drawBoardEmpty(Graphics g)
     {
-        if (g instanceof Graphics2D)
-            ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        setRenderingHints(g);
 
         Set<Integer> landHexShow;
         final int SC_6;
@@ -5289,7 +5519,7 @@ import javax.swing.JComponent;
             prevStroke = null;
         }
 
-        g.setColor(HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS[hexesGraphicsSetIndex]);
+        g.setColor(activePiriPathColor);
         for (int i = 0; i < ppath.length; ++i)
         {
             hc = ppath[i];
@@ -7825,6 +8055,10 @@ import javax.swing.JComponent;
         {
             hexesGraphicsSetIndex = setIdx;
 
+            // Load this set's theme colors (hex borders, water border, dice circles, pirate path),
+            // falling back to compiled-in defaults for any missing file or key.
+            loadThemeColors(setIdx, clazz);
+
             hexes = new BufferedImage[10];  // water, desert, 5 resources, gold, fog, 3:1 port
 
             try
@@ -7849,6 +8083,116 @@ import javax.swing.JComponent;
             }
 
             rotatHexesMustAlwaysScale = checkNonstandardHexesSize(rotatHexes, true);
+        }
+    }
+
+    /**
+     * Load the theme color tables for a hex graphics set from its {@code theme.properties} resource,
+     * falling back to the compiled-in defaults ({@link #HEX_BORDER_COLORS}, {@link #ROTAT_HEX_BORDER_COLORS},
+     * {@link #HEX_GRAPHICS_SET_BORDER_WATER_COLORS}, {@link #HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS},
+     * {@link #DICE_NUMBER_CIRCLE_COLORS}) for any missing file or key.
+     *<P>
+     * Results populate the {@code active*} static color fields read by the drawing code:
+     * {@link #activeHexBorderColors}, {@link #activeRotatHexBorderColors}, {@link #activeWaterBorderColor},
+     * {@link #activePiriPathColor}, {@link #activeDiceNumberCircleColors}.
+     *<P>
+     * The theme file format is documented in {@code resources/hexes/pastel/theme.properties}:
+     * standard Java {@code .properties}, color values are 6 hex digits {@code RRGGBB}, ASCII only.
+     * A missing or unparseable file is logged once and the defaults are kept.
+     *
+     * @param setIdx  Index into {@link #HEX_GRAPHICS_SET_SUBDIRS} of the set being loaded
+     * @param clazz  Class to use for {@link Class#getResourceAsStream(String)}
+     * @since 2.7.00
+     */
+    private static void loadThemeColors(final int setIdx, final Class<?> clazz)
+    {
+        // Start from the compiled-in defaults; the theme file (if any) overrides individual keys.
+        final Color[] borders = HEX_BORDER_COLORS.clone();
+        final Color[] rotatBorders = ROTAT_HEX_BORDER_COLORS.clone();
+        Color waterBorder = HEX_GRAPHICS_SET_BORDER_WATER_COLORS[setIdx];
+        Color piriPath = HEX_GRAPHICS_SET_SC_PIRI_PATH_COLORS[setIdx];
+        final Color[] diceCircles = DICE_NUMBER_CIRCLE_COLORS.clone();
+
+        final String path = IMAGEDIR + "/" + HEX_GRAPHICS_SET_SUBDIRS[setIdx] + "/" + THEME_FILENAME;
+        final Properties props = new Properties();
+        try (InputStream in = clazz.getResourceAsStream(path))
+        {
+            if (in != null)
+            {
+                props.load(in);
+
+                // Border colors, un-rotated; same indexes as HEX_BORDER_COLORS.
+                borders[1] = parseThemeColor(props, "border.clay",   borders[1]);
+                borders[2] = parseThemeColor(props, "border.ore",    borders[2]);
+                borders[3] = parseThemeColor(props, "border.sheep",  borders[3]);
+                borders[4] = parseThemeColor(props, "border.wheat",  borders[4]);
+                borders[5] = parseThemeColor(props, "border.wood",   borders[5]);
+                borders[6] = parseThemeColor(props, "border.desert", borders[6]);
+
+                // Border colors, rotated; same indexes as ROTAT_HEX_BORDER_COLORS (no desert at 6 here).
+                rotatBorders[1] = parseThemeColor(props, "border.rotat.clay",   rotatBorders[1]);
+                rotatBorders[2] = parseThemeColor(props, "border.rotat.ore",    rotatBorders[2]);
+                rotatBorders[3] = parseThemeColor(props, "border.rotat.sheep",  rotatBorders[3]);
+                rotatBorders[4] = parseThemeColor(props, "border.rotat.wheat",  rotatBorders[4]);
+                rotatBorders[5] = parseThemeColor(props, "border.rotat.wood",   rotatBorders[5]);
+
+                waterBorder = parseThemeColor(props, "border.water", waterBorder);
+                piriPath = parseThemeColor(props, "piri.path", piriPath);
+
+                for (int i = 0; i < diceCircles.length; ++i)
+                    diceCircles[i] = parseThemeColor(props, "dice.circle." + i, diceCircles[i]);
+            }
+        } catch (IOException | RuntimeException e) {
+            System.out.println("Error loading hex theme " + path + ": " + e);
+        }
+
+        // Color-blind override: when active, replace the dice-circle rarity colors with a palette
+        // that doesn't rely on the red-green (or blue-yellow) axis. Same mechanism as themes; applied
+        // on top of theme/defaults. Hex bitmaps are unchanged; resource/water UI colors come from ColorSquare.
+        final String cbMode = UserPreferences.getPref
+            (UserPreferences.PreferenceDescriptor.KEY_COLOR_BLIND_MODE, "off");
+        if ((cbMode != null) && ! cbMode.equals("off"))
+        {
+            final int[] cbDice = DICE_NUMBER_CIRCLE_COLORBLIND.get(cbMode);
+            if (cbDice != null)
+                for (int i = 0; (i < diceCircles.length) && (i < cbDice.length); ++i)
+                    diceCircles[i] = new Color(cbDice[i]);
+        }
+
+        activeHexBorderColors = borders;
+        activeRotatHexBorderColors = rotatBorders;
+        activeWaterBorderColor = waterBorder;
+        activePiriPathColor = piriPath;
+        activeDiceNumberCircleColors = diceCircles;
+    }
+
+    /**
+     * Parse one {@code RRGGBB} hex color value from a theme {@link Properties} for {@link #loadThemeColors(int, Class)}.
+     * An absent key, or value {@code "none"} / empty, returns {@code dflt} (which may itself be {@code null}).
+     * A malformed value is logged once and also returns {@code dflt}.
+     *
+     * @param props  Theme properties
+     * @param key  Property key to look up, such as {@code "border.clay"}
+     * @param dflt  Default color to return if absent/blank/malformed; may be {@code null}
+     * @return the parsed {@link Color}, or {@code dflt}
+     * @since 2.7.00
+     */
+    private static Color parseThemeColor(final Properties props, final String key, final Color dflt)
+    {
+        final String val = props.getProperty(key);
+        if (val == null)
+            return dflt;  // <--- Early return: key not present, use default ---
+
+        final String v = val.trim();
+        if (v.isEmpty() || v.equalsIgnoreCase("none"))
+            return dflt;  // <--- Early return: explicit "no color" / blank, use default ---
+
+        try
+        {
+            return new Color(Integer.parseInt(v, 16));
+        } catch (NumberFormatException e) {
+            System.out.println("Bad theme color for " + key + ": " + val);
+            return dflt;
         }
     }
 

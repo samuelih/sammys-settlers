@@ -767,9 +767,9 @@ Client requests the next level of a track with an `OP_PICK`; server validates co
 requirements, deducts cost, and replies with the combined `OP_SET_PICK` (acts as `OP_SET`
 then `OP_PICK`), then the resulting game state.
 
-- f3:SOCSetSpecialItem:game=test|op=3|typeKey=_CK_IMPROV/T|gi=-1|pi=0  // OP_PICK; track T (Trade)
+- f3:SOCSetSpecialItem:game=test|op=3|typeKey=_CK_IMP/T|gi=-1|pi=0  // OP_PICK; track T (Trade)
 - all:SOCPlayerElements:game=test|playerNum=3|actionType=LOSE|...  // cost (commodities in Phase 2, standard resources in Phase 1)
-- all:SOCSetSpecialItem:game=test|op=5|typeKey=_CK_IMPROV/T|gi=-1|pi=0|pn=3|co=-1|lv=2|sv=  // OP_SET_PICK; new level=2
+- all:SOCSetSpecialItem:game=test|op=5|typeKey=_CK_IMP/T|gi=-1|pi=0|pn=3|co=-1|lv=2|sv=  // OP_SET_PICK; new level=2
 - If this level grants a metropolis (sole track leader at the qualifying level):
     - all:SOCPlayerElement:game=test|playerNum=3|actionType=GAIN|elementType=...|amount=2  // metropolis SVP (placeholder PEType)
     - If a different player previously held this metropolis, that player loses it first:
@@ -782,7 +782,7 @@ then `OP_PICK`), then the resulting game state.
 If the player can't buy now (cost, requirements, or not their turn), server replies with
 `OP_DECLINE` (and, for a robot, the matching cancel), exactly as `SC_WOND` does:
 
-- un:SOCSetSpecialItem:game=test|op=4|typeKey=_CK_IMPROV/T|gi=-1|pi=0  // OP_DECLINE
+- un:SOCSetSpecialItem:game=test|op=4|typeKey=_CK_IMP/T|gi=-1|pi=0  // OP_DECLINE
 
 No new message type required.
 
@@ -828,7 +828,7 @@ action types and `SOCPlayerElement.PEType` element types) are needed, but no new
 
 ## PROPOSED: Barbarian attack resolution
 
-The barbarian counter advances inside `rollDice()` under the `_CK_BARBARIAN` option, modeled
+The barbarian counter advances inside `rollDice()` under the `_CK_BARB` option, modeled
 on the `SC_PIRI` pirate-fleet block (design doc section 3.4). On most rolls the barbarian only
 advances; when it reaches the city gate, the attack resolves before the usual 7-discard
 handling, exactly as `SC_PIRI` resolves its fleet attack before discards.

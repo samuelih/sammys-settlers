@@ -1151,6 +1151,18 @@ public class SOCGame implements Serializable, Cloneable
     private boolean hasRolledSeven;
 
     /**
+     * Cities &amp; Knights barbarian-attack strength counter (groundwork; not yet playable).
+     * Starts at 0 and is advanced by {@link #advanceBarbarianStrength()}, called from
+     * {@link #rollDice()} only when game option {@link SOCGameOptionSet#K__CK_BARBARIAN} is set.
+     * Because that option is inactive-hidden, this stays 0 in all normal play.
+     * Modeled on the {@link SOCGameOptionSet#K_SC_PIRI SC_PIRI} pirate-fleet advancement.
+     * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+     * @see #getBarbarianStrength()
+     * @since 2.7.00
+     */
+    private int barbarianStrength;
+
+    /**
      * The most recent {@link #moveRobber(int, int)} or {@link #movePirate(int, int)} result.
      * Used at server only.
      * @since 2.0.00
@@ -2821,6 +2833,54 @@ public class SOCGame implements Serializable, Cloneable
     public boolean hasRolledSeven()
     {
         return hasRolledSeven;
+    }
+
+    /**
+     * Get the Cities &amp; Knights barbarian-attack strength counter (groundwork; not yet playable).
+     * Stays 0 in all normal play because it's only advanced when game option
+     * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set, and that option is inactive-hidden.
+     * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+     * @return the current barbarian strength counter, 0 or more
+     * @see #advanceBarbarianStrength()
+     * @since 2.7.00
+     */
+    public int getBarbarianStrength()
+    {
+        return barbarianStrength;
+    }
+
+    /**
+     * Advance the Cities &amp; Knights barbarian-attack strength counter by one step, and run the
+     * (stubbed) attack-resolution hook (groundwork; not yet playable).
+     *<P>
+     * Called from {@link #rollDice()} only when game option {@link SOCGameOptionSet#K__CK_BARBARIAN}
+     * is set; that option is inactive-hidden, so this is unreachable in normal play. Modeled on the
+     * {@link SOCGameOptionSet#K_SC_PIRI SC_PIRI} pirate-fleet advancement in {@code rollDice()}.
+     *<P>
+     * Phase 0 scope: this advances {@link #getBarbarianStrength()} and, when a threshold would be
+     * reached, fires a documented log-only hook. Actual attack resolution (city downgrades, knight
+     * defense, resource loss) is deferred until knight semantics exist in a later phase.
+     *<P>
+     * Returns the new counter value so {@link #rollDice()} can copy attack results onto
+     * {@link RollResult}.
+     *
+     * @return the barbarian strength counter after advancing
+     * @see #getBarbarianStrength()
+     * @since 2.7.00
+     */
+    public int advanceBarbarianStrength()
+    {
+        ++barbarianStrength;
+
+        // Phase 0 stub: attack resolution is log-only until knight semantics exist.
+        // A later phase resolves the attack (city downgrades, knight defense, resource loss)
+        // and announces it, reusing the SC_PIRI_FORT_ATTACK_RESULT SOCSimpleAction pattern;
+        // see doc/Cities-and-Knights-Design.md section 3.4 and the PROPOSED message sequences.
+        D.ebugPrintlnINFO
+            ("C&K barbarian groundwork: strength advanced to " + barbarianStrength
+             + " in game " + name + " (attack resolution stubbed)");
+
+        return barbarianStrength;
     }
 
     /**
@@ -6656,6 +6716,15 @@ public class SOCGame implements Serializable, Cloneable
         } while ((currentDice == 7) && ! okToRoll7);
 
         currentRoll.update(die1, die2);  // also clears currentRoll.cloth (SC_CLVI)
+
+        // Cities & Knights barbarian groundwork (not yet playable): advance strength counter.
+        // Guarded by the inactive-hidden _CK_BARB option, so this is unreachable in normal play.
+        // Modeled on the SC_PIRI pirate-fleet advancement below. See doc/Cities-and-Knights-Design.md.
+        if (isGameOptionSet(SOCGameOptionSet.K__CK_BARBARIAN))
+        {
+            currentRoll.ck_barbarianStrength = advanceBarbarianStrength();
+            currentRoll.ck_barbarianAttackFired = false;  // resolution stubbed until knight semantics exist
+        }
 
         boolean sc_piri_plGainsGold = false;  // Has a player won against pirate fleet attack? (SC_PIRI)
         if (isGameOptionSet(SOCGameOptionSet.K_SC_PIRI))
@@ -10827,6 +10896,28 @@ public class SOCGame implements Serializable, Cloneable
          * must prompt the player to choose their free resource.
          */
         public SOCResourceSet sc_piri_fleetAttackRsrcs;
+
+        /**
+         * Cities &amp; Knights barbarian-attack strength after this roll (groundwork; not yet playable).
+         * Set from {@link SOCGame#getBarbarianStrength()} when the dice are rolled and game option
+         * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set; that option is inactive-hidden, so this
+         * stays 0 in normal play. Modeled on {@link #sc_piri_fleetAttackRsrcs}.
+         * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+         * @see #ck_barbarianAttackFired
+         * @since 2.7.00
+         */
+        public int ck_barbarianStrength;
+
+        /**
+         * Cities &amp; Knights flag: did a barbarian attack fire on this roll (groundwork; not yet playable)?
+         * Always {@code false} in Phase 0: attack resolution is stubbed (log-only) until knight semantics
+         * exist in a later phase. Set when the dice are rolled and game option
+         * {@link SOCGameOptionSet#K__CK_BARBARIAN} is set; that option is inactive-hidden.
+         * See {@code doc/Cities-and-Knights-Design.md} section 3.4.
+         * @see #ck_barbarianStrength
+         * @since 2.7.00
+         */
+        public boolean ck_barbarianAttackFired;
 
         /**
          * Convenience: Set diceA and diceB; null out {@link #cloth} and {@link #sc_robPossibleVictims};

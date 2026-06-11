@@ -1306,6 +1306,11 @@ public class SOCPlayerInterface extends JFrame
      * Because PI itself isn't a Swing component, we use JPanel {@link #buildingPanel}
      * which may one day get its own hotkeys. Also overrides {@link #textInput}'s Ctrl-A
      * to keep its functionality or accept the trade offer if all text is already selected.
+     *<P>
+     * As of v2.7.00 also adds gameplay build hotkeys: Settlement (Ctrl/Cmd-S),
+     * City (Ctrl/Cmd-K), and (in games with no Special Building Phase) Buy Dev Card (Ctrl/Cmd-B).
+     * Roll (Ctrl/Cmd-R) and Done/End-turn (Ctrl/Cmd-D) are added separately in {@link SOCHandPanel}.
+     * All hotkeys require the Ctrl/Cmd modifier, so they never fire while typing in the chat input.
      * @since 2.3.00
      */
     private void addHotkeysInputMap()
@@ -1320,6 +1325,10 @@ public class SOCPlayerInterface extends JFrame
         am.put("hotkey_counteroffer", new PIHotkeyActionListener(PIHotkeyActionListener.COUNTER));
         if (game.maxPlayers > 4)
             am.put("hotkey_askspecialbuild", new PIHotkeyActionListener(PIHotkeyActionListener.ASK_SPECIAL_BUILD));
+        am.put("hotkey_buildsettlement", new PIHotkeyActionListener(PIHotkeyActionListener.BUILD_SETTLEMENT));
+        am.put("hotkey_buildcity", new PIHotkeyActionListener(PIHotkeyActionListener.BUILD_CITY));
+        if (game.maxPlayers <= 4)
+            am.put("hotkey_buydevcard", new PIHotkeyActionListener(PIHotkeyActionListener.BUY_DEV_CARD));
 
         final InputMap im = buildingPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         addHotkeysInputMap_one(im, KeyEvent.VK_A, "hotkey_accept", null);
@@ -1327,6 +1336,11 @@ public class SOCPlayerInterface extends JFrame
         addHotkeysInputMap_one(im, KeyEvent.VK_C, "hotkey_counteroffer", null);
         if (game.maxPlayers > 4)
             addHotkeysInputMap_one(im, KeyEvent.VK_B, "hotkey_askspecialbuild", null);
+        addHotkeysInputMap_one(im, KeyEvent.VK_S, "hotkey_buildsettlement", null);
+        addHotkeysInputMap_one(im, KeyEvent.VK_K, "hotkey_buildcity", null);
+        if (game.maxPlayers <= 4)
+            // Ctrl/Cmd-B is reserved for Ask Special Build in 6-player games (added above when maxPlayers > 4)
+            addHotkeysInputMap_one(im, KeyEvent.VK_B, "hotkey_buydevcard", null);
 
         textInput.getActionMap().put("hotkey_selectAllOrTradeAccept", new AbstractAction()
         {
@@ -6015,6 +6029,10 @@ public class SOCPlayerInterface extends JFrame
      * Not used for {@link SOCHandPanel}'s Roll and Done hotkeys.
      * Initialized in {@link SOCPlayerInterface#addHotkeysInputMap()}.
      *<P>
+     * As of v2.7.00 also handles gameplay build hotkeys ({@link #BUILD_SETTLEMENT}, {@link #BUILD_CITY},
+     * {@link #BUY_DEV_CARD}), which route through {@link SOCBuildingPanel#clickBuildingButton(SOCGame, String, boolean)}
+     * just like the building-panel buttons; that method ignores them unless the build/buy is currently allowed.
+     *<P>
      * Before v2.5.00 this class was {@code TradeHotkeyActionListener}.
      * @since 2.3.00
      */
@@ -6029,6 +6047,24 @@ public class SOCPlayerInterface extends JFrame
         public static final int ASK_SPECIAL_BUILD = 4;
 
         /**
+         * Buy/place a Settlement: same code path as {@link SOCBuildingPanel}'s Settlement button.
+         * @since 2.7.00
+         */
+        public static final int BUILD_SETTLEMENT = 5;
+
+        /**
+         * Buy/place a City: same code path as {@link SOCBuildingPanel}'s City button.
+         * @since 2.7.00
+         */
+        public static final int BUILD_CITY = 6;
+
+        /**
+         * Buy a Development Card: same code path as {@link SOCBuildingPanel}'s Card button.
+         * @since 2.7.00
+         */
+        public static final int BUY_DEV_CARD = 7;
+
+        /**
          * {@link #ACCEPT}, {@link #ASK_SPECIAL_BUILD}, etc.
          * @see #isForTrade
          */
@@ -6037,7 +6073,7 @@ public class SOCPlayerInterface extends JFrame
         /**
          * True if should do nothing if more than one hand panel has {@link TradePanel#isOfferToPlayer()}.
          * Set in constructor. Is used with trade buttons {@link #ACCEPT}, {@link #REJECT}, {@link #COUNTER}
-         * but not {@link #ASK_SPECIAL_BUILD}.
+         * but not {@link #ASK_SPECIAL_BUILD} or the building hotkeys.
          * @see #forButton
          * @since 2.5.00
          */
@@ -6045,26 +6081,38 @@ public class SOCPlayerInterface extends JFrame
 
         /**
          * @param forButton The button to activate: {@link #ACCEPT}, {@link #REJECT}, {@link #COUNTER},
-         *     or {@link #ASK_SPECIAL_BUILD}
+         *     {@link #ASK_SPECIAL_BUILD}, {@link #BUILD_SETTLEMENT}, {@link #BUILD_CITY},
+         *     or {@link #BUY_DEV_CARD}
          */
         public PIHotkeyActionListener(final int forButton)
         {
             this.forButton = forButton;
-            this.isForTrade = (forButton != ASK_SPECIAL_BUILD);
+            this.isForTrade = (forButton <= COUNTER);
         }
 
         public void actionPerformed(ActionEvent e)
         {
             if (! isForTrade)
             {
+                // Building hotkeys route through the same method as the SOCBuildingPanel buttons,
+                // which checks game state and only acts when the build/buy is currently allowed.
                 switch (forButton)
                 {
                 case ASK_SPECIAL_BUILD:
                     buildingPanel.clickBuildingButton(game, SOCBuildingPanel.SBP, false);
                     break;
+                case BUILD_SETTLEMENT:
+                    buildingPanel.clickBuildingButton(game, SOCBuildingPanel.STLMT, false);
+                    break;
+                case BUILD_CITY:
+                    buildingPanel.clickBuildingButton(game, SOCBuildingPanel.CITY, false);
+                    break;
+                case BUY_DEV_CARD:
+                    buildingPanel.clickBuildingButton(game, SOCBuildingPanel.CARD, false);
+                    break;
                 }
 
-                return;
+                return;   // <--- Early return: not a trade-offer hotkey ---
             }
 
             SOCHandPanel hpo = null;

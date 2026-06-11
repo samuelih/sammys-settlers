@@ -143,8 +143,8 @@ City improvements map onto this naturally:
 
 - Three `typeKey`s, one per track. Per the `SOCSpecialItem` class javadoc convention, when an
   option has more than one special-item type the key is `optionName + "/" + shortKey`, so the
-  tracks would be e.g. `"_CK_IMPROV/T"` (Trade), `"_CK_IMPROV/P"` (Politics),
-  `"_CK_IMPROV/S"` (Science).
+  tracks would be e.g. `"_CK_IMP/T"` (Trade), `"_CK_IMP/P"` (Politics),
+  `"_CK_IMP/S"` (Science).
 - The `level` field holds the current track level (0-5). Buying the next level costs the
   appropriate commodity (Phase 2) or interim standard-resource cost (Phase 1), parsed into a
   `SOCResourceSet` cost array exactly like `COST_SC_WOND`.
@@ -202,7 +202,7 @@ victim, and copies the outcome onto `currentRoll` via the `RollResult` fields
 - A `SOCGame` field for barbarian advancement (the classic rule advances the ship one step
   each time the smaller die... in C&K it advances on each roll until a threshold is reached;
   the exact rule is a Phase 1 detail). The counter advances in the new
-  `isGameOptionSet(_CK_BARBARIAN)` block in `rollDice()`.
+  `isGameOptionSet(_CK_BARB)` block in `rollDice()`.
 - New `RollResult` fields (e.g. a barbarian-attack-fired flag and per-player city-loss /
   resource-loss results) mirroring the `sc_piri_*` fields, set in that block.
 - Resolution timing: like `SC_PIRI`, the barbarian step runs before the standard 7-discard
@@ -210,7 +210,7 @@ victim, and copies the outcome onto `currentRoll` via the `RollResult` fields
   method (the `// <--- Early return: ... ---` comment at line 6696 is the model).
 
 **Phase 0 prototype scope:** the counter advances in `rollDice()` under the inactive
-`_CK_BARBARIAN` option, the new `RollResult` fields are populated, and attack *resolution* is
+`_CK_BARB` option, the new `RollResult` fields are populated, and attack *resolution* is
 stubbed to a log line (no city downgrades, no resource theft) until knight semantics land in
 Phase 1/3. A unit test asserts the counter advances and the `RollResult` fields are set.
 
@@ -366,11 +366,11 @@ each with `SOCGameOption.FLAG_INACTIVE_HIDDEN | FLAG_DROP_IF_UNUSED`:
 
 | Key            | Meaning                                                   |
 |----------------|----------------------------------------------------------|
-| `_CK_KNIGHTS`  | Knights mechanic (city-linked knight state)              |
-| `_CK_IMPROV`   | City improvements (Trade / Politics / Science tracks)    |
-| `_CK_PROGRESS` | Progress-card decks instead of standard dev cards        |
-| `_CK_BARBARIAN`| Barbarian attack state machine                           |
-| `_CK_METROPOLIS`| Metropolis VP awards to track leaders                   |
+| `_CK_KNI`  | Knights mechanic (city-linked knight state)              |
+| `_CK_IMP`   | City improvements (Trade / Politics / Science tracks)    |
+| `_CK_PROG` | Progress-card decks instead of standard dev cards        |
+| `_CK_BARB`| Barbarian attack state machine                           |
+| `_CK_METR`| Metropolis VP awards to track leaders                   |
 
 **Flag rationale:**
 
@@ -404,7 +404,7 @@ Add a disabled scenario stub `K_SC_CK = "SC_CK"` to `SOCScenario.initAllScenario
 the template), and the matching main option key `K_SC_CK = "_SC_CK"` in `SOCGameOptionSet`.
 
 - The scenario's option string ties together the `_CK_*` rules plus `SBL=t` and `VP=t13`,
-  e.g. `"_SC_CK=t,_CK_IMPROV=t,_CK_KNIGHTS=t,_CK_PROGRESS=t,_CK_BARBARIAN=t,_CK_METROPOLIS=t,SBL=t,VP=t13"`.
+  e.g. `"_SC_CK=t,_CK_IMP=t,_CK_KNI=t,_CK_PROG=t,_CK_BARB=t,_CK_METR=t,SBL=t,VP=t13"`.
   (The exact base-board choice — classic vs. sea board — is a Phase 1 decision; C&K is
   traditionally played on the base board, but JSettlers scenarios are sea-board based, so the
   stub may start on `SBL`.)

@@ -29,6 +29,8 @@ import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -63,28 +65,36 @@ public class ColorSquare extends JComponent implements MouseListener
      * The color constants are used by ColorSquare,
      * and also used for the robber's "ghost" when
      * moving the robber, and fallback for missing hex graphics.
+     *<P>
+     * Since v2.7.00 these resource colors are no longer {@code final}: when a color-blind palette is
+     * active, {@link #applyColorBlindPalette()} replaces them at class load (before any ColorSquare is
+     * created), so reference comparisons like {@code c == CLAY} elsewhere stay valid.
      *
      * @see soc.client.SOCBoardPanel#drawRobber(Graphics, int, boolean, boolean)
      * @see soc.client.SOCBoardPanel#drawHex(Graphics, int)
      */
-    public final static Color CLAY = new Color(204, 102, 102);
-    public final static Color ORE = new Color(153, 153, 153);
-    public final static Color SHEEP = new Color(51, 204, 51);
-    public final static Color WHEAT = new Color(204, 204, 51);
-    public final static Color WOOD = new Color(204, 153, 102);
+    public static Color CLAY = new Color(204, 102, 102);
+    public static Color ORE = new Color(153, 153, 153);
+    public static Color SHEEP = new Color(51, 204, 51);
+    public static Color WHEAT = new Color(204, 204, 51);
+    public static Color WOOD = new Color(204, 153, 102);
     public final static Color GREY = new Color(204, 204, 204);  // Must not equal ORE, for ore's auto-tooltip to show
 
     /**
      * {@link soc.game.SOCBoard#DESERT_HEX} color.
+     *<P>
+     * Not {@code final} since v2.7.00: see {@link #CLAY}.
      * @since 1.1.00
      */
-    public final static Color DESERT = new Color(255, 255, 153);
+    public static Color DESERT = new Color(255, 255, 153);
 
     /**
      * {@link soc.game.SOCBoardLarge#GOLD_HEX Gold hex} color.
+     *<P>
+     * Not {@code final} since v2.7.00: see {@link #CLAY}.
      * @since 2.0.00
      */
-    public final static Color GOLD = new Color(255, 250, 0);
+    public static Color GOLD = new Color(255, 250, 0);
 
     /**
      * {@link soc.game.SOCBoardLarge#FOG_HEX Fog hex} color.
@@ -92,8 +102,13 @@ public class ColorSquare extends JComponent implements MouseListener
      */
     public final static Color FOG = new Color(220, 220, 220);  // Should not equal GREY, for comparisons
 
-    /** Water hex color, for fallback if graphic is missing. @since 1.1.07 */
-    public static final Color WATER = new Color(72, 97, 162);  // grey-blue; waterHex.gif average is actually (76, 102, 152)
+    /**
+     * Water hex color, for fallback if graphic is missing.
+     *<P>
+     * Not {@code final} since v2.7.00: see {@link #CLAY}.
+     * @since 1.1.07
+     */
+    public static Color WATER = new Color(72, 97, 162);  // grey-blue; waterHex.gif average is actually (76, 102, 152)
 
     /**
      * Array of resource colors.
@@ -101,10 +116,108 @@ public class ColorSquare extends JComponent implements MouseListener
      *<P>
      * Because this array has the resource types a player can hold or trade,
      * it does not contain {@link #GOLD}.
+     *<P>
+     * The array reference is {@code final}, but its element values are reassigned
+     * to match {@link #CLAY} etc. when a color-blind palette is applied at class load.
      * @since 1.1.08
      */
     public static final Color[] RESOURCE_COLORS =
         { CLAY, ORE, SHEEP, WHEAT, WOOD };
+
+    /**
+     * Color-blind alternate palettes for the resource/hex colors
+     * {@link #CLAY}, {@link #ORE}, {@link #SHEEP}, {@link #WHEAT}, {@link #WOOD},
+     * {@link #DESERT}, {@link #GOLD}, {@link #WATER}, in that order.
+     *<P>
+     * Selected once at class load by {@link #applyColorBlindPalette()} based on user preference
+     * {@link UserPreferences.PreferenceDescriptor#KEY_COLOR_BLIND_MODE colorBlindMode}.
+     * The default ("off") palette is the historical hardcoded set, so by default this has no effect.
+     *<P>
+     * Palettes are keyed by mode name ("deuteranopia", "protanopia", "tritanopia"). Each value
+     * is an 8-element {@code int[]} of {@code 0xRRGGBB} colors. Deuteranopia and protanopia (red-green
+     * deficiencies) use a blue / orange / yellow / dark-brown axis and avoid red-vs-green contrasts;
+     * tritanopia (blue-yellow deficiency) avoids blue-vs-yellow and leans on red / teal / pink.
+     *<P>
+     * This affects only the solid-color UI squares, fallbacks, and (via copied values) tables in
+     * {@link SOCBoardPanel}. Hex bitmap images are unchanged.
+     *
+     * @see #applyColorBlindPalette()
+     * @since 2.7.00
+     */
+    private static final Map<String, int[]> COLOR_BLIND_PALETTES = makeColorBlindPalettes();
+
+    /**
+     * Build the {@link #COLOR_BLIND_PALETTES} table.
+     * Each palette is 8 {@code 0xRRGGBB} values: clay, ore, sheep, wheat, wood, desert, gold, water.
+     * @return the populated palette map
+     * @since 2.7.00
+     */
+    private static Map<String, int[]> makeColorBlindPalettes()
+    {
+        final Map<String, int[]> m = new HashMap<String, int[]>();
+
+        // Deuteranopia & protanopia (red-green): use an orange/blue/yellow/dark-brown axis.
+        // clay=vermilion-orange, ore=mid-grey (unchanged), sheep=sky-blue, wheat=bright yellow,
+        // wood=dark brown, desert=pale tan, gold=amber, water=deep blue.
+        final int[] redGreen =
+            { 0xD55E00, 0x999999, 0x56B4E9, 0xF0E442, 0x6B3D12, 0xEDE6B0, 0xE69F00, 0x0050A0 };
+        m.put("deuteranopia", redGreen);
+        m.put("protanopia", redGreen);
+
+        // Tritanopia (blue-yellow): avoid blue-vs-yellow; use red/teal/pink/grey contrasts.
+        // clay=brick red, ore=mid-grey, sheep=teal-green, wheat=pink, wood=maroon,
+        // desert=light grey, gold=bright red-orange, water=dark teal.
+        final int[] blueYellow =
+            { 0xCC3311, 0x999999, 0x009988, 0xEE99AA, 0x772211, 0xDDDDDD, 0xEE3377, 0x114455 };
+        m.put("tritanopia", blueYellow);
+
+        return m;
+    }
+
+    /**
+     * Apply the user's color-blind palette preference to the resource/hex color fields.
+     * Reads preference {@link UserPreferences.PreferenceDescriptor#KEY_COLOR_BLIND_MODE colorBlindMode};
+     * if "off" or unknown, leaves the default colors in place. Otherwise replaces
+     * {@link #CLAY}, {@link #ORE}, {@link #SHEEP}, {@link #WHEAT}, {@link #WOOD},
+     * {@link #DESERT}, {@link #GOLD}, {@link #WATER} and refreshes {@link #RESOURCE_COLORS}.
+     *<P>
+     * Called once from the static initializer at class load. Because resource colors are compared by
+     * reference ({@code c == CLAY}) elsewhere, this must run before any {@link ColorSquare} is created;
+     * changing the preference takes effect after restart (like the hex graphics-set preference).
+     *
+     * @since 2.7.00
+     */
+    private static void applyColorBlindPalette()
+    {
+        final String mode = UserPreferences.getPref
+            (UserPreferences.PreferenceDescriptor.KEY_COLOR_BLIND_MODE, "off");
+        if ((mode == null) || mode.equals("off"))
+            return;  // <--- Early return: color-blind mode disabled, keep default palette ---
+
+        final int[] pal = COLOR_BLIND_PALETTES.get(mode);
+        if (pal == null)
+            return;  // <--- Early return: unknown mode value, keep default palette ---
+
+        CLAY   = new Color(pal[0]);
+        ORE    = new Color(pal[1]);
+        SHEEP  = new Color(pal[2]);
+        WHEAT  = new Color(pal[3]);
+        WOOD   = new Color(pal[4]);
+        DESERT = new Color(pal[5]);
+        GOLD   = new Color(pal[6]);
+        WATER  = new Color(pal[7]);
+
+        RESOURCE_COLORS[0] = CLAY;
+        RESOURCE_COLORS[1] = ORE;
+        RESOURCE_COLORS[2] = SHEEP;
+        RESOURCE_COLORS[3] = WHEAT;
+        RESOURCE_COLORS[4] = WOOD;
+    }
+
+    static
+    {
+        applyColorBlindPalette();
+    }
 
     public final static int NUMBER = 0;
     public final static int YES_NO = 1;
