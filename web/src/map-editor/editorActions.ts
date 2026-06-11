@@ -105,21 +105,6 @@ export function setHexDice(map: CustomMap, coord: number, dice: number): CustomM
   return { ...map, landHexes: hexes };
 }
 
-/** Set the `landArea` of the hex at `coord` (undefined/0 removes the field). */
-export function setHexLandArea(map: CustomMap, coord: number, area: number | undefined): CustomMap {
-  const idx = indexOfHexAt(map, coord);
-  if (idx < 0) {
-    return map;
-  }
-  const hexes = [...(map.landHexes ?? [])];
-  const next: MapLandHex = { type: hexes[idx].type, coord: hexes[idx].coord, diceNum: hexes[idx].diceNum };
-  if (area !== undefined && area > 0) {
-    next.landArea = area;
-  }
-  hexes[idx] = next;
-  return { ...map, landHexes: hexes };
-}
-
 /**
  * Add or replace a port at `edge` with the given type + facing. If a port already
  * sits on that edge it is replaced.

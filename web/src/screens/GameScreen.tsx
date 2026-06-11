@@ -1132,9 +1132,11 @@ function DevCardPanel({
     cg.deckDevCardCount > 0 &&
     canAfford(myView, DEV_CARD_COST);
 
-  // Can play a card: my turn and either ROLL_OR_CARD (before roll) or PLAY1.
+  // Can play a card: my turn, either ROLL_OR_CARD (before roll) or PLAY1, and I
+  // haven't already played a dev card this turn (server allows at most one).
   const canPlay =
     isMyTurn &&
+    !myView.playedDevCard &&
     (cg.gameState === GameState.PLAY1 || cg.gameState === GameState.ROLL_OR_CARD);
 
   return (

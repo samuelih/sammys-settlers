@@ -71,6 +71,14 @@ export interface PlayerView {
    * when not picking. From SOCPlayerElement(NUM_PICK_GOLD_HEX_RESOURCES).
    */
   numPickGoldRes: number;
+  /**
+   * True if this player has already played a development card this turn (at most
+   * one is allowed). From SOCPlayerElement(PLAYED_DEV_CARD_FLAG) / the legacy
+   * SOCSetPlayedDevCard. Cleared at the start of this player's next turn (the
+   * server folds the flag-clear into SOCTurn for v2.5.00+ clients, so the
+   * applyTurn reducer clears it rather than waiting for a SET-to-0 element).
+   */
+  playedDevCard: boolean;
 }
 
 /**
@@ -113,5 +121,6 @@ export function makePlayerView(playerNumber: number): PlayerView {
     longestRoad: false,
     largestArmy: false,
     numPickGoldRes: 0,
+    playedDevCard: false,
   };
 }

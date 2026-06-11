@@ -15,6 +15,8 @@ import {
   DevCardType,
   GameState,
   GameStatsType,
+  PlayerElementAction,
+  PlayerElementType,
   Resource,
   SOCAcceptOffer,
   SOCBoardLayout2,
@@ -23,7 +25,9 @@ import {
   SOCGameStats,
   SOCMakeOffer,
   SOCMoveRobber,
+  SOCPlayerElement,
   SOCRobberyResult,
+  SOCTurn,
 } from '../protocol';
 import { resourceSet } from '../protocol';
 import { inventorySize, useGameStore } from './gameStore';
@@ -171,6 +175,94 @@ describe('dev-card inventory (DEVCARDACTION)', () => {
     );
     expect(cg().myInventory.vpCards[DevCardType.UNIV]).toBe(1);
     expect(cg().myInventory.newCards[DevCardType.UNIV] ?? 0).toBe(0);
+  });
+});
+
+describe('new-to-playable transition at turn start (SOCTurn / newToOld)', () => {
+  it('a card drawn this turn becomes playable at the start of my next turn', () => {
+    const s = useGameStore.getState();
+    // DRAW a Knight to my seat (0): it's new (not yet playable).
+    s.applyDevCardAction(new SOCDevCardAction(GAME, 0, DevCardAction.DRAW, DevCardType.KNIGHT));
+    expect(cg().myInventory.newCards[DevCardType.KNIGHT]).toBe(1);
+    expect(cg().myInventory.playable[DevCardType.KNIGHT] ?? 0).toBe(0);
+
+    // A turn announced for MY seat folds new cards into playable (mirrors
+    // SOCInventory.newToOld via SOCGame.updateAtTurn / SOCPlayer.updateAtOurTurn).
+    s.applyTurn(new SOCTurn(GAME, 0, GameState.ROLL_OR_CARD));
+    const inv = cg().myInventory;
+    expect(inv.playable[DevCardType.KNIGHT]).toBe(1);
+    expect(inv.newCards[DevCardType.KNIGHT] ?? 0).toBe(0);
+  });
+
+  it("a turn for a different seat does NOT promote my new cards", () => {
+    const s = useGameStore.getState();
+    s.applyDevCardAction(new SOCDevCardAction(GAME, 0, DevCardAction.DRAW, DevCardType.KNIGHT));
+    // Turn passes to seat 1 (a bot): my new card stays new.
+    s.applyTurn(new SOCTurn(GAME, 1, GameState.ROLL_OR_CARD));
+    const inv = cg().myInventory;
+    expect(inv.newCards[DevCardType.KNIGHT]).toBe(1);
+    expect(inv.playable[DevCardType.KNIGHT] ?? 0).toBe(0);
+  });
+
+  it('VP cards drawn this turn are unaffected by the turn-start flip', () => {
+    const s = useGameStore.getState();
+    s.applyDevCardAction(new SOCDevCardAction(GAME, 0, DevCardAction.DRAW, DevCardType.UNIV));
+    s.applyTurn(new SOCTurn(GAME, 0, GameState.ROLL_OR_CARD));
+    const inv = cg().myInventory;
+    expect(inv.vpCards[DevCardType.UNIV]).toBe(1);
+    expect(inv.playable[DevCardType.UNIV] ?? 0).toBe(0);
+    expect(inv.newCards[DevCardType.UNIV] ?? 0).toBe(0);
+  });
+});
+
+describe('played-dev-card flag (PLAYED_DEV_CARD_FLAG / SETPLAYEDDEVCARD)', () => {
+  it('SOCPlayerElement(PLAYED_DEV_CARD_FLAG) SET 1 sets the flag; SOCTurn clears it', () => {
+    const s = useGameStore.getState();
+    expect(cg().playerViews[0].playedDevCard).toBe(false);
+
+    s.applyPlayerElement(
+      new SOCPlayerElement(
+        GAME,
+        0,
+        PlayerElementAction.SET,
+        PlayerElementType.PLAYED_DEV_CARD_FLAG,
+        1,
+      ),
+    );
+    expect(cg().playerViews[0].playedDevCard).toBe(true);
+
+    // The modern server folds the per-turn flag-clear into SOCTurn (no SET-to-0
+    // PLAYERELEMENT is sent for v2.5.00+ clients), so applyTurn must clear it.
+    s.applyTurn(new SOCTurn(GAME, 0, GameState.ROLL_OR_CARD));
+    expect(cg().playerViews[0].playedDevCard).toBe(false);
+  });
+
+  it('a SET-to-0 PLAYERELEMENT also clears the flag (e.g. road-building cancel)', () => {
+    const s = useGameStore.getState();
+    s.applyPlayerElement(
+      new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.PLAYED_DEV_CARD_FLAG, 1),
+    );
+    expect(cg().playerViews[0].playedDevCard).toBe(true);
+    s.applyPlayerElement(
+      new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.PLAYED_DEV_CARD_FLAG, 0),
+    );
+    expect(cg().playerViews[0].playedDevCard).toBe(false);
+  });
+
+  it('the legacy SOCSetPlayedDevCard message sets/clears the flag', () => {
+    const s = useGameStore.getState();
+    s.applySetPlayedDevCard(GAME, 1, true);
+    expect(cg().playerViews[1].playedDevCard).toBe(true);
+    s.applySetPlayedDevCard(GAME, 1, false);
+    expect(cg().playerViews[1].playedDevCard).toBe(false);
+  });
+});
+
+describe('plain trade reject (REJECTOFFER reasonCode 0)', () => {
+  it('records a seat response for a plain "no thanks"', () => {
+    const s = useGameStore.getState();
+    s.applyRejectOffer(GAME, 2);
+    expect(cg().offerResponses[2]).toBe('reject');
   });
 });
 

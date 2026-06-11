@@ -64,8 +64,86 @@ describe('validate — name', () => {
     const m = sample();
     m.name = 'line1\nline2';
     expect(messages(errors(validate(m)))).toContain(
-      '"name" must not contain control or newline characters',
+      '"name" must not contain control, newline, or line/paragraph separator characters',
     );
+  });
+
+  // Finding #1: U+2028/U+2029 pass CustomMapValidator.hasControlChar (isISOControl only)
+  // but fail SOCMessage.isSingleLineAndSafe, which the server applies to the scenario
+  // desc/longDesc — so the running server SKIPS such a map. The editor must reject it.
+  it('flags a name with a Unicode LINE SEPARATOR (U+2028)', () => {
+    const m = sample();
+    m.name = 'line1\u2028line2';
+    expect(messages(errors(validate(m)))).toContain(
+      '"name" must not contain control, newline, or line/paragraph separator characters',
+    );
+  });
+
+  it('flags a name with a Unicode PARAGRAPH SEPARATOR (U+2029)', () => {
+    const m = sample();
+    m.name = 'para1\u2029para2';
+    expect(messages(errors(validate(m)))).toContain(
+      '"name" must not contain control, newline, or line/paragraph separator characters',
+    );
+  });
+
+  // Finding #2: SOCVersionedItem.setDesc parses a leading "n - " / "[n] " sort-rank
+  // prefix off the scenario desc (the map name). Malformed prefixes throw and the
+  // server skips the map; well-formed prefixes silently change the displayed name.
+  describe('sort-rank prefix (mirrors SOCVersionedItem.setDesc)', () => {
+    it('errors on a dashed prefix with nothing after it', () => {
+      const m = sample();
+      m.name = '3 -';
+      const msgs = messages(errors(validate(m)));
+      expect(msgs.some((s) => s.includes('nothing after it'))).toBe(true);
+    });
+
+    it('errors on a dashed prefix missing the required trailing space', () => {
+      const m = sample();
+      m.name = '3 -X';
+      const msgs = messages(errors(validate(m)));
+      expect(msgs.some((s) => s.includes('missing the required'))).toBe(true);
+    });
+
+    it('errors on a bracketed prefix missing the required trailing space', () => {
+      const m = sample();
+      m.name = '[5]X';
+      const msgs = messages(errors(validate(m)));
+      expect(msgs.some((s) => s.includes('missing the required'))).toBe(true);
+    });
+
+    it('errors on a bracketed prefix whose value is not a number ("[5x] ...")', () => {
+      const m = sample();
+      m.name = '[5x] Special';
+      const msgs = messages(errors(validate(m)));
+      expect(msgs.some((s) => s.includes('not a number'))).toBe(true);
+    });
+
+    it('warns (not errors) on a well-formed dashed prefix and reports the displayed name', () => {
+      const m = sample();
+      m.name = '3 - Islands';
+      const issues = validate(m);
+      expect(errors(issues)).toEqual([]);
+      const warns = issues.filter((i) => i.severity === 'warning');
+      expect(warns.some((w) => w.field === 'name' && w.message.includes('"Islands"'))).toBe(true);
+    });
+
+    it('warns on a well-formed bracketed prefix', () => {
+      const m = sample();
+      m.name = '[5] Special';
+      const issues = validate(m);
+      expect(errors(issues)).toEqual([]);
+      const warns = issues.filter((i) => i.severity === 'warning');
+      expect(warns.some((w) => w.field === 'name' && w.message.includes('"Special"'))).toBe(true);
+    });
+
+    it('does not flag an ordinary name that only contains digits mid-string', () => {
+      const m = sample();
+      m.name = 'Map 3 - foo'; // dashed alternative is anchored at ^, so no match
+      const issues = validate(m);
+      expect(errors(issues)).toEqual([]);
+      expect(issues.filter((i) => i.field === 'name')).toEqual([]);
+    });
   });
 });
 
@@ -82,6 +160,16 @@ describe('validate — description', () => {
     const m = sample();
     m.description = 'commas, are, fine, here';
     expect(errors(validate(m))).toEqual([]);
+  });
+
+  // Finding #1: longDesc also goes through isSingleLineAndSafe, which rejects
+  // U+2028/U+2029 even though CustomMapValidator.hasControlChar (isISOControl) does not.
+  it('flags a description with a Unicode LINE SEPARATOR (U+2028)', () => {
+    const m = sample();
+    m.description = 'line1\u2028line2';
+    expect(messages(errors(validate(m)))).toContain(
+      '"description" must not contain control, newline, or line/paragraph separator characters',
+    );
   });
 });
 

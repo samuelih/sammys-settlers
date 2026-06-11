@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 
 import { resolveTheme, useSettingsStore } from '../store/settingsStore';
-import type { ThemeMode as SettingsThemeMode } from '../store/settingsStore';
 
 // Theme hook. Thin adapter over the single source of truth in
 // `store/settingsStore` (which persists the choice and reflects it onto the
@@ -15,8 +14,6 @@ export type ThemeMode = 'light' | 'dark';
 export function useTheme(): {
   /** The currently *applied* theme (`system` resolved to light/dark). */
   theme: ThemeMode;
-  /** Set an explicit light/dark theme. */
-  setTheme: (mode: ThemeMode) => void;
   /** Flip between the applied light and dark themes. */
   toggleTheme: () => void;
 } {
@@ -25,14 +22,10 @@ export function useTheme(): {
 
   const theme = resolveTheme(mode);
 
-  const setTheme = useCallback(
-    (next: ThemeMode) => setMode(next as SettingsThemeMode),
-    [setMode],
-  );
   const toggleTheme = useCallback(
     () => setMode(theme === 'dark' ? 'light' : 'dark'),
     [setMode, theme],
   );
 
-  return { theme, setTheme, toggleTheme };
+  return { theme, toggleTheme };
 }

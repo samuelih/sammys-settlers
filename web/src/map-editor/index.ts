@@ -32,12 +32,10 @@ export {
   MAX_ROW,
   MAX_COL,
 } from './validation';
-export { mapToBoard } from './mapToBoard';
 export {
   placeHex,
   clearHex,
   setHexDice,
-  setHexLandArea,
   placePort,
   clearPort,
   toggleRobber,

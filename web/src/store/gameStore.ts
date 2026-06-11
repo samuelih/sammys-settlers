@@ -94,7 +94,11 @@ import {
   SOCPickResourceType,
   SOCPlayDevCardRequest,
   SOCRejectOffer,
+  RejectOfferReason,
   SOCRobberyResult,
+  SOCSetPlayedDevCard,
+  SOCDeclinePlayerRequest,
+  DeclineReason,
   SOCSimpleAction,
   type TradeOffer,
   type ResourceSet,
@@ -433,6 +437,11 @@ export interface GameStoreState {
   applyDevCardAction: (msg: SOCDevCardAction) => void;
   /** Set the deck dev-card count for older-style DEVCARDCOUNT messages. */
   applyDevCardCount: (gameName: string, count: number) => void;
+  /**
+   * Set/clear a seat's "played a dev card this turn" flag (from the legacy
+   * SOCSetPlayedDevCard; modern servers use SOCPlayerElement(PLAYED_DEV_CARD_FLAG)).
+   */
+  applySetPlayedDevCard: (gameName: string, playerNumber: number, played: boolean) => void;
   /** Set/clear the local player's discard requirement (from SOCDiscardRequest). */
   applyDiscardRequest: (gameName: string, numDiscards: number) => void;
   /** Move the robber/pirate to a hex on the board (from SOCMoveRobber). */
@@ -569,6 +578,16 @@ function bumpBag(bag: Record<number, number>, key: number, delta: number): Recor
   return next;
 }
 
+/** True if a card bag holds at least one card (any positive count). */
+function hasAnyCards(bag: Record<number, number>): boolean {
+  for (const k in bag) {
+    if (bag[k] > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Total number of cards held across all three bags of an inventory. */
 export function inventorySize(inv: DevCardInventory): number {
   const sum = (bag: Record<number, number>): number =>
@@ -658,6 +677,12 @@ function applyElementToView(
         ...view,
         numPickGoldRes: applyElementAction(view.numPickGoldRes, action, amount),
       };
+    case PlayerElementType.PLAYED_DEV_CARD_FLAG:
+      // Boolean flag: the server sends SET with amount 1 (played) or 0 (cleared).
+      // Mirrors SOCPlayer.setPlayedDevCard / hasPlayedDevCard. The per-turn clear
+      // for v2.5.00+ clients is folded into SOCTurn (see applyTurn), but a SET-to-0
+      // PLAYERELEMENT (e.g. road-building cancel) is still honored here.
+      return { ...view, playedDevCard: action === PlayerElementAction.SET && amount !== 0 };
     default:
       return view; // flags / scenario / not-shown element types: ignore
   }
@@ -1090,11 +1115,37 @@ export const useGameStore = create<GameStoreState>((set) => ({
       // A SOCTurn that announces OVER (won at start of own turn) names the winner.
       const winnerPlayerNumber =
         gameState === GameState.OVER ? msg.playerNumber : cg.winnerPlayerNumber;
+
+      // Start-of-turn bookkeeping the server does NOT send explicit wire messages
+      // for (v2.5.00+ folds these into SOCTurn — see SOCGame.updateAtTurn /
+      // SOCPlayer.updateAtOurTurn):
+      //  1. The new current player's dev cards drawn last turn become playable
+      //     now (SOCInventory.newToOld). Only the local player has a real
+      //     inventory, so only fold ours when this turn is ours.
+      //  2. The new current player's "played a dev card this turn" flag clears
+      //     (SOCPlayer.playedDevCard = false). Modern servers do NOT send a
+      //     SET-to-0 PLAYERELEMENT for this, so do it here.
+      const isMyTurn = msg.playerNumber === cg.mySeat && cg.mySeat >= 0;
+      let myInventory = cg.myInventory;
+      if (isMyTurn && hasAnyCards(myInventory.newCards)) {
+        const playable = { ...myInventory.playable };
+        for (const [t, n] of Object.entries(myInventory.newCards)) {
+          const ct = Number(t);
+          playable[ct] = (playable[ct] ?? 0) + n;
+        }
+        myInventory = { ...myInventory, playable, newCards: {} };
+      }
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) =>
+        v.playedDevCard ? { ...v, playedDevCard: false } : v,
+      );
+
       return {
         currentGame: {
           ...cg,
           currentPlayerNumber: msg.playerNumber,
           gameState,
+          myInventory,
+          playerViews,
           // A new turn clears the previous turn's dice display and any stale
           // trade offers / responses / discard prompt.
           lastDice: null,
@@ -1298,6 +1349,21 @@ export const useGameStore = create<GameStoreState>((set) => ({
         return {};
       }
       return { currentGame: { ...cg, deckDevCardCount: count } };
+    }),
+
+  applySetPlayedDevCard: (gameName, playerNumber, played) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      const playerViews = updateView(cg.playerViews, playerNumber, (v) =>
+        v.playedDevCard === played ? v : { ...v, playedDevCard: played },
+      );
+      if (playerViews === cg.playerViews) {
+        return {};
+      }
+      return { currentGame: { ...cg, playerViews } };
     }),
 
   applyDiscardRequest: (gameName, numDiscards) =>
@@ -1961,6 +2027,19 @@ export function connectStore(
 
   conn.on(MessageType.REJECTOFFER, (msg: SOCMessage) => {
     const r = msg as SOCRejectOffer;
+    // A nonzero reasonCode (or pn < 0) is a server reply-reason, not a seat's
+    // plain "no thanks": surface it to the user instead of recording it as a
+    // trade response. Mirrors the Java client surfacing these rejections
+    // (SOCGameMessageHandler.handleBANKTRADE / executeTrade send REJECTOFFER
+    // with a REASON_* code when a trade can't be made). A plain reject
+    // (reasonCode 0, pn >= 0) routes to applyRejectOffer as before.
+    if (r.reasonCode !== 0 || r.playerNumber < 0) {
+      const text = rejectOfferReasonText(r.reasonCode);
+      const st = useGameStore.getState();
+      st.appendGameLog(r.game, text);
+      st.setError(text);
+      return; // <--- Early return: reply-reason surfaced, not a seat response ---
+    }
     useGameStore.getState().applyRejectOffer(r.game, r.playerNumber);
   });
 
@@ -1997,6 +2076,26 @@ export function connectStore(
   conn.on(MessageType.DEVCARDCOUNT, (msg: SOCMessage) => {
     const d = msg as SOCDevCardCount;
     useGameStore.getState().applyDevCardCount(d.game, d.numDevCards);
+  });
+
+  // Legacy "played a dev card this turn" flag for pre-2.0.00 servers; modern
+  // servers (incl. WS 8888) send SOCPlayerElement(PLAYED_DEV_CARD_FLAG) instead,
+  // handled via applyPlayerElement/applyElementToView. Kept for compatibility.
+  conn.on(MessageType.SETPLAYEDDEVCARD, (msg: SOCMessage) => {
+    const m = msg as SOCSetPlayedDevCard;
+    useGameStore.getState().applySetPlayedDevCard(m.game, m.playerNumber, m.playedDevCard);
+  });
+
+  // Server declined a player request (e.g. a second dev-card play, build here,
+  // not your turn). The Java client surfaces the decline reason; do the same so
+  // a rejected request produces visible feedback instead of failing silently.
+  conn.on(MessageType.DECLINEPLAYERREQUEST, (msg: SOCMessage) => {
+    const d = msg as SOCDeclinePlayerRequest;
+    const text =
+      d.reasonText !== null && d.reasonText !== '' ? d.reasonText : declineReasonText(d.reasonCode);
+    const st = useGameStore.getState();
+    st.appendGameLog(d.game, text);
+    st.setError(text);
   });
 
   // Robber / discard
@@ -2062,6 +2161,43 @@ function describeResourceSet(rs: ResourceSet): string {
     }
   }
   return parts.length > 0 ? parts.join(', ') : 'nothing';
+}
+
+/**
+ * User-facing text for a {@link SOCRejectOffer} reply-reason code, mirroring the
+ * Java client's SOCPlayerInterface.playerTradeDisallowed strings (the i18n keys
+ * reply.common.trade.cannot_make / trade.msg.cant.make.offer /
+ * base.reply.not.your.turn). Used to surface bank/port-trade rejections.
+ */
+function rejectOfferReasonText(reasonCode: number): string {
+  switch (reasonCode) {
+    case RejectOfferReason.REASON_CANNOT_MAKE_TRADE:
+      return "You can't make that trade.";
+    case RejectOfferReason.REASON_NOT_YOUR_TURN:
+      return "It's not your turn.";
+    case RejectOfferReason.REASON_CANNOT_MAKE_OFFER:
+      return "You can't make that offer.";
+    default:
+      return "You can't make that trade.";
+  }
+}
+
+/**
+ * User-facing text for a {@link SOCDeclinePlayerRequest} reason code, mirroring
+ * the Java client's SOCPlayerInterface.showDeclinedPlayerRequest strings. Used
+ * when the message carries no localized reasonText of its own.
+ */
+function declineReasonText(reasonCode: number): string {
+  switch (reasonCode) {
+    case DeclineReason.REASON_NOT_THIS_GAME:
+      return "You can't do that in this game.";
+    case DeclineReason.REASON_NOT_YOUR_TURN:
+      return "It's not your turn.";
+    case DeclineReason.REASON_LOCATION:
+      return "You can't do that at that location.";
+    default:
+      return "You can't do that right now.";
+  }
 }
 
 /**

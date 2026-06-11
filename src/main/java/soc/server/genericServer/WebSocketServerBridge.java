@@ -68,6 +68,10 @@ public class WebSocketServerBridge
     {
         super(addr);
         this.ourServer = ourServer;
+        // Allow quick restarts: without SO_REUSEADDR the listen port can linger in
+        // TIME_WAIT after shutdown and rebinding fails with "Address already in use".
+        // Mirrors NetServerSocket's setReuseAddress(true) for the TCP listener.
+        setReuseAddr(true);
     }
 
     /**

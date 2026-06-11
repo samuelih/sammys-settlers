@@ -139,9 +139,121 @@ function validateName(map: CustomMap, issues: ValidationIssue[]): void {
     issues.push({
       severity: 'error',
       field: 'name',
-      message: '"name" must not contain control or newline characters',
+      message: '"name" must not contain control, newline, or line/paragraph separator characters',
     });
   }
+  validateSortRankPrefix(name, 'name', issues);
+}
+
+/**
+ * Regex mirroring {@code SOCVersionedItem.REGEX_SORT_RANK_PREFIX} =
+ * {@code "^(\\p{Nd}+) -|\\[(\\p{Nd}[^\\]]*)\\]"}. The {@code "n -"} alternative is
+ * anchored at the start; the bracketed {@code "[n]"} alternative is NOT, so (like the
+ * Java {@code Matcher.find()}) it can match anywhere in the string. The {@code /u}
+ * flag makes {@code \p{Nd}} cover the same Unicode decimal digits Java does.
+ */
+const REGEX_SORT_RANK_PREFIX = /^(\p{Nd}+) -|\[(\p{Nd}[^\]]*)\]/u;
+
+/**
+ * Mirror {@code SOCVersionedItem.setDesc}'s sort-rank handling, which the live server
+ * applies to the map name (as the scenario {@code desc}) in
+ * {@code CustomMapLoader.loadAndRegisterOne}. The Java {@code CustomMapValidator}
+ * never sees this, so the editor must replicate it directly to avoid a false-negative.
+ *<P>
+ * A leading {@code "n - "} or anywhere-matched {@code "[n] "} prefix is consumed as a
+ * localization sort rank, so the registered scenario name differs from what was typed.
+ * A malformed prefix (nothing after it, no required trailing space, or a non-numeric
+ * bracketed value such as {@code "[5x]"}) makes {@code setDesc} throw
+ * {@code IllegalArgumentException}, which {@code loadAndRegisterOne} turns into a
+ * {@code CustomMapException} — the server SKIPS the map. We surface the malformed
+ * cases as ERRORS (matching the order Java checks them) and the well-formed case as a
+ * WARNING. Mirrors {@code SOCVersionedItem.setDesc} lines 244-269.
+ */
+function validateSortRankPrefix(name: string, field: string, issues: ValidationIssue[]): void {
+  const m = REGEX_SORT_RANK_PREFIX.exec(name);
+  if (m === null) {
+    return; // no prefix; sortRank stays default (matches Java's else branch)
+  }
+
+  // rankValue from "n -" (group 1) or "[n]" (group 2), as in setDesc.
+  const rankValue = m[1] !== undefined ? m[1] : m[2];
+  const idxAfter = m.index + m[0].length;
+
+  // Java checks "nothing after prefix", then "trailing space required", then parseInt.
+  if (idxAfter >= name.length) {
+    issues.push({
+      severity: 'error',
+      field,
+      message:
+        `"${field}" "${name}" starts a sort-rank prefix ("n - " or "[n] ") with nothing after it;` +
+        ' the server rejects this and skips the map at load',
+    });
+    return; // <--- Early return: malformed; mirrors setDesc throwing ---
+  }
+  if (name.charAt(idxAfter) !== ' ') {
+    issues.push({
+      severity: 'error',
+      field,
+      message:
+        `"${field}" "${name}" starts a sort-rank prefix ("n - " or "[n] ") but is missing the required` +
+        ' trailing space; the server rejects this and skips the map at load',
+    });
+    return; // <--- Early return: malformed; mirrors setDesc throwing ---
+  }
+  // Integer.parseInt(rankValue): group 1 is all digits, but group 2 (from "[n...]")
+  // can be "5x" etc. Java's parseInt accepts any Unicode decimal digits (\p{Nd}) via
+  // Character.digit, and throws NumberFormatException on a non-digit or 32-bit overflow.
+  if (!parsesAsJavaInt(rankValue)) {
+    issues.push({
+      severity: 'error',
+      field,
+      message:
+        `"${field}" "${name}" has a malformed sort-rank prefix ("[${rankValue}]" is not a number);` +
+        ' the server rejects this and skips the map at load',
+    });
+    return; // <--- Early return: parseInt would throw; mirrors setDesc ---
+  }
+
+  // Well-formed: the prefix IS consumed as a sort rank, so the displayed name changes.
+  const displayed = name.substring(idxAfter + 1);
+  issues.push({
+    severity: 'warning',
+    field,
+    message:
+      `"${field}" "${name}" begins with a sort-rank prefix ("n - " or "[n] "), which the server` +
+      ` strips when registering the scenario; the displayed name will be "${displayed}"`,
+  });
+}
+
+/**
+ * True if {@code s} would parse via Java's {@code Integer.parseInt(s)} without throwing.
+ * Java accepts any Unicode decimal digits ({@code \p{Nd}}) via {@code Character.digit} and
+ * throws on a non-digit or 32-bit overflow. Used to mirror the {@code parseInt} step in
+ * {@code SOCVersionedItem.setDesc}.
+ *<P>
+ * Any non-{@code \p{Nd}} character makes it fail. For pure-ASCII digit strings we also
+ * apply the signed-32-bit overflow check (the realistic case). A string of non-ASCII
+ * Unicode digits is treated as parseable (Java would parse it); JS has no built-in
+ * digit-value mapping for every {@code Nd} block, and such a map name is implausible, so
+ * we accept it rather than risk a false-positive error on an otherwise valid map.
+ */
+function parsesAsJavaInt(s: string): boolean {
+  if (s.length === 0) {
+    return false;
+  }
+  // Reject any character that is not a Unicode decimal digit.
+  for (const ch of s) {
+    if (!/^\p{Nd}$/u.test(ch)) {
+      return false;
+    }
+  }
+  // For ASCII digits, enforce Java's signed 32-bit int range (0 .. 2147483647).
+  if (/^[0-9]+$/.test(s)) {
+    const v = Number.parseInt(s, 10);
+    return Number.isFinite(v) && v <= 2147483647;
+  }
+  // All-Unicode-digit (non-ASCII) value: Java's parseInt would accept it.
+  return true;
 }
 
 function validateDescription(map: CustomMap, issues: ValidationIssue[]): void {
@@ -160,7 +272,8 @@ function validateDescription(map: CustomMap, issues: ValidationIssue[]): void {
     issues.push({
       severity: 'error',
       field: 'description',
-      message: '"description" must not contain control or newline characters',
+      message:
+        '"description" must not contain control, newline, or line/paragraph separator characters',
     });
   }
 }
@@ -761,12 +874,31 @@ function parseCoordChecked(
   return v;
 }
 
-/** Mirror {@code hasControlChar}: any ISO control character (incl. newlines). */
+/**
+ * Reject characters the server's {@code SOCMessage.isSingleLineAndSafe} gate rejects.
+ * This is strictly broader than the Java {@code CustomMapValidator.hasControlChar}
+ * (which only checks {@code Character.isISOControl}), and intentionally so: the live
+ * load path is {@code CustomMapLoader.loadAndRegisterOne}, which feeds the map name
+ * into {@code SOCScenario}'s {@code desc} (via {@code SOCVersionedItem.setDesc} →
+ * {@code isSingleLineAndSafe(desc)}) and the description into its {@code longDesc}
+ * (via {@code isSingleLineAndSafe(longDesc, true)}). {@code isSingleLineAndSafe} also
+ * rejects {@code Character.isSpaceChar(c) && getType(c) != SPACE_SEPARATOR}, i.e. the
+ * only such code points not already ISO-control: U+2028 LINE SEPARATOR (Zl) and
+ * U+2029 PARAGRAPH SEPARATOR (Zp). So a name/description containing those would pass
+ * {@code CustomMapValidator} but be SKIPPED by the running server at registration —
+ * matching them here keeps the editor's "exactly what the server would reject at load
+ * time" guarantee.
+ */
 function hasControlChar(s: string): boolean {
   for (let i = 0; i < s.length; ++i) {
     const code = s.charCodeAt(i);
     // ISO control: U+0000..U+001F or U+007F..U+009F (matches Character.isISOControl).
     if ((code >= 0x00 && code <= 0x1f) || (code >= 0x7f && code <= 0x9f)) {
+      return true;
+    }
+    // SOCMessage.isSingleLineAndSafe also rejects non-SPACE_SEPARATOR space chars:
+    // U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR.
+    if (code === 0x2028 || code === 0x2029) {
       return true;
     }
   }
