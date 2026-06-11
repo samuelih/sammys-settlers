@@ -40,6 +40,7 @@ import soc.server.genericServer.Connection;
 import soc.server.genericServer.InboundMessageQueue;
 import soc.server.genericServer.Server;
 import soc.server.genericServer.StringConnection;
+import soc.server.genericServer.WebSocketServerBridge;
 import soc.server.savegame.SavedGameModel;
 import soc.util.DataUtils;
 import soc.util.SOCFeatureSet;
@@ -60,6 +61,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -216,6 +218,15 @@ public class SOCServer extends Server
      * @since 1.1.09
      */
     public static final String PROP_JSETTLERS_PORT = "jsettlers.port";
+
+    /**
+     * Property <tt>jsettlers.websocket.port</tt> to specify an optional WebSocket port for the
+     * web client transport, in addition to the TCP {@link #PROP_JSETTLERS_PORT}.
+     * If set and &gt; 0, {@link #serverUp()} starts a
+     * {@link soc.server.genericServer.WebSocketServerBridge} on that port. Disabled if unset or 0.
+     * @since 2.7.00
+     */
+    public static final String PROP_JSETTLERS_WEBSOCKET_PORT = "jsettlers.websocket.port";
 
     /** Property <tt>jsettlers.connections</tt> to specify the maximum number of connections allowed.
      * Remember that robots count against this limit.
@@ -661,6 +672,7 @@ public class SOCServer extends Server
     public static final String[] PROPS_LIST =
     {
         PROP_JSETTLERS_PORT,     "TCP port number for server to listen for client connections",
+        PROP_JSETTLERS_WEBSOCKET_PORT, "Optional WebSocket port for web client transport (default none/disabled)",
         PROP_JSETTLERS_CONNECTIONS,   "Maximum connection count, including robots (default " + SOC_MAXCONN_DEFAULT + ")",
         PROP_JSETTLERS_STARTROBOTS,   "Number of robots to create at startup (default " + SOC_STARTROBOTS_DEFAULT + ")",
         PROP_JSETTLERS_ACCOUNTS_OPEN, "Permit open self-registration of new user accounts? (if Y and using a DB)",
@@ -2743,6 +2755,33 @@ public class SOCServer extends Server
             {
                 System.err.println
                     ("** Not starting robots: Bad number format, ignoring property " + PROP_JSETTLERS_STARTROBOTS);
+            }
+        }
+
+        /**
+         * If a WebSocket port is configured, start the WebSocket listener for the web client
+         * transport, alongside the TCP listener. Wrapped in try/catch so a WebSocket failure
+         * never kills the TCP server.
+         */
+        final int wsPort = getConfigIntProperty(PROP_JSETTLERS_WEBSOCKET_PORT, 0);
+        if (wsPort > 0)
+        {
+            try
+            {
+                WebSocketServerBridge wsBridge =
+                    new WebSocketServerBridge(new InetSocketAddress(wsPort), this);
+                // start() is asynchronous and returns before the port is bound; a bind failure
+                // (e.g. port in use) is reported via the bridge's onError(null, ex), not thrown here.
+                // The real success line is printed by the bridge's onStart() once the bind succeeds.
+                wsBridge.start();
+                System.err.println("Starting WebSocket listener on port " + wsPort + " ...");
+            }
+            catch (Throwable th)
+            {
+                System.err.println
+                    ("** Could not start WebSocket listener on port " + wsPort + ": " + th);
+                if (D.ebugOn)
+                    th.printStackTrace(System.err);
             }
         }
     }

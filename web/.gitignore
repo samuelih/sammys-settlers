@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Vitest / coverage
+coverage/
+
+# Playwright
+playwright-report/
+test-results/
+/blob-report/
+/playwright/.cache/
+
+# Logs / env
+*.log
+.env
+.env.local
+.DS_Store

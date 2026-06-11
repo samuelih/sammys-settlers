@@ -1,0 +1,244 @@
+/*
+ * JSettlers web — design tokens.
+ *
+ * CSS custom properties ONLY (no component styles). Components must reference
+ * these variables rather than hard-coding values, so theming (light/dark) and
+ * color-blind-safe palettes work via data-attributes on the document root.
+ *
+ *   <html data-theme="dark">                -> dark theme overrides
+ *   <html data-theme-cb="deuteranopia">     -> color-blind-safe player palette
+ *
+ * Player / resource colors mirror the Swing client ordering where it matters
+ * (see SOCPlayerInterface / ColorSquare): 0=blue, 1=red, 2=green, 3=orange,
+ * plus 6-player purple/brown for seats 4 and 5.
+ */
+
+:root {
+  /* ---- Brand / board palette --------------------------------------- */
+  --color-board-green: #3f8f3a;
+  --color-board-green-dark: #2c6a28;
+  --color-board-green-light: #6cb967;
+  --color-sea-blue: #2f7fb5;
+  --color-sea-blue-dark: #1f5d88;
+  --color-sea-blue-light: #69abd6;
+  --color-coast: #d8c79a;
+
+  /* ---- Resource colors (Catan goods) ------------------------------- */
+  --color-resource-clay: #b85c38;   /* brick / clay — terracotta */
+  --color-resource-ore: #7d8794;    /* ore — slate grey */
+  --color-resource-sheep: #9cce6a;  /* sheep / wool — pasture green */
+  --color-resource-wheat: #e9c45a;  /* wheat / grain — golden */
+  --color-resource-wood: #4f7a3a;   /* wood / lumber — forest green */
+  --color-resource-desert: #d8c79a; /* desert hex — sand */
+  --color-resource-gold: #f2d35a;   /* gold hex (sea board) */
+
+  /* ---- Player seat colors ------------------------------------------ */
+  --color-player-blue: #2a6fd6;
+  --color-player-red: #d63a3a;
+  --color-player-green: #2faa57;
+  --color-player-orange: #e58a26;
+  --color-player-purple: #8a4fd6;   /* 6-player seat 4 */
+  --color-player-brown: #8a5a2b;    /* 6-player seat 5 */
+
+  /* ---- Neutral / UI surface palette (light theme defaults) --------- */
+  --color-bg: #f4f1ea;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-alt: #ece8df;
+  --color-border: #cfc9bc;
+  --color-border-strong: #a8a092;
+  --color-overlay: rgba(20, 18, 14, 0.45);
+
+  --color-text: #20211f;
+  --color-text-muted: #5c5c56;
+  --color-text-inverse: #ffffff;
+  --color-text-on-accent: #ffffff;
+
+  /* ---- Accent / interactive --------------------------------------- */
+  --color-accent: #2f7fb5;
+  --color-accent-hover: #266a98;
+  --color-accent-active: #1f5d88;
+  --color-accent-subtle: #dbeaf4;
+  --color-focus-ring: #1f78c2;
+
+  /* ---- Status / feedback ------------------------------------------- */
+  --color-success: #2f8f4e;
+  --color-warning: #d99b1f;
+  --color-danger: #cf3b3b;
+  --color-info: #2f7fb5;
+
+  /* ---- Spacing scale (4px base) ------------------------------------ */
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4px  */
+  --space-2: 0.5rem;   /* 8px  */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.5rem;   /* 24px */
+  --space-6: 2rem;     /* 32px */
+  --space-7: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
+
+  /* ---- Radii ------------------------------------------------------- */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --radius-round: 50%;
+
+  /* ---- Typography -------------------------------------------------- */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.375rem;  /* 22px */
+  --font-size-2xl: 1.75rem;  /* 28px */
+  --font-size-3xl: 2.25rem;  /* 36px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.7;
+
+  /* ---- Shadows ----------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(20, 18, 14, 0.08);
+  --shadow-sm: 0 1px 3px rgba(20, 18, 14, 0.12), 0 1px 2px rgba(20, 18, 14, 0.08);
+  --shadow-md: 0 4px 10px rgba(20, 18, 14, 0.12), 0 2px 4px rgba(20, 18, 14, 0.08);
+  --shadow-lg: 0 10px 24px rgba(20, 18, 14, 0.18), 0 4px 8px rgba(20, 18, 14, 0.1);
+  --shadow-xl: 0 20px 48px rgba(20, 18, 14, 0.24);
+  --shadow-focus: 0 0 0 3px rgba(31, 120, 194, 0.45);
+
+  /* ---- Z-index layers ---------------------------------------------- */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-overlay: 2000;
+  --z-modal: 2100;
+  --z-toast: 3000;
+
+  /* ---- Motion ------------------------------------------------------ */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 320ms ease;
+}
+
+/* ===================================================================== *
+ *  Dark theme
+ * ===================================================================== */
+:root[data-theme='dark'],
+[data-theme='dark'] {
+  --color-bg: #15181c;
+  --color-bg-elevated: #1e2228;
+  --color-surface: #232830;
+  --color-surface-alt: #2b313a;
+  --color-border: #39404a;
+  --color-border-strong: #525b67;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  --color-text: #e8eaed;
+  --color-text-muted: #a3aab4;
+  --color-text-inverse: #15181c;
+  --color-text-on-accent: #ffffff;
+
+  --color-accent: #4f9fd6;
+  --color-accent-hover: #66afe0;
+  --color-accent-active: #3f8cc4;
+  --color-accent-subtle: #1f3340;
+  --color-focus-ring: #66afe0;
+
+  --color-success: #4caf6e;
+  --color-warning: #e0ad3f;
+  --color-danger: #e25757;
+  --color-info: #4f9fd6;
+
+  /* slightly brighter board/resource colors for dark surfaces */
+  --color-board-green: #4f9f48;
+  --color-sea-blue: #4f9fd6;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.7);
+  --shadow-focus: 0 0 0 3px rgba(102, 175, 224, 0.5);
+}
+
+/* ===================================================================== *
+ *  Color-blind-safe palette (deuteranopia / red-green).
+ *  Remaps the player + key resource colors to an Okabe-Ito-derived set so
+ *  seats and goods stay distinguishable. Applied via data-theme-cb and so
+ *  composes on top of either light or dark theme.
+ * ===================================================================== */
+:root[data-theme-cb='deuteranopia'],
+[data-theme-cb='deuteranopia'] {
+  --color-player-blue: #0072b2;   /* blue */
+  --color-player-red: #d55e00;    /* vermillion (reads as "red" seat) */
+  --color-player-green: #009e73;  /* bluish green */
+  --color-player-orange: #e69f00; /* orange */
+  --color-player-purple: #cc79a7; /* reddish purple */
+  --color-player-brown: #56462b;  /* dark brown */
+
+  --color-resource-clay: #d55e00;
+  --color-resource-ore: #56707f;
+  --color-resource-sheep: #009e73;
+  --color-resource-wheat: #f0e442;
+  --color-resource-wood: #006c4f;
+
+  --color-success: #009e73;
+  --color-warning: #e69f00;
+  --color-danger: #d55e00;
+}
+
+/* ===================================================================== *
+ *  Base element resets that depend on tokens (kept minimal; not component
+ *  styling). Components own their own styles via CSS modules / plain css.
+ * ===================================================================== */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
