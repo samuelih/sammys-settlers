@@ -740,133 +740,59 @@ then the "game over" sequence:
 - p3:SOCPlayerStats:game=test|p=1|p=0|p=0|p=5|p=2|p=0
 
 
-# PROPOSED (design stage, not implemented): Cities & Knights sequences
+# Cities & Knights sequences (implemented in v2.7.00)
 
-**These sequences are a design proposal, NOT implemented protocol.** No Cities & Knights
-gameplay exists yet; nothing below is sent or recognized by any server or client. This section
-exists so the message flows can be reviewed before any code is written. See
-[Cities-and-Knights-Design.md](Cities-and-Knights-Design.md) for the full design and rationale.
+These flows were designed in the former PROPOSED section of this file and are now
+implemented; the authoritative reference with final constants is
+[Cities-and-Knights-Implemented.md](Cities-and-Knights-Implemented.md). Summary of the
+implemented sequences, which reuse existing message types throughout (no new message classes):
 
-The guiding principle is to reuse existing message types wherever possible
-(`SOCSetSpecialItem`, `SOCSimpleAction`, `SOCPlayerElement`, `SOCGameElements`,
-`SOCInventoryItemAction`) and to flag clearly the few places where a genuinely new message
-type would be unavoidable. Coordinates, element-type numbers, and action-type numbers shown
-below are illustrative placeholders to be assigned during implementation.
-
-When these sequences are eventually implemented, move them into the main list above and add
-test coverage in `TestRecorder` / `TestActionsMessages` like the other actions.
-
-
-## PROPOSED: Buy / upgrade a city improvement
-
-Improvements are `SOCSpecialItem`s with a per-track `typeKey` and the item's `level` field
-holding the 1-5 track level (see design doc section 3.2), so this reuses the same
-`SOCSetSpecialItem` `PICK` flow that the Wonders scenario uses to build a wonder level.
-
-Client requests the next level of a track with an `OP_PICK`; server validates cost and
-requirements, deducts cost, and replies with the combined `OP_SET_PICK` (acts as `OP_SET`
-then `OP_PICK`), then the resulting game state.
+## Buy / upgrade a city improvement
 
 - f3:SOCSetSpecialItem:game=test|op=3|typeKey=_CK_IMP/T|gi=-1|pi=0  // OP_PICK; track T (Trade)
-- all:SOCPlayerElements:game=test|playerNum=3|actionType=LOSE|...  // cost (commodities in Phase 2, standard resources in Phase 1)
-- all:SOCSetSpecialItem:game=test|op=5|typeKey=_CK_IMP/T|gi=-1|pi=0|pn=3|co=-1|lv=2|sv=  // OP_SET_PICK; new level=2
-- If this level grants a metropolis (sole track leader at the qualifying level):
-    - all:SOCPlayerElement:game=test|playerNum=3|actionType=GAIN|elementType=...|amount=2  // metropolis SVP (placeholder PEType)
-    - If a different player previously held this metropolis, that player loses it first:
-      all:SOCPlayerElement:game=test|playerNum=2|actionType=LOSE|elementType=...|amount=2
-- all:SOCGameState:game=test|state=20  // PLAY1, or 100 (SPECIAL_BUILDING)
-    - Or if won game (reached VP=13 with this award):
-    - all:SOCGameElements:game=test|e4=3  // CURRENT_PLAYER
-    - all:SOCGameState:game=test|state=1000  // OVER
+- all:SOCPlayerElements:game=test|playerNum=3|actionType=SET|e110=0  // commodity payment (new totals)
+- all:SOCSetSpecialItem:game=test|op=5|typeKey=_CK_IMP/T|gi=-1|pi=0|pn=3|co=-1|lv=2|sv=  // OP_SET_PICK; new level
+- If this level claims or steals the track's metropolis:
+    - all:SOCPlayerElement:game=test|playerNum=3|actionType=SET|elementType=102|amount=2  // SCENARIO_SVP
+    - all:SOCPlayerElement for the previous owner's reduced SVP, if stolen
+    - all:SOCSimpleAction:game=test|pn=3|actType=1005|v1=<track>|v2=0  // CK_METROPOLIS_CLAIMED
+- Decline is the standard OP_DECLINE reply, as in SC_WOND.
 
-If the player can't buy now (cost, requirements, or not their turn), server replies with
-`OP_DECLINE` (and, for a robot, the matching cancel), exactly as `SC_WOND` does:
+## Buy / activate / promote a knight
 
-- un:SOCSetSpecialItem:game=test|op=4|typeKey=_CK_IMP/T|gi=-1|pi=0  // OP_DECLINE
+Knights are per-player state; no board pieces or coordinates are involved
+(simplification from the original proposal: no per-city linkage).
 
-No new message type required.
+- f3:SOCSimpleRequest:game=test|pn=3|reqType=1002|v1=0|v2=0  // CK_BUY_KNIGHT (1003 activate, 1004 promote)
+- all:SOCPlayerElements:game=test|playerNum=3|actionType=LOSE|...  // resource cost
+- all:SOCPlayerElements:game=test|playerNum=3|actionType=SET|e113..e118  // knight counts by level, total + active
+- Decline is the standard SOCSimpleRequest denial (pn=-1).
 
+## Dice roll additions
 
-## PROPOSED: Activate / promote a knight
+- all:SOCGameElements:game=test|e11=<strength>  // CK_BARBARIAN_STRENGTH after each roll
+- Commodity production: all:SOCPlayerElements:game=test|playerNum=N|actionType=GAIN|e110..e112
+- Progress-card draws: SOCInventoryItemAction(ADD_PLAYABLE itype) to the drawing player,
+  ADD_PLAYABLE itype=0 to others; VP cards to everyone as ADD_OTHER with isKept/isVP
+  plus the SCENARIO_SVP element.
 
-Knights are city-linked **player state**, not board pieces (see design doc section 3.1), so
-activation and promotion are reported as `SOCPlayerElement` changes plus a `SOCSimpleAction`
-to announce the event, rather than via `SOCPutPiece`. The element types shown
-(`CK_KNIGHTS_BASIC` etc.) are placeholders for new `SOCPlayerElement.PEType` values; the
-action type is a placeholder for a new `SOCSimpleAction` constant in the 1000+ scenario range.
+## Barbarian attack resolution
 
-### Hire (place a new basic knight at one of your cities)
+Resolves inside the roll sequence when the counter reaches 7, before the usual 7-handling:
 
-- f3:SOCSimpleRequest:game=test|pn=3|reqType=...|v1=<cityNode>|v2=0  // request hire (placeholder reqType)
-- all:SOCPlayerElements:game=test|playerNum=3|actionType=LOSE|...  // cost (1 ore + 1 sheep in real C&K)
-- all:SOCPlayerElement:game=test|playerNum=3|actionType=GAIN|elementType=...|amount=1  // CK_KNIGHTS_BASIC count
-- all:SOCSimpleAction:game=test|pn=3|actType=...|v1=<cityNode>|v2=1  // KNIGHT_HIRED (placeholder); v2 = knight level
-- all:SOCGameState:game=test|state=20  // PLAY1
+- all:SOCSimpleAction:game=test|pn=-1|actType=1004|v1=<attackStrength>|v2=<defense>  // CK_BARBARIAN_ATTACK_RESULT
+- If barbarians win: each sacked city as all:SOCRemovePiece:game=test|pn=2|pieceType=2|coord=<node>
+  (clients downgrade the city to a settlement via SOCGame.ckDowngradeCity)
+- Every seated player's knight counts re-announced (all active knights deactivate)
+- If defenders win with a sole strongest defender:
+    - all:SOCPlayerElement:game=test|playerNum=3|actionType=SET|elementType=102|amount=<svp>  // SCENARIO_SVP
+    - all:SOCSimpleAction:game=test|pn=3|actType=1006|v1=<svp>|v2=0  // CK_DEFENDER_OF_CATAN
 
-### Promote (upgrade a knight: basic -> strong -> mighty)
+## Play a progress card
 
-- f3:SOCSimpleRequest:game=test|pn=3|reqType=...|v1=<cityNode>|v2=0  // request promote (placeholder reqType)
-- all:SOCPlayerElements:game=test|playerNum=3|actionType=LOSE|...  // cost
-- all:SOCPlayerElement:game=test|playerNum=3|actionType=LOSE|elementType=...|amount=1   // old level count down
-- all:SOCPlayerElement:game=test|playerNum=3|actionType=GAIN|elementType=...|amount=1   // new level count up
-- all:SOCSimpleAction:game=test|pn=3|actType=...|v1=<cityNode>|v2=2  // KNIGHT_PROMOTED (placeholder); v2 = new level
-- all:SOCGameState:game=test|state=20  // PLAY1
-
-### Activate (a knight must be active to act; costs 1 wheat)
-
-- f3:SOCSimpleRequest:game=test|pn=3|reqType=...|v1=<cityNode>|v2=0  // request activate (placeholder reqType)
-- all:SOCPlayerElement:game=test|playerNum=3|actionType=LOSE|elementType=4|amount=1  // WHEAT
-- all:SOCSimpleAction:game=test|pn=3|actType=...|v1=<cityNode>|v2=1  // KNIGHT_ACTIVATED (placeholder)
-- all:SOCGameState:game=test|state=20  // PLAY1
-
-**New message type needed?** No new message *class* is required: a knight's hire/promote/
-activate/move/disband all fit `SOCSimpleRequest` (client to server) plus `SOCSimpleAction`
-(server broadcast) carrying a city node coordinate and a knight level, with the actual count
-changes carried by `SOCPlayerElement`. New *constants* (`SOCSimpleRequest`/`SOCSimpleAction`
-action types and `SOCPlayerElement.PEType` element types) are needed, but no new message class.
-
-
-## PROPOSED: Barbarian attack resolution
-
-The barbarian counter advances inside `rollDice()` under the `_CK_BARB` option, modeled
-on the `SC_PIRI` pirate-fleet block (design doc section 3.4). On most rolls the barbarian only
-advances; when it reaches the city gate, the attack resolves before the usual 7-discard
-handling, exactly as `SC_PIRI` resolves its fleet attack before discards.
-
-### Roll where the barbarian only advances (most rolls)
-
-Folded into the normal Roll dice sequence; the only addition is one announcement of the new
-barbarian position so clients can update the strength/position meter:
-
-- all:SOCSimpleAction:game=test|pn=-1|actType=...|v1=<newPosition>|v2=0  // BARBARIAN_ADVANCED (placeholder); pn=-1 = game-wide
-- (then the standard roll-result messages: resource gains, etc.)
-
-### Roll where the barbarian reaches the gate and attacks
-
-Resolution compares total knight strength of all players against the barbarian strength,
-mirroring the `SC_PIRI_FORT_ATTACK_RESULT` "send game-data updates, then one result action"
-pattern. Sent before the standard 7-handling if a 7 was also rolled.
-
-- Game-data updates first, so clients can show them before any result popup:
-    - If defenders lose: for each player whose weakest city is sacked (city -> settlement),
-      a piece-downgrade announcement (reusing the existing settlement/city representation):
-      all:SOCPutPiece:game=test|playerNumber=2|pieceType=1|coord=<cityNode>  // city reduced to settlement
-      and all:SOCPlayerElement:game=test|playerNum=2|actionType=GAIN|elementType=12|amount=1  // CITIES piece back
-    - If defenders win: SVP to the player(s) with the most knight strength
-      (the "Defender of Catan" reward):
-      all:SOCPlayerElement:game=test|playerNum=3|actionType=GAIN|elementType=...|amount=1  // defender SVP (placeholder)
-    - Knights that defended become inactive again:
-      all:SOCPlayerElement:game=test|playerNum=3|actionType=SET|elementType=...|amount=0  // active-knight flags cleared
-- Then a single result action carrying the outcome (mirrors SC_PIRI_FORT_ATTACK_RESULT=1001):
-    - all:SOCSimpleAction:game=test|pn=-1|actType=...|v1=<barbarianStrength>|v2=<outcomeCode>  // BARBARIAN_ATTACK_RESULT (placeholder); v2: 0=defenders win, 1=tie, 2=barbarians win
-- all:SOCGameServerText:game=test|text=...  // optional flavor text, ignorable by bots
-- Then the standard post-roll messages (7-discard handling, resource distribution, next state).
-
-**New message type needed?** The advance and result fit `SOCSimpleAction` with new action-type
-constants (no new class). The city downgrade reuses `SOCPutPiece`/`SOCPlayerElement`. The one
-place that *might* warrant a new message is conveying a full per-player attack summary in a
-single packet (who lost which city, who won SVP) if a sequence of `SOCPlayerElement` /
-`SOCPutPiece` messages proves too chatty for clients to animate cleanly — but the `SC_PIRI`
-precedent shows the per-update-then-result pattern is workable without a new class, so a new
-message type is **not** anticipated to be unavoidable here.
-
+- f3:SOCInventoryItemAction:game=test|pn=3|action=4|itemType=14  // PLAY (Warlord)
+- all:SOCInventoryItemAction:game=test|pn=3|action=6|itemType=14  // PLAYED
+- then the card's effect messages (element changes / knight counts / text), and for
+  Resource Monopoly / Trade Monopoly: SOCGameState(WAITING_FOR_MONOPOLY), client answers
+  with SOCPickResourceType (resource 1-5, or commodity 1-3 for Trade Monopoly), and the
+  capped takings are announced like dev-card Monopoly.

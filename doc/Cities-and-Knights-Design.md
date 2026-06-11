@@ -1,11 +1,17 @@
 # Cities & Knights Design
 
+> **Status update:** Phases 1–3 of this design are now **implemented** — the `SC_CK`
+> scenario is playable. See [Cities-and-Knights-Implemented.md](Cities-and-Knights-Implemented.md)
+> for the shipped rules, wire protocol, and the simplifications relative to the boxed game.
+> Commodities shipped as separate per-player counters (the "separate optional dimension" of
+> section 5.3) rather than the full `SOCResourceSet` refactor; Phase 4 (bot competence)
+> remains future work. The rest of this document is the original design rationale.
+
 This is a **decision-complete design document** for adding *Cities & Knights*-style rules
-to JSettlers. It does not describe shipped behavior: as of this writing, no Cities & Knights
-gameplay is implemented. The document exists so that the groundwork landing in this release
+to JSettlers. It was written before implementation so that the groundwork
 (reserved game options, a disabled scenario stub, two flag-hidden prototypes, and proposed
-message sequences) is built against an agreed plan, and so the multi-release roadmap that
-follows can be picked up one independently-shippable phase at a time.
+message sequences) was built against an agreed plan, and so the multi-release roadmap that
+follows could be picked up one independently-shippable phase at a time.
 
 It replaces and expands the one-line TODO entry "Cities & Knights support" in
 [Readme.developer.md](Readme.developer.md). Proposed network message sequences for the new

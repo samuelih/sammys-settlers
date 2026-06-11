@@ -622,25 +622,18 @@ ideas.
     - Maybe have a converter to this format from `*SAVEGAME*` json format
 - HTML5 client (see v3 branch for protobuf/JSON over websockets and preliminary
   observer-only start on that work)
-- Cities & Knights support
-    - UI mock-ups
-    - state change / network message plans
-    - robot support
-    - Phase 0 groundwork is in place as of v2.7.00, but no C&K gameplay is
-      implemented yet. The roadmap and representation decisions are documented in
-      [Cities-and-Knights-Design.md](Cities-and-Knights-Design.md); proposed network
-      messages are in the clearly-marked "PROPOSED (design stage, not implemented)"
-      section of [Message-Sequences-for-Game-Actions.md](Message-Sequences-for-Game-Actions.md).
-      Groundwork added so far is hidden behind inactive flags and changes no existing-game
-      behavior: reserved inactive-hidden game options `_CK_KNI`, `_CK_IMP`, `_CK_PROG`,
-      `_CK_BARB`, `_CK_METR` (and scenario flag `_SC_CK`) in `SOCGameOptionSet`; a disabled
-      `SC_CK` scenario stub in `SOCScenario`; `SOCSpecialItem` city-improvement track entries
-      with typeKeys `_CK_IMP/T`, `_CK_IMP/P`, `_CK_IMP/S` (Trade/Politics/Science) built via
-      `makeKnownItem(typeKey, level)` with interim standard-resource costs; and a barbarian-strength
-      counter in `SOCGame` (`advanceBarbarianStrength`/`getBarbarianStrength`, advanced once per
-      `rollDice()` when `_CK_BARB` is set), surfaced on `RollResult`. The structural blocker
-      for real gameplay is the 6th-resource (cloth/coin/paper) commodity refactor, which needs its
-      own release.
+- Cities & Knights: implemented as of v2.7.00 as the playable `SC_CK` scenario
+  (commodities, city improvements, metropolis, knights, barbarians, progress cards);
+  see [Cities-and-Knights-Implemented.md](Cities-and-Knights-Implemented.md) for the
+  shipped rules/protocol and [Cities-and-Knights-Design.md](Cities-and-Knights-Design.md)
+  for the design rationale. Remaining C&K work:
+    - Bot competence (Phase 4): bots play the base game in `SC_CK` games but ignore
+      commodities/improvements/knights/progress cards
+    - Swing client UI for the C&K mechanics (the web client under `web/` has full UI)
+    - `*SAVEGAME*`/`*LOADGAME*` persistence of C&K state
+    - Optional boxed-game features not yet implemented (city walls, merchant,
+      knight board placement, the full progress-card list); see the
+      Simplifications section of Cities-and-Knights-Implemented.md
 - Support for multiple game types
     - At server: Other game types would extend GameHandler (like SOCGameHandler)
     - When client connects: Game list, scenario list, and game options would
