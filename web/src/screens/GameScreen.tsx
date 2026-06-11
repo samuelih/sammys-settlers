@@ -18,15 +18,25 @@ import {
 import {
   type DevCardTypeValue,
   type ResourceValue,
+  ChoosePlayerChoice,
+  CKProgressCard,
   DevCardType,
   GameState,
   PieceTypeConst,
   Resource,
 } from '../protocol';
 import {
+  CKBarbarianBanner,
+  CKCommodityPickDialog,
+  CKPanel,
+  CKPlayerSummary,
+} from '../components/ck';
+import {
   type CurrentGame,
   type DevCardInventory,
+  type GameLogEntry,
   type PlayerView,
+  CK_TRACK_NAMES,
   PLAYER_COLORS,
   acceptOffer,
   bankTrade,
@@ -52,6 +62,7 @@ import {
   rejectOffer,
   rollDice,
   buildRequest,
+  sendChat,
   useGameStore,
 } from '../store/gameStore';
 import { playSound } from '../util/sound';
@@ -322,6 +333,8 @@ function gameStateLabel(state: number): string {
       return 'Choosing Year of Plenty resources';
     case GameState.WAITING_FOR_MONOPOLY:
       return 'Choosing a Monopoly resource';
+    case GameState.WAITING_FOR_ROBBER_OR_PIRATE:
+      return 'Choosing robber or pirate';
     case GameState.WAITING_FOR_PICK_GOLD_RESOURCE:
       return 'Picking a gold-hex resource';
     case GameState.SPECIAL_BUILDING:
@@ -347,10 +360,16 @@ function PlayerPanel({
   view,
   isCurrent,
   isMe,
+  ckEnabled = false,
+  metropolisTracks = [],
 }: {
   view: PlayerView;
   isCurrent: boolean;
   isMe: boolean;
+  /** True in a Cities & Knights game: show the compact C&K summary. */
+  ckEnabled?: boolean;
+  /** C&K improvement-track indexes whose metropolis this player owns. */
+  metropolisTracks?: number[];
 }): JSX.Element {
   const pn = view.playerNumber;
   return (
@@ -411,7 +430,18 @@ function PlayerPanel({
             Largest Army
           </span>
         )}
+        {metropolisTracks.map((track) => (
+          <span
+            key={track}
+            className={styles.award}
+            data-testid={`ck-player-metropolis-${pn}-${track}`}
+          >
+            {CK_TRACK_NAMES[track]} Metropolis
+          </span>
+        ))}
       </div>
+
+      {ckEnabled && view.seated && <CKPlayerSummary view={view} />}
     </li>
   );
 }
@@ -435,8 +465,12 @@ function MyResources({ view }: { view: PlayerView }): JSX.Element {
   );
 }
 
-/** A scrolling game log; auto-scrolls to the newest line. */
-function GameLog({ lines }: { lines: readonly string[] }): JSX.Element {
+/**
+ * A scrolling game log; auto-scrolls to the newest line. Player chat lines
+ * (kind 'chat') are rendered with the speaker's nickname and a distinct style;
+ * server/announcement lines render as plain text.
+ */
+function GameLog({ lines }: { lines: readonly GameLogEntry[] }): JSX.Element {
   const endRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     // scrollIntoView is unavailable in some non-browser test environments (jsdom).
@@ -451,12 +485,72 @@ function GameLog({ lines }: { lines: readonly string[] }): JSX.Element {
         <p className={styles.logEmpty}>No game messages yet.</p>
       ) : (
         lines.map((line, i) => (
-          <p key={i} className={styles.logLine}>
-            {line}
+          <p
+            key={i}
+            className={`${styles.logLine} ${line.kind === 'chat' ? styles.logChat : ''}`}
+            data-kind={line.kind}
+          >
+            {line.kind === 'chat' && line.nickname != null && (
+              <span className={styles.logNick}>{line.nickname}: </span>
+            )}
+            {line.text}
           </p>
         ))
       )}
       <div ref={endRef} />
+    </div>
+  );
+}
+
+/**
+ * Chat input row under the game log: a text field + Send button. Enter sends
+ * (and is swallowed so it can't trigger board/global shortcuts or submit other
+ * forms); empty/whitespace-only messages are never sent.
+ */
+function ChatInput(): JSX.Element {
+  const [text, setText] = useState('');
+
+  const submit = (): void => {
+    if (text.trim() === '') {
+      return; // <--- Early return: nothing to send ---
+    }
+    sendChat(text);
+    setText('');
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    // Keep key events inside the chat field so they never reach board/global
+    // shortcut handlers while typing.
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  return (
+    <div className={styles.chatRow}>
+      <input
+        className={styles.chatInput}
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={onKeyDown}
+        placeholder="Send a message…"
+        aria-label="Chat message"
+        data-testid="chat-input"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        data-testid="chat-send"
+        disabled={text.trim() === ''}
+        onClick={submit}
+      >
+        Send
+      </Button>
     </div>
   );
 }
@@ -543,7 +637,13 @@ export function GameScreen(): JSX.Element | null {
   const cg = useGameStore((s) => s.currentGame);
   const error = useGameStore((s) => s.error);
   const setError = useGameStore((s) => s.setError);
+  const notice = useGameStore((s) => s.notice);
+  const setNotice = useGameStore((s) => s.setNotice);
   const { showToast } = useToast();
+
+  // Leaving a game in progress is destructive (the seat is abandoned), so the
+  // header Leave button asks for confirmation first.
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   useEffect(() => {
     if (error != null && error !== '') {
@@ -551,6 +651,14 @@ export function GameScreen(): JSX.Element | null {
       setError(undefined);
     }
   }, [error, showToast, setError]);
+
+  // Non-error notices (e.g. C&K Defender of Catan) toast as successes.
+  useEffect(() => {
+    if (notice != null && notice !== '') {
+      showToast(notice, { variant: 'success' });
+      setNotice(undefined);
+    }
+  }, [notice, showToast, setNotice]);
 
   // Sound + dice-roll feedback derived from observed state changes. Must be
   // called before any early return to obey the Rules of Hooks; it tolerates a
@@ -592,7 +700,7 @@ export function GameScreen(): JSX.Element | null {
           variant="ghost"
           size="sm"
           className={styles.leave}
-          onClick={leaveGame}
+          onClick={() => setConfirmLeave(true)}
           data-testid="leave-game"
         >
           Leave
@@ -633,10 +741,24 @@ export function GameScreen(): JSX.Element | null {
                   view={view}
                   isCurrent={view.playerNumber === cg.currentPlayerNumber}
                   isMe={view.playerNumber === cg.mySeat}
+                  ckEnabled={cg.isCKGame}
+                  metropolisTracks={
+                    cg.isCKGame
+                      ? cg.ckMetropolisOwners
+                          .map((owner, track) => (owner === view.playerNumber ? track : -1))
+                          .filter((t) => t >= 0)
+                      : []
+                  }
                 />
               ))}
             </ul>
           </Panel>
+
+          {cg.isCKGame && (
+            <Panel title="Cities & Knights">
+              <CKPanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
+            </Panel>
+          )}
 
           {myView !== null && (
             <Panel title="Your hand">
@@ -658,13 +780,46 @@ export function GameScreen(): JSX.Element | null {
 
           <Panel title="Game log" flushBody>
             <GameLog lines={cg.gameLog} />
+            <ChatInput />
           </Panel>
         </aside>
       </div>
 
+      {/* Leave-game confirmation */}
+      {confirmLeave && (
+        <Dialog
+          open
+          onClose={() => setConfirmLeave(false)}
+          title="Leave game?"
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmLeave(false)}
+                data-testid="leave-cancel"
+              >
+                Keep playing
+              </Button>
+              <Button variant="danger" onClick={leaveGame} data-testid="leave-confirm">
+                Leave game
+              </Button>
+            </>
+          }
+        >
+          <p className={styles.prompt} data-testid="leave-confirm-dialog">
+            This game is still in progress. If you leave, you give up your seat.
+          </p>
+        </Dialog>
+      )}
+
       {/* Modal prompts driven by game state */}
       {myView !== null && (
         <InteractionDialogs cg={cg} myView={myView} isMyTurn={isMyTurn} />
+      )}
+
+      {/* C&K: transient barbarian-attack banner */}
+      {cg.isCKGame && cg.lastBarbarianAttack !== null && (
+        <CKBarbarianBanner attack={cg.lastBarbarianAttack} />
       )}
 
       {/* Game-over overlay */}
@@ -1378,7 +1533,18 @@ function InteractionDialogs({
 }): JSX.Element {
   return (
     <>
-      {isMyTurn && cg.gameState === GameState.WAITING_FOR_MONOPOLY && <MonopolyDialog />}
+      {isMyTurn &&
+        cg.gameState === GameState.WAITING_FOR_MONOPOLY &&
+        // C&K Trade Monopoly (itype 12) picks a commodity; the dev-card
+        // Monopoly and C&K Resource Monopoly (itype 11) pick a resource.
+        (cg.ckPendingMonopoly === CKProgressCard.TRADE_MONOPOLY ? (
+          <CKCommodityPickDialog />
+        ) : (
+          <MonopolyDialog />
+        ))}
+      {isMyTurn && cg.gameState === GameState.WAITING_FOR_ROBBER_OR_PIRATE && (
+        <RobberOrPirateDialog />
+      )}
       {isMyTurn &&
         (cg.gameState === GameState.WAITING_FOR_DISCOVERY ||
           cg.gameState === GameState.WAITING_FOR_PICK_GOLD_RESOURCE) && (
@@ -1400,6 +1566,41 @@ function InteractionDialogs({
         <VictimChooser cg={cg} victims={cg.robVictims} canChooseNone={cg.robCanChooseNone} />
       )}
     </>
+  );
+}
+
+/**
+ * Sea-board prompt (WAITING_FOR_ROBBER_OR_PIRATE): choose whether to move the
+ * robber or the pirate ship. Sends SOCChoosePlayer with the CHOICE_MOVE_ROBBER
+ * / CHOICE_MOVE_PIRATE special; the server then advances to PLACING_ROBBER or
+ * PLACING_PIRATE, which the board handles via hex clicks.
+ */
+function RobberOrPirateDialog(): JSX.Element {
+  return (
+    <Dialog
+      open
+      onClose={() => undefined}
+      hideCloseButton
+      closeOnOverlayClick={false}
+      title="Move the robber or the pirate?"
+    >
+      <div className={styles.victims} data-testid="robber-or-pirate-dialog">
+        <Button
+          variant="secondary"
+          data-testid="choose-robber"
+          onClick={() => choosePlayer(ChoosePlayerChoice.CHOICE_MOVE_ROBBER)}
+        >
+          Move the robber
+        </Button>
+        <Button
+          variant="secondary"
+          data-testid="choose-pirate"
+          onClick={() => choosePlayer(ChoosePlayerChoice.CHOICE_MOVE_PIRATE)}
+        >
+          Move the pirate
+        </Button>
+      </div>
+    </Dialog>
   );
 }
 

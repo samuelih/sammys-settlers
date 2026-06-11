@@ -3,8 +3,9 @@
 // hand breakdown, and the game log. The store is seeded directly (the wire path
 // is covered by gameInGame.test.ts).
 
-import { render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ToastProvider } from '../components';
 import {
@@ -111,5 +112,86 @@ describe('GameScreen', () => {
     useGameStore.getState().appendGameLog(GAME, 'It is your turn.');
     renderGame();
     expect(screen.getByTestId('game-log')).toHaveTextContent('It is your turn.');
+  });
+
+  it('renders player chat lines with the speaker nickname, distinct from server lines', () => {
+    const s = useGameStore.getState();
+    s.appendGameLog(GAME, 'It is your turn.');
+    s.appendChatLog(GAME, 'Alice', 'anyone want wood?');
+    renderGame();
+
+    const log = screen.getByTestId('game-log');
+    expect(log).toHaveTextContent('Alice: anyone want wood?');
+    const lines = log.querySelectorAll('p');
+    expect(lines[0]).toHaveAttribute('data-kind', 'server');
+    expect(lines[0]).toHaveTextContent('It is your turn.');
+    expect(lines[1]).toHaveAttribute('data-kind', 'chat');
+  });
+});
+
+describe('GameScreen chat input', () => {
+  it('renders the chat input row with Send disabled until text is entered', () => {
+    renderGame();
+    const input = screen.getByTestId('chat-input');
+    const send = screen.getByTestId('chat-send');
+    expect(input).toBeInTheDocument();
+    expect(send).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: '   ' } });
+    expect(send).toBeDisabled(); // whitespace-only is not sendable
+
+    fireEvent.change(input, { target: { value: 'hello' } });
+    expect(send).toBeEnabled();
+  });
+
+  it('Enter sends and clears the field; whitespace-only is kept unsent', () => {
+    renderGame();
+    const input = screen.getByTestId('chat-input');
+
+    fireEvent.change(input, { target: { value: 'hello table' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveValue(''); // submitted (send itself is wire-tested in gameChat.test.ts)
+
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(input).toHaveValue('   '); // not submitted, not cleared
+  });
+
+  it('keystrokes in the chat field do not leak to document-level key handlers', () => {
+    renderGame();
+    const spy = vi.fn();
+    document.addEventListener('keydown', spy);
+    try {
+      fireEvent.keyDown(screen.getByTestId('chat-input'), { key: 'Enter' });
+      fireEvent.keyDown(screen.getByTestId('chat-input'), { key: 'r' });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener('keydown', spy);
+    }
+  });
+});
+
+describe('GameScreen leave confirmation', () => {
+  it('asks for confirmation and keeps playing on cancel', async () => {
+    const user = userEvent.setup();
+    renderGame();
+
+    await user.click(screen.getByTestId('leave-game'));
+    expect(screen.getByTestId('leave-confirm-dialog')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('leave-cancel'));
+    expect(screen.queryByTestId('leave-confirm-dialog')).not.toBeInTheDocument();
+    expect(useGameStore.getState().currentGame).not.toBeNull();
+  });
+
+  it('leaves the game only after confirming', async () => {
+    const user = userEvent.setup();
+    renderGame();
+
+    await user.click(screen.getByTestId('leave-game'));
+    expect(useGameStore.getState().currentGame).not.toBeNull();
+
+    await user.click(screen.getByTestId('leave-confirm'));
+    expect(useGameStore.getState().currentGame).toBeNull();
   });
 });

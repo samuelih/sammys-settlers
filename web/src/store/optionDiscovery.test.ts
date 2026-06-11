@@ -106,11 +106,36 @@ describe('New Game option discovery (defaults-first flow)', () => {
 
     requestGameOptions();
 
-    expect(ws.sent).toHaveLength(1);
+    // Two frames: the bare defaults request + the scenario-info request (so
+    // the New Game dialog can list scenarios, incl. Cities & Knights SC_CK).
+    expect(ws.sent).toHaveLength(2);
     expect(typeOf(ws.sent[0])).toBe(1080);
     // Bare "1080" request (no opts): exactly the type id.
     expect(ws.sent[0]).toBe('1080');
+    // SCENARIOINFO client request: "[" marker, the standard scenario keys,
+    // and the trailing "?" any-changed marker.
+    expect(typeOf(ws.sent[1])).toBe(1101);
+    expect(ws.sent[1]).toBe(
+      '1101|[|SC_NSHO|SC_4ISL|SC_FOG|SC_TTD|SC_CLVI|SC_PIRI|SC_FTRI|SC_WOND|SC_CK|?',
+    );
     expect(useGameStore.getState().optionsRequested).toBe(true);
+  });
+
+  it('upserts scenarios (incl. SC_CK) from the SCENARIOINFO replies', () => {
+    const ws = connectAndHandshake();
+    requestGameOptions();
+
+    // Server reply form: key | minVers | lastModVers | opts | title.
+    ws.receive('1101|SC_NSHO|2000|2000|_SC_SEAC=t,SBL=t,VP=t13|New Shores');
+    ws.receive(
+      '1101|SC_CK|2700|2700|_SC_CK=t,_CK_IMP=t,_CK_KNI=t,_CK_PROG=t,_CK_BARB=t,_CK_METR=t,SBL=t,VP=t13|Cities & Knights',
+    );
+    ws.receive('1101|-'); // end-of-list marker
+
+    const scenarios = useGameStore.getState().scenarios;
+    expect(scenarios.SC_NSHO?.title).toBe('New Shores');
+    expect(scenarios.SC_CK?.title).toBe('Cities & Knights');
+    expect(scenarios.SC_CK?.opts).toContain('_CK_IMP=t');
   });
 
   it('replies to the defaults with an EXPLICIT key list GAMEOPTIONGETINFOS', () => {

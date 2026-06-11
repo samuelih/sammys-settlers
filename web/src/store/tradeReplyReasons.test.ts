@@ -95,7 +95,7 @@ describe('REJECTOFFER reply-reason handling', () => {
 
     expect(useGameStore.getState().error).toBe("You can't make that trade.");
     const log = cg().gameLog;
-    expect(log[log.length - 1]).toBe("You can't make that trade.");
+    expect(log[log.length - 1].text).toBe("You can't make that trade.");
     // No seat recorded a 'reject' response.
     expect(cg().offerResponses.every((r) => r === null)).toBe(true);
   });
@@ -126,7 +126,7 @@ describe('DECLINEPLAYERREQUEST handling', () => {
     ws.receive(`1104${SEP}${GAME}${SEP2}0${SEP2}2`);
     expect(useGameStore.getState().error).toBe("It's not your turn.");
     const log = cg().gameLog;
-    expect(log[log.length - 1]).toBe("It's not your turn.");
+    expect(log[log.length - 1].text).toBe("It's not your turn.");
   });
 
   it('prefers a server-supplied localized reasonText when present', () => {

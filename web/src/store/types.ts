@@ -26,6 +26,90 @@ export function emptyResources(): ResourceCounts {
 }
 
 /**
+ * A player's Cities & Knights commodity counts (cloth/coin/paper; per-player
+ * counters separate from the 5-resource hand). From SOCPlayerElement(s)
+ * PETypes CK_CLOTH_COUNT(110)..CK_PAPER_COUNT(112) — GAIN on production,
+ * SET on join/loss, LOSE honored too. See
+ * doc/Cities-and-Knights-Implemented.md ("Commodities").
+ */
+export interface CKCommodityCounts {
+  cloth: number;
+  coin: number;
+  paper: number;
+}
+
+/**
+ * A player's Cities & Knights knight counts by level (1=basic, 2=strong,
+ * 3=mighty): totals plus the active subset. From SOCPlayerElement(s) PETypes
+ * CK_KNIGHTS_LV1..LV3(113..115) and CK_KNIGHTS_ACTIVE_LV1..LV3(116..118),
+ * always SET. See doc/Cities-and-Knights-Implemented.md ("Knights").
+ */
+export interface CKKnightCounts {
+  /** Total basic (level-1) knights. */
+  lv1: number;
+  /** Total strong (level-2) knights. */
+  lv2: number;
+  /** Total mighty (level-3) knights. */
+  lv3: number;
+  /** Active basic knights (subset of {@link lv1}). */
+  activeLv1: number;
+  /** Active strong knights (subset of {@link lv2}). */
+  activeLv2: number;
+  /** Active mighty knights (subset of {@link lv3}). */
+  activeLv3: number;
+}
+
+/**
+ * A player's Cities & Knights city-improvement track levels (0..5 each).
+ * From SOCSetSpecialItem OP_SET / OP_SET_PICK with typeKeys '_CK_IMP/T'
+ * (Trade, costs cloth), '_CK_IMP/P' (Politics, costs coin), '_CK_IMP/S'
+ * (Science, costs paper). See doc/Cities-and-Knights-Implemented.md
+ * ("City improvements").
+ */
+export interface CKImprovementLevels {
+  trade: number;
+  politics: number;
+  science: number;
+}
+
+/**
+ * The Cities & Knights per-seat state slice of a {@link PlayerView}. Present
+ * on every view (all zeros outside C&K games, where the driving messages
+ * never arrive). @since (web) C&K phase
+ */
+export interface CKPlayerView {
+  /** Commodity counts (cloth/coin/paper). */
+  commodities: CKCommodityCounts;
+  /** Knight counts by level, total + active. */
+  knights: CKKnightCounts;
+  /** City-improvement track levels (0..5). */
+  improvements: CKImprovementLevels;
+  /**
+   * Number of hidden progress cards held. For opponents this is tracked from
+   * SOCInventoryItemAction ADD_PLAYABLE announcements with itemType 0 (hidden
+   * draw) and PLAYED; for the local player it mirrors the real hand
+   * (CurrentGame.myProgressHand).
+   */
+  progressCards: number;
+  /**
+   * Revealed victory-point progress-card itypes (Constitution=16, Printer=19),
+   * announced to all players as ADD_OTHER with isVP=true. Worth +1 SVP each.
+   */
+  vpProgressCards: number[];
+}
+
+/** A fresh, all-zero {@link CKPlayerView}. */
+export function emptyCKPlayerView(): CKPlayerView {
+  return {
+    commodities: { cloth: 0, coin: 0, paper: 0 },
+    knights: { lv1: 0, lv2: 0, lv3: 0, activeLv1: 0, activeLv2: 0, activeLv3: 0 },
+    improvements: { trade: 0, politics: 0, science: 0 },
+    progressCards: 0,
+    vpProgressCards: [],
+  };
+}
+
+/**
  * Render-ready per-seat view of a player in the started game. Mirrors the
  * subset of {@code soc.game.SOCPlayer} the in-game UI shows. Built and updated
  * from SITDOWN / PLAYERELEMENT(S) / GAMEELEMENTS / PUTPIECE / dice messages.
@@ -79,6 +163,11 @@ export interface PlayerView {
    * applyTurn reducer clears it rather than waiting for a SET-to-0 element).
    */
   playedDevCard: boolean;
+  /**
+   * Cities & Knights per-seat state (commodities, knights, improvement levels,
+   * progress-card counts). Always present; stays all-zero outside C&K games.
+   */
+  ck: CKPlayerView;
 }
 
 /**
@@ -122,5 +211,6 @@ export function makePlayerView(playerNumber: number): PlayerView {
     largestArmy: false,
     numPickGoldRes: 0,
     playedDevCard: false,
+    ck: emptyCKPlayerView(),
   };
 }

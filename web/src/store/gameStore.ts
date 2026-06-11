@@ -34,6 +34,8 @@ import {
   SOCGames,
   SOCGameServerText,
   SOCGameState,
+  SERVERNAME,
+  SERVER_FOR_CHAT,
   SOCGamesWithOptions,
   SOCGameTextMsg,
   SOCJoinGame,
@@ -103,6 +105,16 @@ import {
   type TradeOffer,
   type ResourceSet,
   resourceSet,
+  // Cities & Knights (C&K)
+  CKImprovementTypeKey,
+  CKProgressCard,
+  InventoryItemAction,
+  SimpleRequestType,
+  SpecialItemOp,
+  SOCInventoryItemAction,
+  SOCRemovePiece,
+  SOCSetSpecialItem,
+  SOCSimpleRequest,
 } from '../protocol';
 import {
   type BoardModel,
@@ -124,7 +136,15 @@ import {
   GameConnection,
 } from '../net/GameConnection';
 
-export { PLAYER_COLORS, type PlayerView, type ResourceCounts } from './types';
+export {
+  PLAYER_COLORS,
+  type PlayerView,
+  type ResourceCounts,
+  type CKPlayerView,
+  type CKCommodityCounts,
+  type CKKnightCounts,
+  type CKImprovementLevels,
+} from './types';
 
 /**
  * One game as shown in the lobby list. The web client only needs the name, a
@@ -207,7 +227,7 @@ export interface CurrentGame {
   /** Number of dev cards left in the deck (from GAMEELEMENTS). */
   deckDevCardCount: number;
   /** Rolling chat/announcement log (server text + chat), newest last. */
-  gameLog: string[];
+  gameLog: GameLogEntry[];
 
   // --- In-game interactions (Phase 4) ---
 
@@ -252,6 +272,60 @@ export interface CurrentGame {
    * by seat number; null until the final-stats message arrives.
    */
   finalScores: number[] | null;
+
+  // --- Cities & Knights (C&K, scenario SC_CK) ---
+
+  /**
+   * True when this game uses the Cities & Knights rules: its option string
+   * includes the '_SC_CK' scenario flag or the '_CK_IMP' core option. Gates
+   * all C&K UI.
+   */
+  isCKGame: boolean;
+  /**
+   * Barbarian strength counter (0..7); advances 1 per dice roll, attacks at 7
+   * then resets. From SOCGameElements GEType CK_BARBARIAN_STRENGTH(11).
+   */
+  ckBarbarianStrength: number;
+  /**
+   * Metropolis owner seat number per improvement track (index 0=Trade,
+   * 1=Politics, 2=Science); -1 = unclaimed. From SimpleAction
+   * CK_METROPOLIS_CLAIMED.
+   */
+  ckMetropolisOwners: number[];
+  /**
+   * The most recent barbarian-attack result (for the transient banner), or
+   * null if none yet. From SimpleAction CK_BARBARIAN_ATTACK_RESULT.
+   */
+  lastBarbarianAttack: CKBarbarianAttack | null;
+  /**
+   * The local player's progress-card hand as itypes (11..19, duplicates
+   * allowed). From SOCInventoryItemAction ADD_PLAYABLE (real itype to the
+   * drawing player) / PLAYED.
+   */
+  myProgressHand: number[];
+  /**
+   * Which C&K monopoly progress card the local player has just played and is
+   * now picking for (RESOURCE_MONOPOLY=11 -> resource picker,
+   * TRADE_MONOPOLY=12 -> commodity picker), or null. Set when our PLAYED for
+   * 11/12 arrives; cleared whenever the game state leaves
+   * WAITING_FOR_MONOPOLY.
+   */
+  ckPendingMonopoly: number | null;
+}
+
+/**
+ * The result of a C&K barbarian attack, kept for a transient banner. From
+ * SimpleAction CK_BARBARIAN_ATTACK_RESULT (value1=strength, value2=defense).
+ */
+export interface CKBarbarianAttack {
+  /** Barbarian strength (total cities of all players). */
+  strength: number;
+  /** Catan's defense (sum of knight level x active knights). */
+  defense: number;
+  /** True when defense >= strength. */
+  defendersWon: boolean;
+  /** Monotonic per-game attack counter, so the banner can re-show per attack. */
+  seq: number;
 }
 
 /** A response by another seat to the local player's outstanding trade offer. */
@@ -271,6 +345,22 @@ export interface DevCardInventory {
   newCards: Record<number, number>;
   /** Victory-point cards held, keyed by card type -> count. */
   vpCards: Record<number, number>;
+}
+
+/**
+ * One line of the rolling game log. Server announcements and derived/log-only
+ * lines use kind 'server'; player-authored chat (GAMETEXTMSG with a real
+ * sender nickname) uses kind 'chat' so the UI can render the speaker.
+ *
+ * @since (web) chat input
+ */
+export interface GameLogEntry {
+  /** Display text (chat lines exclude the speaker prefix; see {@link nickname}). */
+  text: string;
+  /** 'chat' = player-authored; 'server' = announcement / derived line. */
+  kind: 'server' | 'chat';
+  /** The speaker's nickname, set on 'chat' lines only. */
+  nickname?: string;
 }
 
 /** A resolved dice roll. d1/d2 are 0 when only the total is known. */
@@ -302,8 +392,23 @@ export interface GameStoreState {
   channels: string[];
   /** Lobby game list. */
   games: GameInfo[];
+  /**
+   * True once the initial game list (GAMES / GAMESWITHOPTIONS) has arrived for
+   * this connection, so the lobby can show a loading row until then. Reset on a
+   * fresh connect ({@link resetLobby}).
+   */
+  gamesLoaded: boolean;
+  /** Host of the last connect attempt (saved for Reconnect). */
+  lastHost: string;
+  /** Port of the last connect attempt (saved for Reconnect). */
+  lastPort: number;
   /** Last error / status text, if any. */
   error?: string;
+  /**
+   * A transient non-error notice to toast (e.g. "Defender of Catan"); cleared
+   * by the UI after showing, like {@link error} but not styled as a failure.
+   */
+  notice?: string;
   /**
    * Known game-option descriptors, keyed by option key, built from
    * GAMEOPTIONINFO replies. Empty until {@link requestGameOptions} runs.
@@ -346,8 +451,12 @@ export interface GameStoreState {
   removeGame: (name: string) => void;
   /** Replace the whole game list (from GAMES / GAMESWITHOPTIONS). */
   setGames: (games: GameInfo[]) => void;
+  /** Save the host/port of the latest connect attempt (for Reconnect). */
+  setServerAddress: (host: string, port: number) => void;
   /** Set a transient error/status message. */
   setError: (error?: string) => void;
+  /** Set/clear the transient non-error notice (toasted by the UI). */
+  setNotice: (notice?: string) => void;
   /** Reset lobby data to its initial empty state (e.g. on a fresh connect). */
   resetLobby: () => void;
 
@@ -418,8 +527,10 @@ export interface GameStoreState {
   applyLongestRoad: (gameName: string, playerNumber: number) => void;
   /** Set the Largest Army holder (from SOCLargestArmy), -1 = none. */
   applyLargestArmy: (gameName: string, playerNumber: number) => void;
-  /** Append a line to the rolling game log. */
+  /** Append a server/announcement line to the rolling game log. */
   appendGameLog: (gameName: string, line: string) => void;
+  /** Append a player-authored chat line (with its speaker) to the game log. */
+  appendChatLog: (gameName: string, nickname: string, text: string) => void;
 
   // --- In-game interaction reducers (Phase 4) ---
 
@@ -454,6 +565,33 @@ export interface GameStoreState {
   applyRobberyResult: (msg: SOCRobberyResult) => void;
   /** Record final per-seat scores + winner at game over (from SOCGameStats). */
   applyGameStats: (msg: SOCGameStats) => void;
+
+  // --- Cities & Knights reducers (see doc/Cities-and-Knights-Implemented.md) ---
+
+  /**
+   * Apply a Special Item change (from SOCSetSpecialItem): OP_SET / OP_SET_PICK
+   * for the '_CK_IMP/T|P|S' typeKeys updates that player's improvement-track
+   * level; OP_DECLINE (sent only to the requester) surfaces an error.
+   */
+  applySetSpecialItem: (msg: SOCSetSpecialItem) => void;
+  /**
+   * Apply an inventory-item change (from SOCInventoryItemAction): C&K
+   * progress-card draws/plays for the local hand, hidden-hand counts for
+   * opponents, revealed VP progress cards, and CANNOT_PLAY errors.
+   */
+  applyInventoryItemAction: (msg: SOCInventoryItemAction) => void;
+  /**
+   * Remove a piece from the board (from SOCRemovePiece). A removed CITY is
+   * replaced in place by that player's settlement (C&K barbarian downgrade;
+   * the server's follow-up SOCPutPiece(settlement) dedupes against it).
+   */
+  applyRemovePiece: (msg: SOCRemovePiece) => void;
+  /** Record a track's metropolis owner (from SimpleAction CK_METROPOLIS_CLAIMED). */
+  applyCkMetropolis: (gameName: string, track: number, ownerPn: number) => void;
+  /** Record a barbarian-attack result (from SimpleAction CK_BARBARIAN_ATTACK_RESULT). */
+  applyCkBarbarianAttack: (gameName: string, strength: number, defense: number) => void;
+  /** Toast + log the Defender of Catan award (from SimpleAction CK_DEFENDER_OF_CATAN). */
+  applyCkDefenderOfCatan: (gameName: string, playerNumber: number, newSvp: number) => void;
 }
 
 /**
@@ -519,6 +657,15 @@ function makePlayerViews(maxPlayers: number): PlayerView[] {
 }
 
 /** Build a fresh, all-empty {@link CurrentGame} for a just-joined game. */
+/**
+ * True when a packed options summary marks a Cities & Knights game: contains
+ * the '_SC_CK' scenario flag or the '_CK_IMP' core option. See
+ * doc/Cities-and-Knights-Implemented.md ("Scenario").
+ */
+export function isCKGameOptions(optionsSummary: string): boolean {
+  return optionsSummary.includes('_SC_CK') || optionsSummary.includes('_CK_IMP');
+}
+
 function makeCurrentGame(
   gameName: string,
   options: string,
@@ -553,6 +700,12 @@ function makeCurrentGame(
     robCanChooseNone: false,
     winnerPlayerNumber: -1,
     finalScores: null,
+    isCKGame: isCKGameOptions(options),
+    ckBarbarianStrength: 0,
+    ckMetropolisOwners: [-1, -1, -1],
+    lastBarbarianAttack: null,
+    myProgressHand: [],
+    ckPendingMonopoly: null,
   };
 }
 
@@ -683,9 +836,55 @@ function applyElementToView(
       // for v2.5.00+ clients is folded into SOCTurn (see applyTurn), but a SET-to-0
       // PLAYERELEMENT (e.g. road-building cancel) is still honored here.
       return { ...view, playedDevCard: action === PlayerElementAction.SET && amount !== 0 };
+
+    // Cities & Knights commodities (GAIN on production, SET on join/loss; LOSE
+    // honored too) and knight counts (always SET); see
+    // doc/Cities-and-Knights-Implemented.md.
+    case PlayerElementType.CK_CLOTH_COUNT:
+      return withCkCommodity(view, 'cloth', action, amount);
+    case PlayerElementType.CK_COIN_COUNT:
+      return withCkCommodity(view, 'coin', action, amount);
+    case PlayerElementType.CK_PAPER_COUNT:
+      return withCkCommodity(view, 'paper', action, amount);
+    case PlayerElementType.CK_KNIGHTS_LV1:
+      return withCkKnights(view, 'lv1', action, amount);
+    case PlayerElementType.CK_KNIGHTS_LV2:
+      return withCkKnights(view, 'lv2', action, amount);
+    case PlayerElementType.CK_KNIGHTS_LV3:
+      return withCkKnights(view, 'lv3', action, amount);
+    case PlayerElementType.CK_KNIGHTS_ACTIVE_LV1:
+      return withCkKnights(view, 'activeLv1', action, amount);
+    case PlayerElementType.CK_KNIGHTS_ACTIVE_LV2:
+      return withCkKnights(view, 'activeLv2', action, amount);
+    case PlayerElementType.CK_KNIGHTS_ACTIVE_LV3:
+      return withCkKnights(view, 'activeLv3', action, amount);
     default:
       return view; // flags / scenario / not-shown element types: ignore
   }
+}
+
+/** Apply a SET/GAIN/LOSE to one C&K commodity count, returning a new view. */
+function withCkCommodity(
+  view: PlayerView,
+  field: keyof PlayerView['ck']['commodities'],
+  action: number,
+  amount: number,
+): PlayerView {
+  const commodities = { ...view.ck.commodities };
+  commodities[field] = applyElementAction(commodities[field], action, amount);
+  return { ...view, ck: { ...view.ck, commodities } };
+}
+
+/** Apply a SET/GAIN/LOSE to one C&K knight count, returning a new view. */
+function withCkKnights(
+  view: PlayerView,
+  field: keyof PlayerView['ck']['knights'],
+  action: number,
+  amount: number,
+): PlayerView {
+  const knights = { ...view.ck.knights };
+  knights[field] = applyElementAction(knights[field], action, amount);
+  return { ...view, ck: { ...view.ck, knights } };
 }
 
 /**
@@ -714,7 +913,11 @@ export const useGameStore = create<GameStoreState>((set) => ({
   serverVersionStr: undefined,
   channels: [],
   games: [],
+  gamesLoaded: false,
+  lastHost: DEFAULT_HOST,
+  lastPort: DEFAULT_PORT,
   error: undefined,
+  notice: undefined,
   knownOptions: {},
   optionsLoaded: false,
   optionsRequested: false,
@@ -763,15 +966,24 @@ export const useGameStore = create<GameStoreState>((set) => ({
     }),
 
   setGames: (games) =>
-    set({ games: games.map((g) => ({ ...g, name: cleanGameName(g.name) })) }),
+    set({
+      games: games.map((g) => ({ ...g, name: cleanGameName(g.name) })),
+      gamesLoaded: true,
+    }),
+
+  setServerAddress: (host, port) => set({ lastHost: host, lastPort: port }),
 
   setError: (error) => set({ error }),
+
+  setNotice: (notice) => set({ notice }),
 
   resetLobby: () =>
     set({
       channels: [],
       games: [],
+      gamesLoaded: false,
       error: undefined,
+      notice: undefined,
       serverVersion: undefined,
       serverVersionStr: undefined,
       knownOptions: {},
@@ -919,8 +1131,17 @@ export const useGameStore = create<GameStoreState>((set) => ({
       // Leaving WAITING_FOR_DISCARDS clears any stale discard requirement.
       const discardRequired =
         state !== GameState.WAITING_FOR_DISCARDS ? 0 : cg.discardRequired;
+      // Leaving WAITING_FOR_MONOPOLY clears the pending C&K monopoly pick.
+      const ckPendingMonopoly =
+        state !== GameState.WAITING_FOR_MONOPOLY ? null : cg.ckPendingMonopoly;
       return {
-        currentGame: { ...cg, gameState: state, winnerPlayerNumber, discardRequired },
+        currentGame: {
+          ...cg,
+          gameState: state,
+          winnerPlayerNumber,
+          discardRequired,
+          ckPendingMonopoly,
+        },
       };
     }),
 
@@ -1044,6 +1265,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       let currentPlayerNumber = cg.currentPlayerNumber;
       let deckDevCardCount = cg.deckDevCardCount;
+      let ckBarbarianStrength = cg.ckBarbarianStrength;
       let playerViews = cg.playerViews;
       for (let i = 0; i < msg.elementTypes.length; ++i) {
         const et = msg.elementTypes[i];
@@ -1067,12 +1289,21 @@ export const useGameStore = create<GameStoreState>((set) => ({
               cg.pieces,
             );
             break;
+          case GameElementType.CK_BARBARIAN_STRENGTH:
+            ckBarbarianStrength = val;
+            break;
           default:
             break; // ROUND_COUNT / FIRST_PLAYER / scenario fields: not shown
         }
       }
       return {
-        currentGame: { ...cg, currentPlayerNumber, deckDevCardCount, playerViews },
+        currentGame: {
+          ...cg,
+          currentPlayerNumber,
+          deckDevCardCount,
+          ckBarbarianStrength,
+          playerViews,
+        },
       };
     }),
 
@@ -1154,6 +1385,9 @@ export const useGameStore = create<GameStoreState>((set) => ({
           discardRequired: 0,
           robVictims: null,
           winnerPlayerNumber,
+          // A pending C&K monopoly pick can't survive a turn change.
+          ckPendingMonopoly:
+            gameState === GameState.WAITING_FOR_MONOPOLY ? cg.ckPendingMonopoly : null,
         },
       };
     }),
@@ -1199,10 +1433,17 @@ export const useGameStore = create<GameStoreState>((set) => ({
       if (cg === null || line === '') {
         return {};
       }
-      const gameLog = [...cg.gameLog, line];
-      if (gameLog.length > GAME_LOG_MAX) {
-        gameLog.splice(0, gameLog.length - GAME_LOG_MAX);
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
+      return { currentGame: { ...cg, gameLog } };
+    }),
+
+  appendChatLog: (gameName, nickname, text) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null || text === '') {
+        return {};
       }
+      const gameLog = pushLog(cg.gameLog, { text, kind: 'chat', nickname });
       return { currentGame: { ...cg, gameLog } };
     }),
 
@@ -1301,7 +1542,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       const offerResponses = new Array<OfferResponse | null>(cg.maxPlayers).fill(null);
       const line = `${seatLabel(cg, msg.accepting)} accepted ${seatLabel(cg, msg.offering)}'s trade offer.`;
-      const gameLog = pushLog(cg.gameLog, line);
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
       return { currentGame: { ...cg, offers, offerResponses, gameLog } };
     }),
 
@@ -1422,7 +1663,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
         return {};
       }
       const line = robberyLogLine(cg, msg);
-      const gameLog = pushLog(cg.gameLog, line);
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
       return { currentGame: { ...cg, gameLog } };
     }),
 
@@ -1449,7 +1690,273 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       return { currentGame: { ...cg, finalScores, winnerPlayerNumber } };
     }),
+
+  // --- Cities & Knights reducers ---
+
+  applySetSpecialItem: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const track = ckTrackOfTypeKey(msg.typeKey);
+      if (track === null) {
+        return {}; // not a C&K improvement item (e.g. SC_WOND wonders): ignore
+      }
+      if (msg.op === SpecialItemOp.OP_DECLINE) {
+        // The server sends OP_DECLINE only to the requesting client, so any
+        // decline we see is ours: surface it (toasted via store.error).
+        const text = "You can't build that city improvement right now.";
+        return {
+          error: text,
+          currentGame: { ...cg, gameLog: pushLog(cg.gameLog, { text, kind: 'server' }) },
+        };
+      }
+      if (msg.op !== SpecialItemOp.OP_SET && msg.op !== SpecialItemOp.OP_SET_PICK) {
+        return {}; // OP_CLEAR(_PICK) unused by the C&K tracks
+      }
+      // The message's playerNumber + level carry the data (pi is always 0).
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) => ({
+        ...v,
+        ck: {
+          ...v.ck,
+          improvements: { ...v.ck.improvements, [track]: msg.level },
+        },
+      }));
+      if (playerViews === cg.playerViews) {
+        return {};
+      }
+      return { currentGame: { ...cg, playerViews } };
+    }),
+
+  applyInventoryItemAction: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const itype = msg.itemType;
+      const isMine = cg.mySeat >= 0 && msg.playerNumber === cg.mySeat;
+
+      if (msg.action === InventoryItemAction.CANNOT_PLAY) {
+        // pn is always -1; sent only to the requesting client.
+        const text = "You can't play that card right now.";
+        return {
+          error: text,
+          currentGame: { ...cg, gameLog: pushLog(cg.gameLog, { text, kind: 'server' }) },
+        };
+      }
+
+      // VP progress card revealed on draw: announced to ALL players as
+      // ADD_OTHER with the real itype and isVP=true (kept, +1 SVP).
+      if (
+        msg.action === InventoryItemAction.ADD_OTHER &&
+        msg.isVP &&
+        isCKProgressCard(itype)
+      ) {
+        const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) => ({
+          ...v,
+          ck: { ...v.ck, vpProgressCards: [...v.ck.vpProgressCards, itype] },
+        }));
+        if (playerViews === cg.playerViews) {
+          return {};
+        }
+        return { currentGame: { ...cg, playerViews } };
+      }
+
+      if (
+        msg.action === InventoryItemAction.ADD_PLAYABLE ||
+        msg.action === InventoryItemAction.ADD_OTHER
+      ) {
+        if (isMine && isCKProgressCard(itype)) {
+          // Our own draw arrives with the real itype.
+          const myProgressHand = [...cg.myProgressHand, itype];
+          const playerViews = setProgressCardCount(
+            cg.playerViews,
+            cg.mySeat,
+            myProgressHand.length,
+          );
+          return { currentGame: { ...cg, myProgressHand, playerViews } };
+        }
+        if (itype === 0 && msg.playerNumber >= 0 && !isMine) {
+          // Another player drew a hidden progress card. Announced as
+          // ADD_PLAYABLE with itemType 0 (the doc says ADD_OTHER; the live
+          // server uses ADD_PLAYABLE — accept both).
+          const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) => ({
+            ...v,
+            ck: { ...v.ck, progressCards: v.ck.progressCards + 1 },
+          }));
+          return { currentGame: { ...cg, playerViews } };
+        }
+        return {};
+      }
+
+      if (
+        msg.action === InventoryItemAction.PLAYED ||
+        msg.action === InventoryItemAction.REMOVE_PLAYABLE
+      ) {
+        if (isMine) {
+          const idx = cg.myProgressHand.indexOf(itype);
+          if (idx < 0) {
+            return {};
+          }
+          const myProgressHand = cg.myProgressHand
+            .slice(0, idx)
+            .concat(cg.myProgressHand.slice(idx + 1));
+          const playerViews = setProgressCardCount(
+            cg.playerViews,
+            cg.mySeat,
+            myProgressHand.length,
+          );
+          // Playing a C&K monopoly moves the game to WAITING_FOR_MONOPOLY;
+          // remember WHICH monopoly so the UI shows the right picker
+          // (resource for 11, commodity for 12).
+          const ckPendingMonopoly =
+            msg.action === InventoryItemAction.PLAYED &&
+            (itype === CKProgressCard.RESOURCE_MONOPOLY ||
+              itype === CKProgressCard.TRADE_MONOPOLY)
+              ? itype
+              : cg.ckPendingMonopoly;
+          return {
+            currentGame: { ...cg, myProgressHand, playerViews, ckPendingMonopoly },
+          };
+        }
+        if (msg.playerNumber >= 0) {
+          // Another player's play: their hidden-hand count shrinks by one.
+          const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) => ({
+            ...v,
+            ck: { ...v.ck, progressCards: Math.max(0, v.ck.progressCards - 1) },
+          }));
+          return { currentGame: { ...cg, playerViews } };
+        }
+        return {};
+      }
+
+      return {}; // BUY / PLACING_EXTRA / REMOVE_OTHER: unused in the C&K loop
+    }),
+
+  applyRemovePiece: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      let found = false;
+      const pieces: BoardPiece[] = [];
+      for (const p of cg.pieces) {
+        if (
+          !found &&
+          p.coord === msg.coord &&
+          p.playerNumber === msg.playerNumber &&
+          p.ptype === msg.pieceType
+        ) {
+          found = true;
+          if (msg.pieceType === PieceTypeConst.CITY) {
+            // C&K barbarian city downgrade: replace the city with the owner's
+            // settlement in place, so the board never shows an empty node. The
+            // server's follow-up SOCPutPiece(settlement) at the same node
+            // dedupes against this in applyPutPiece.
+            pieces.push({ ...p, ptype: PIECE_SETTLEMENT });
+          }
+          continue; // piece removed (or replaced)
+        }
+        pieces.push(p);
+      }
+      if (!found) {
+        return {};
+      }
+      const playerViews = recomputeVp(cg.playerViews, pieces, msg.playerNumber);
+      return { currentGame: { ...cg, pieces, playerViews } };
+    }),
+
+  applyCkMetropolis: (gameName, track, ownerPn) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null || track < 0 || track > 2) {
+        return {};
+      }
+      const ckMetropolisOwners = cg.ckMetropolisOwners.slice();
+      ckMetropolisOwners[track] = ownerPn;
+      const line = `${seatLabel(cg, ownerPn)} claimed the ${CK_TRACK_NAMES[track]} metropolis!`;
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
+      return { currentGame: { ...cg, ckMetropolisOwners, gameLog } };
+    }),
+
+  applyCkBarbarianAttack: (gameName, strength, defense) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      const defendersWon = defense >= strength;
+      const lastBarbarianAttack: CKBarbarianAttack = {
+        strength,
+        defense,
+        defendersWon,
+        seq: (cg.lastBarbarianAttack?.seq ?? 0) + 1,
+      };
+      const line =
+        `Barbarians attacked! Strength ${strength} vs defense ${defense} — ` +
+        `defenders ${defendersWon ? 'won' : 'lost'}.`;
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
+      // The counter resets to 0 after an attack; the server re-announces it on
+      // the next roll, but reset locally so the track doesn't linger at 7.
+      return {
+        currentGame: { ...cg, lastBarbarianAttack, ckBarbarianStrength: 0, gameLog },
+      };
+    }),
+
+  applyCkDefenderOfCatan: (gameName, playerNumber, newSvp) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      const line =
+        `${seatLabel(cg, playerNumber)} is the Defender of Catan! ` +
+        `(+1 special victory point, now ${newSvp})`;
+      const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
+      return { notice: line, currentGame: { ...cg, gameLog } };
+    }),
 }));
+
+/** Display names for the C&K improvement tracks, indexed 0=Trade, 1=Politics, 2=Science. */
+export const CK_TRACK_NAMES: readonly string[] = ['Trade', 'Politics', 'Science'];
+
+/**
+ * Map a {@link SOCSetSpecialItem} typeKey to its improvement-track field name
+ * ('trade'/'politics'/'science'), or null for non-C&K type keys.
+ */
+function ckTrackOfTypeKey(
+  typeKey: string,
+): keyof PlayerView['ck']['improvements'] | null {
+  switch (typeKey) {
+    case CKImprovementTypeKey.TRADE:
+      return 'trade';
+    case CKImprovementTypeKey.POLITICS:
+      return 'politics';
+    case CKImprovementTypeKey.SCIENCE:
+      return 'science';
+    default:
+      return null;
+  }
+}
+
+/** True if `itype` is a C&K progress-card item type (11..19). */
+function isCKProgressCard(itype: number): boolean {
+  return itype >= CKProgressCard.RESOURCE_MONOPOLY && itype <= CKProgressCard.PRINTER;
+}
+
+/** Set one seat's C&K progress-card count (mirrors the local hand size). */
+function setProgressCardCount(
+  views: readonly PlayerView[],
+  pn: number,
+  count: number,
+): PlayerView[] {
+  return updateView(views, pn, (v) =>
+    v.ck.progressCards === count ? v : { ...v, ck: { ...v.ck, progressCards: count } },
+  );
+}
 
 /** Per-seat dev-card-count delta for a {@link DevCardAction}. */
 function devCountDelta(action: number): number {
@@ -1515,12 +2022,12 @@ function applyInventoryAction(
   }
 }
 
-/** Append a line to a capped game-log array (immutable). */
-function pushLog(log: readonly string[], line: string): string[] {
-  if (line === '') {
+/** Append an entry to a capped game-log array (immutable). */
+function pushLog(log: readonly GameLogEntry[], entry: GameLogEntry): GameLogEntry[] {
+  if (entry.text === '') {
     return [...log];
   }
-  const out = [...log, line];
+  const out = [...log, entry];
   if (out.length > GAME_LOG_MAX) {
     out.splice(0, out.length - GAME_LOG_MAX);
   }
@@ -1794,6 +2301,8 @@ export function connectStore(
   }
 
   store.resetLobby();
+  // Remember where we connected so a mid-game disconnect can offer Reconnect.
+  store.setServerAddress(host, port);
 
   const conn = new GameConnection({ host, port });
   connection = conn;
@@ -2006,11 +2515,19 @@ export function connectStore(
 
   conn.on(MessageType.GAMETEXTMSG, (msg: SOCMessage) => {
     const t = msg as SOCGameTextMsg;
-    // Prefix chat lines with the sender (server text uses "Server"/":"); the
-    // log is plain strings so the UI stays simple.
-    const line =
-      t.nickname === '' || t.nickname === '-' ? t.text : `${t.nickname}: ${t.text}`;
-    useGameStore.getState().appendGameLog(t.game, line);
+    // Server text uses the reserved nicknames "Server" / ":" (or "-" / empty);
+    // anything else is player-authored chat, logged with its speaker so the UI
+    // can render chat lines distinctly.
+    const fromServer =
+      t.nickname === '' ||
+      t.nickname === '-' ||
+      t.nickname === SERVERNAME ||
+      t.nickname === SERVER_FOR_CHAT;
+    if (fromServer) {
+      useGameStore.getState().appendGameLog(t.game, t.text);
+    } else {
+      useGameStore.getState().appendChatLog(t.game, t.nickname, t.text);
+    }
   });
 
   // --- Full in-game interaction messages (Phase 4) ---
@@ -2134,7 +2651,64 @@ export function connectStore(
         a.game,
         `${seatLabel(cg, a.playerNumber)} monopolized ${a.value1} ${resourceName(a.value2)}.`,
       );
+    } else if (a.actType === SimpleActionType.CK_BARBARIAN_ATTACK_RESULT) {
+      // value1 = barbarian strength, value2 = Catan's defense.
+      st.applyCkBarbarianAttack(a.game, a.value1, a.value2);
+    } else if (a.actType === SimpleActionType.CK_METROPOLIS_CLAIMED) {
+      // value1 = track (0=Trade, 1=Politics, 2=Science). The new owner is in
+      // the message's playerNumber; older docs describe it in value2 — accept
+      // either (playerNumber preferred when >= 0).
+      const owner = a.playerNumber >= 0 ? a.playerNumber : a.value2;
+      st.applyCkMetropolis(a.game, a.value1, owner);
+    } else if (a.actType === SimpleActionType.CK_DEFENDER_OF_CATAN) {
+      // The defender is in playerNumber with value1 = their new SVP total;
+      // older docs describe (value1=pn, value2=svp) — accept either form.
+      const pn = a.playerNumber >= 0 ? a.playerNumber : a.value1;
+      const svp = a.playerNumber >= 0 ? a.value1 : a.value2;
+      st.applyCkDefenderOfCatan(a.game, pn, svp);
     }
+  });
+
+  // A C&K knight request denied by the server: SOCSimpleRequest is echoed back
+  // to the requester with pn = -1 (the standard denial convention).
+  conn.on(MessageType.SIMPLEREQUEST, (msg: SOCMessage) => {
+    const r = msg as SOCSimpleRequest;
+    if (r.playerNumber !== -1) {
+      return; // <--- Early return: not a denial echo ---
+    }
+    let text: string | null = null;
+    switch (r.reqType) {
+      case SimpleRequestType.CK_BUY_KNIGHT:
+        text = "You can't buy a knight right now.";
+        break;
+      case SimpleRequestType.CK_ACTIVATE_KNIGHT:
+        text = "You can't activate a knight right now.";
+        break;
+      case SimpleRequestType.CK_PROMOTE_KNIGHT:
+        text = "You can't promote a knight right now.";
+        break;
+      default:
+        break; // other request types: no C&K handling
+    }
+    if (text !== null) {
+      const st = useGameStore.getState();
+      st.appendGameLog(r.game, text);
+      st.setError(text);
+    }
+  });
+
+  // --- Cities & Knights state messages ---
+
+  conn.on(MessageType.SETSPECIALITEM, (msg: SOCMessage) => {
+    useGameStore.getState().applySetSpecialItem(msg as SOCSetSpecialItem);
+  });
+
+  conn.on(MessageType.INVENTORYITEMACTION, (msg: SOCMessage) => {
+    useGameStore.getState().applyInventoryItemAction(msg as SOCInventoryItemAction);
+  });
+
+  conn.on(MessageType.REMOVEPIECE, (msg: SOCMessage) => {
+    useGameStore.getState().applyRemovePiece(msg as SOCRemovePiece);
   });
 
   conn.on(MessageType.GAMESTATS, (msg: SOCMessage) => {
@@ -2201,6 +2775,19 @@ function declineReasonText(reasonCode: number): string {
 }
 
 /**
+ * Reconnect to the most recent server address (saved by {@link connectStore}).
+ * Used by the mid-game "Connection lost" overlay's Reconnect button. The
+ * nickname is kept (it lives in the store and survives resetLobby); the joined
+ * game is cleared, so a successful reconnect lands back in the lobby.
+ *
+ * @returns the new connection
+ */
+export function reconnectStore(): GameConnection {
+  const s = useGameStore.getState();
+  return connectStore(s.lastHost, s.lastPort);
+}
+
+/**
  * Close and clear the active connection (used by tests and a future Disconnect
  * button). Sets the store back to `disconnected`.
  */
@@ -2264,7 +2851,29 @@ export function requestGameOptions(): void {
   store.setOptionsRequested(true);
   // Step 1: ask for the defaults (opts=null => bare "1080" request).
   conn.send(new SOCGameOptionGetDefaults(null));
+  // Also ask for the standard scenarios so the New Game dialog can offer them
+  // (the Swing client requests scenario info the same way). The "?" any-changed
+  // marker also picks up scenarios we don't know to name. Replies arrive as
+  // SCENARIOINFO and are upserted into the scenarios registry.
+  conn.send(SOCScenarioInfo.request(STANDARD_SCENARIO_KEYS, true));
 }
+
+/**
+ * The standard scenario keynames a 2.x server knows (soc.game.SOCScenario
+ * keynames), requested during option discovery so the New Game dialog's
+ * scenario list (including Cities & Knights, SC_CK) can be populated.
+ */
+export const STANDARD_SCENARIO_KEYS: readonly string[] = [
+  'SC_NSHO',
+  'SC_4ISL',
+  'SC_FOG',
+  'SC_TTD',
+  'SC_CLVI',
+  'SC_PIRI',
+  'SC_FTRI',
+  'SC_WOND',
+  'SC_CK',
+];
 
 /**
  * Create a new game with options and (per the server flow) auto-join it.
@@ -2722,6 +3331,26 @@ export function discard(amounts: Partial<Record<ResourceValue, number>>): void {
 }
 
 /**
+ * Send a chat message to the joined game as a SOCGameTextMsg with the local
+ * nickname. Whitespace-only messages are not sent. The server echoes the chat
+ * back to every game member (including the sender), so the log line is appended
+ * by the GAMETEXTMSG handler on that echo — no optimistic local append, which
+ * would duplicate the line.
+ *
+ * @param text  the chat text as typed (trimmed before sending)
+ */
+export function sendChat(text: string): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  const trimmed = text.trim();
+  if (conn === null || cg === null || trimmed === '') {
+    return; // <--- Early return: not in a game / nothing to send ---
+  }
+  const nick = useGameStore.getState().nickname;
+  conn.send(new SOCGameTextMsg(cg.gameName, nick, trimmed));
+}
+
+/**
  * Send a debug chat command (e.g. "rsrcs: 1 0 1 0 1 #0", "*FREEPLACE* 1") as a
  * SOCGameTextMsg in the joined game. The server runs it when debug is enabled
  * (the dev server runs with -Djsettlers.allow.debug=Y). Useful for setting up
@@ -2737,6 +3366,80 @@ export function sendDebug(text: string): void {
   }
   const nick = useGameStore.getState().nickname;
   conn.send(new SOCGameTextMsg(cg.gameName, nick, text));
+}
+
+// ---------------------------------------------------------------------------
+// Cities & Knights action senders (see doc/Cities-and-Knights-Implemented.md).
+// ---------------------------------------------------------------------------
+
+/** Internal: send a C&K knight SOCSimpleRequest with our seat (values 0,0). */
+function ckKnightRequest(reqType: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  conn.send(new SOCSimpleRequest(cg.gameName, cg.mySeat, reqType, 0, 0));
+}
+
+/** Buy a knight (1 sheep + 1 ore -> +1 inactive basic knight). C&K only. */
+export function ckBuyKnight(): void {
+  ckKnightRequest(SimpleRequestType.CK_BUY_KNIGHT);
+}
+
+/** Activate the lowest-level inactive knight (1 wheat). C&K only. */
+export function ckActivateKnight(): void {
+  ckKnightRequest(SimpleRequestType.CK_ACTIVATE_KNIGHT);
+}
+
+/** Promote the lowest-level knight one level (1 sheep + 1 ore). C&K only. */
+export function ckPromoteKnight(): void {
+  ckKnightRequest(SimpleRequestType.CK_PROMOTE_KNIGHT);
+}
+
+/**
+ * Buy the next level of a C&K city-improvement track. Sends
+ * SOCSetSpecialItem(OP_PICK) exactly as the Java client's
+ * GameMessageSender.pickSpecialItem does: gameItemIndex=-1, playerItemIndex=0,
+ * playerNumber=-1 (the server uses the requester's seat), coord=-1, level=0,
+ * sv=null. The server pays the commodities and replies OP_SET_PICK with the
+ * new level (or OP_DECLINE).
+ *
+ * @param track  0 = Trade (cloth), 1 = Politics (coin), 2 = Science (paper)
+ */
+export function ckBuyImprovement(track: 0 | 1 | 2): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  const typeKey = [
+    CKImprovementTypeKey.TRADE,
+    CKImprovementTypeKey.POLITICS,
+    CKImprovementTypeKey.SCIENCE,
+  ][track];
+  conn.send(
+    new SOCSetSpecialItem(cg.gameName, SpecialItemOp.OP_PICK, typeKey, -1, 0, -1),
+  );
+}
+
+/**
+ * Play a C&K progress card from the local hand. Sends
+ * SOCInventoryItemAction(PLAY) with our player number (mirrors the Java
+ * client's GameMessageSender.playInventoryItem). The server replies PLAYED
+ * (broadcast) or CANNOT_PLAY (privately).
+ *
+ * @param itype  the progress-card item type ({@link CKProgressCard}, 11..19)
+ */
+export function ckPlayProgressCard(itype: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  conn.send(
+    new SOCInventoryItemAction(cg.gameName, cg.mySeat, InventoryItemAction.PLAY, itype),
+  );
 }
 
 export { PieceTypeConst, GameState, DevCardType, Resource };

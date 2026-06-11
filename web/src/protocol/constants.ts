@@ -129,6 +129,8 @@ export const MessageType = {
   DICERESULTRESOURCES: 1092,
   /** {@link SOCMovePiece} — move a piece (currently only ships) to a new edge. @since 2.0.00 */
   MOVEPIECE: 1093,
+  /** {@link SOCRemovePiece} — server removes a piece from the board (SC_PIRI ships; C&K city downgrade). @since 2.0.00 */
+  REMOVEPIECE: 1094,
   /** {@link SOCGameElements} — several game-status fields at once (multi). @since 2.0.00 */
   GAMEELEMENTS: 1096,
 
@@ -181,6 +183,10 @@ export const MessageType = {
   // Misc
   /** {@link SOCGameStats} — game stats (final scores / timing), or a request for them. */
   GAMESTATS: 1061,
+  /** {@link SOCInventoryItemAction} — scenario inventory items (C&K progress cards, SC_FTRI ports). @since 2.0.00 */
+  INVENTORYITEMACTION: 1098,
+  /** {@link SOCSetSpecialItem} — pick/set/clear a Special Item (C&K improvements, SC_WOND wonders). @since 2.0.00 */
+  SETSPECIALITEM: 1099,
   /** {@link SOCSimpleRequest} — generic player request / server prompt with 2 detail values. @since 1.1.18 */
   SIMPLEREQUEST: 1089,
   /** {@link SOCSimpleAction} — generic in-game action/event from server with 2 detail values. @since 1.1.19 */
@@ -575,6 +581,26 @@ export const PlayerElementType = {
   SCENARIO_CLOTH_COUNT: 106,
   /** Number of ships converted to warships (SC_PIRI scenario). Value 107. */
   SCENARIO_WARSHIP_COUNT: 107,
+
+  // Cities & Knights (SC_CK scenario); see doc/Cities-and-Knights-Implemented.md.
+  /** Cloth commodity count (C&K; GAIN on production, SET on join/loss). Value 110. */
+  CK_CLOTH_COUNT: 110,
+  /** Coin commodity count (C&K). Value 111. */
+  CK_COIN_COUNT: 111,
+  /** Paper commodity count (C&K). Value 112. */
+  CK_PAPER_COUNT: 112,
+  /** Total basic (level-1) knights (C&K; SET only). Value 113. */
+  CK_KNIGHTS_LV1: 113,
+  /** Total strong (level-2) knights (C&K; SET only). Value 114. */
+  CK_KNIGHTS_LV2: 114,
+  /** Total mighty (level-3) knights (C&K; SET only). Value 115. */
+  CK_KNIGHTS_LV3: 115,
+  /** Active basic (level-1) knights (C&K; SET only). Value 116. */
+  CK_KNIGHTS_ACTIVE_LV1: 116,
+  /** Active strong (level-2) knights (C&K; SET only). Value 117. */
+  CK_KNIGHTS_ACTIVE_LV2: 117,
+  /** Active mighty (level-3) knights (C&K; SET only). Value 118. */
+  CK_KNIGHTS_ACTIVE_LV3: 118,
 } as const;
 
 /**
@@ -610,6 +636,12 @@ export const GameElementType = {
   IS_PLACING_ROBBER_FOR_KNIGHT_CARD_FLAG: 9,
   /** Has built a city this turn (1/0); N7C house rule, undo only. Value 10. */
   HAS_BUILT_CITY_N7C: 10,
+  /**
+   * Barbarian strength counter (C&K; advances 1 per dice roll, attacks at
+   * {@link CK_BARBARIAN_ATTACK_THRESHOLD} then resets to 0); see
+   * doc/Cities-and-Knights-Implemented.md. Value 11.
+   */
+  CK_BARBARIAN_STRENGTH: 11,
 } as const;
 
 /**
@@ -768,6 +800,13 @@ export const SimpleRequestType = {
   SC_PIRI_FORT_ATTACK: 1000,
   /** Current player wants to place a trade port they've been given (SC_FTRI). Value 1001. @since 2.0.00 */
   TRADE_PORT_PLACE: 1001,
+  // Cities & Knights knight actions (C&K); see doc/Cities-and-Knights-Implemented.md.
+  /** Current player wants to buy a knight (1 sheep + 1 ore -> +1 inactive basic knight). Value 1002. */
+  CK_BUY_KNIGHT: 1002,
+  /** Current player wants to activate their lowest-level inactive knight (1 wheat). Value 1003. */
+  CK_ACTIVATE_KNIGHT: 1003,
+  /** Current player wants to promote their lowest-level knight (1 sheep + 1 ore). Value 1004. */
+  CK_PROMOTE_KNIGHT: 1004,
 } as const;
 
 /**
@@ -790,6 +829,13 @@ export const SimpleActionType = {
   TRADE_PORT_REMOVED: 1002,
   /** Player undid placing/moving a ship by a Village (SC_CLVI). Value 1003. @since 2.7.00 */
   SC_CLVI_VILLAGE_PLAYER_REMOVED: 1003,
+  // Cities & Knights events (C&K); see doc/Cities-and-Knights-Implemented.md.
+  /** Barbarian attack happened; v1=barbarian strength, v2=Catan's defense. Value 1004. */
+  CK_BARBARIAN_ATTACK_RESULT: 1004,
+  /** Metropolis claimed; v1=track (0=Trade, 1=Politics, 2=Science), v2=new owner pn. Value 1005. */
+  CK_METROPOLIS_CLAIMED: 1005,
+  /** Defender of Catan awarded; v1=player number, v2=that player's new SVP total. Value 1006. */
+  CK_DEFENDER_OF_CATAN: 1006,
 } as const;
 
 /**
@@ -802,3 +848,170 @@ export const GameStatsType = {
   /** Game timing (created/started/finished as unix seconds). Value 2. @since 2.7.00 */
   TYPE_TIMING: 2,
 } as const;
+
+/**
+ * Operation codes for {@link SOCSetSpecialItem} (the {@code OP_*} constants in
+ * {@code SOCSetSpecialItem.java}). Client requests typically use {@code OP_PICK};
+ * the server can announce changes with any op, including the combined
+ * {@code OP_SET_PICK} / {@code OP_CLEAR_PICK}.
+ *<P>
+ * NOTE: the values are verified against the Java source: the combined ops are
+ * plain {@code OP_SET_PICK=5} and {@code OP_CLEAR_PICK=6}, NOT a 16+n bit
+ * encoding. @since 2.0.00
+ */
+export const SpecialItemOp = {
+  /** Set an item in the game and/or owning player's Special Item list. Value 1 (lowest op). */
+  OP_SET: 1,
+  /** Clear an item in the game and/or owning player's Special Item list. Value 2. */
+  OP_CLEAR: 2,
+  /** Pick/choose an item for some action; highest op a client can send. Value 3. */
+  OP_PICK: 3,
+  /** Server declines the client's SET/CLEAR/PICK request (echoes its fields). Value 4. */
+  OP_DECLINE: 4,
+  /** Server-only combined {@link #OP_SET} + {@link #OP_PICK} with the same fields. Value 5. */
+  OP_SET_PICK: 5,
+  /** Server-only combined {@link #OP_CLEAR} + {@link #OP_PICK} with the same fields. Value 6. */
+  OP_CLEAR_PICK: 6,
+} as const;
+
+/**
+ * Type of a {@link SpecialItemOp} value.
+ */
+export type SpecialItemOpValue = (typeof SpecialItemOp)[keyof typeof SpecialItemOp];
+
+/**
+ * Action codes for {@link SOCInventoryItemAction} (the constants in
+ * {@code SOCInventoryItemAction.java}). For all actions EXCEPT {@code PLAY} and
+ * {@code CANNOT_PLAY}, the optional wire `reasonCode` field is a bit field of
+ * the isKept/isVP/canCancelPlay flags (see the message module). @since 2.0.00
+ */
+export const InventoryItemAction = {
+  /** Client request to buy an item (reserved; unused in v2.x core). Value 1. */
+  BUY: 1,
+  /** From server: add as Playable to player's inventory. Value 2. */
+  ADD_PLAYABLE: 2,
+  /** From server: add as New or Kept to player's inventory (per isKept flag). Value 3. */
+  ADD_OTHER: 3,
+  /** Client request to play a PLAYABLE item. Value 4. */
+  PLAY: 4,
+  /** From server: can't play that item now (pn always -1; optional reasonCode). Value 5. */
+  CANNOT_PLAY: 5,
+  /** From server: item was played (check isKept flag to keep/remove it). Value 6. */
+  PLAYED: 6,
+  /** From server: item needs placement but was never in inventory. Value 7. */
+  PLACING_EXTRA: 7,
+  /** From server: remove this Playable item (undo); opposite of ADD_PLAYABLE. Value 8. @since 2.7.00 */
+  REMOVE_PLAYABLE: 8,
+  /** From server: remove this New/Kept item (undo); opposite of ADD_OTHER. Value 9. @since 2.7.00 */
+  REMOVE_OTHER: 9,
+} as const;
+
+/**
+ * Type of an {@link InventoryItemAction} value.
+ */
+export type InventoryItemActionValue =
+  (typeof InventoryItemAction)[keyof typeof InventoryItemAction];
+
+/**
+ * Cities & Knights progress-card item types ({@code SOCInventoryItem.itype}
+ * values 11..19 carried by {@link SOCInventoryItemAction}); decks are Trade
+ * (11-13), Politics (14-16), Science (17-19). See
+ * doc/Cities-and-Knights-Implemented.md ("Progress cards").
+ */
+export const CKProgressCard = {
+  /** Resource Monopoly (Trade): name a resource; take up to 2 of it from each other player. Value 11. */
+  RESOURCE_MONOPOLY: 11,
+  /** Trade Monopoly (Trade): name a commodity; take 1 of it from each other player. Value 12. */
+  TRADE_MONOPOLY: 12,
+  /** Master Merchant (Trade): take 2 random resources from the richest opponent. Value 13. */
+  MASTER_MERCHANT: 13,
+  /** Warlord (Politics): activate all your inactive knights for free. Value 14. */
+  WARLORD: 14,
+  /** Wedding (Politics): each player with more VP than you gives you 1 random resource. Value 15. */
+  WEDDING: 15,
+  /** Constitution (Politics): +1 VP, revealed and scored when drawn (isKept/isVP). Value 16. */
+  CONSTITUTION: 16,
+  /** Irrigation (Science): gain 2 wheat per distinct adjacent fields hex. Value 17. */
+  IRRIGATION: 17,
+  /** Mining (Science): gain 2 ore per distinct adjacent mountains hex. Value 18. */
+  MINING: 18,
+  /** Printer (Science): +1 VP, revealed and scored when drawn (isKept/isVP). Value 19. */
+  PRINTER: 19,
+} as const;
+
+/**
+ * Type of a {@link CKProgressCard} value.
+ */
+export type CKProgressCardValue = (typeof CKProgressCard)[keyof typeof CKProgressCard];
+
+/**
+ * Cities & Knights commodity type constants (per-player counters separate from
+ * the 5-resource set; the {@code SOCPlayer} commodity constants). Used e.g. as
+ * the {@link SOCPickResourceType} value for Trade Monopoly. See
+ * doc/Cities-and-Knights-Implemented.md ("Commodities").
+ */
+export const CKCommodity = {
+  /** Cloth (produced by cities on pasture). Value 1. */
+  CK_CLOTH: 1,
+  /** Coin (produced by cities on mountains). Value 2. */
+  CK_COIN: 2,
+  /** Paper (produced by cities on forest). Value 3. */
+  CK_PAPER: 3,
+} as const;
+
+/**
+ * Type of a {@link CKCommodity} value.
+ */
+export type CKCommodityValue = (typeof CKCommodity)[keyof typeof CKCommodity];
+
+/**
+ * Cities & Knights city-improvement special-item typeKeys, sent in
+ * {@link SOCSetSpecialItem}'s typeKey field (per-player items at player item
+ * index 0, levels 0-5). See doc/Cities-and-Knights-Implemented.md
+ * ("City improvements").
+ */
+export const CKImprovementTypeKey = {
+  /** Trade track (costs cloth). */
+  TRADE: '_CK_IMP/T',
+  /** Politics track (costs coin). */
+  POLITICS: '_CK_IMP/P',
+  /** Science track (costs paper). */
+  SCIENCE: '_CK_IMP/S',
+} as const;
+
+/**
+ * Type of a {@link CKImprovementTypeKey} value.
+ */
+export type CKImprovementTypeKeyValue =
+  (typeof CKImprovementTypeKey)[keyof typeof CKImprovementTypeKey];
+
+/**
+ * C&K: barbarian strength at which the barbarians attack (counter then resets
+ * to 0). See doc/Cities-and-Knights-Implemented.md ("Barbarians").
+ */
+export const CK_BARBARIAN_ATTACK_THRESHOLD = 7;
+
+/**
+ * C&K: maximum knights (all levels combined) a player may have. See
+ * doc/Cities-and-Knights-Implemented.md ("Knights").
+ */
+export const CK_MAX_KNIGHTS = 6;
+
+/**
+ * C&K: progress-card hand limit; VP progress cards are exempt (revealed and
+ * scored on draw). See doc/Cities-and-Knights-Implemented.md ("Progress cards").
+ */
+export const CK_PROGRESS_HAND_LIMIT = 4;
+
+/**
+ * C&K: improvement-track level that claims (or, beyond it, steals) that
+ * track's metropolis (+2 SVP). See doc/Cities-and-Knights-Implemented.md
+ * ("Metropolis").
+ */
+export const CK_METROPOLIS_LEVEL = 4;
+
+/**
+ * C&K: Politics improvement level required to promote a knight to mighty
+ * (level 3). See doc/Cities-and-Knights-Implemented.md ("Knights").
+ */
+export const CK_MIGHTY_KNIGHT_POLITICS_LEVEL = 3;

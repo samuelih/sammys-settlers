@@ -220,12 +220,14 @@ web/
 - **Sea board only.** The renderer targets `SOCBoardLarge` (sea/large board, the
   `SBL` option). The classic 4-player hexagonal board's coordinate system is not
   rendered.
-- **No scenario-specific board rules/UI.** Scenarios are *discoverable and
-  selectable* in the New Game dialog (so the server may apply them), but the client
-  has no special UI for scenario mechanics (fog hexes, gift ports, special items,
-  cloth, Cities & Knights, etc.).
-- **No human chat input.** The in-game panel is a *log*; the only outbound text path
-  is the `debug` command sender used by tests. There is no lobby/channel chat.
+- **Cities & Knights is fully supported.** The `SC_CK` scenario is selectable in the
+  New Game dialog and the in-game C&K panel covers commodities, city improvements +
+  metropolis, knights (buy/activate/promote), the barbarian track and attack results,
+  and the progress-card hand; see `doc/Cities-and-Knights-Implemented.md` (repo root)
+  for the rules and protocol. Other scenarios (fog hexes, gift ports, cloth villages,
+  wonders) remain selectable but have **no scenario-specific UI** yet.
+- **In-game chat is supported** (text input under the game log). There is no
+  lobby/channel chat.
 - **No accounts / persistence / reconnect-into-running-game**, no spectator UX
   beyond the join-as-observer step, no board reset/ask-reset flow, no "ask special
   build" 6-player flow surfaced in the UI, no game-stats/timing dialogs.

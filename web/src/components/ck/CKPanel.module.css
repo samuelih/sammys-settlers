@@ -1,0 +1,246 @@
+/* Cities & Knights panel + per-player summary styles. Uses the shared theme
+ * tokens (src/theme/tokens.css) like the rest of the in-game sidebar. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.section + .section {
+  margin-top: var(--space-3, 0.75rem);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #666);
+}
+
+/* ---- Commodities -------------------------------------------------------- */
+
+.commodities {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+}
+
+.commodityChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  flex: 1 1 0;
+  min-width: 3rem;
+  padding: var(--space-2, 0.5rem) var(--space-2, 0.5rem) var(--space-1, 0.25rem);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-alt, #ece8df);
+  border: 1px solid var(--color-border, #cfc9bc);
+  border-top: 4px solid var(--color-border-strong, #a8a092);
+}
+
+.commodityChip[data-commodity='cloth'] {
+  border-top-color: var(--color-resource-sheep, #7ab648);
+}
+.commodityChip[data-commodity='coin'] {
+  border-top-color: var(--color-resource-ore, #8a8f98);
+}
+.commodityChip[data-commodity='paper'] {
+  border-top-color: var(--color-resource-wood, #3e7c3e);
+}
+
+.commodityLabel {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+}
+
+.commodityValue {
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text, #111);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Improvement tracks -------------------------------------------------- */
+
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.trackName {
+  flex: 0 0 4.5rem;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #111);
+}
+
+.pips {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.pip {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong, #a8a092);
+  background: var(--color-surface, #fff);
+}
+
+.pipFilled {
+  background: var(--color-accent, #2a6fd6);
+  border-color: var(--color-accent, #2a6fd6);
+}
+
+.trackCost {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+  white-space: nowrap;
+}
+
+.metropolisBadge {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-on-accent, #fff);
+  background: var(--color-warning, #b8860b);
+  padding: 0.1rem var(--space-2, 0.5rem);
+  border-radius: var(--radius-pill, 999px);
+  white-space: nowrap;
+}
+
+/* ---- Knights -------------------------------------------------------------- */
+
+.knightSummary {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text, #111);
+  font-variant-numeric: tabular-nums;
+}
+
+.knightButtons {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+/* ---- Barbarian track ------------------------------------------------------ */
+
+.barbarian {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.barbarianPips {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.barbarianPip {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: var(--radius-sm, 3px);
+  border: 1px solid var(--color-border-strong, #a8a092);
+  background: var(--color-surface, #fff);
+}
+
+.barbarianPipFilled {
+  background: var(--color-danger, #c0392b);
+  border-color: var(--color-danger, #c0392b);
+}
+
+.barbarianText {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Progress-card hand ---------------------------------------------------- */
+
+.progressHand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.progressCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  border: 1px solid var(--color-border, #cfc9bc);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-alt, #ece8df);
+}
+
+.progressCardName {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text, #111);
+}
+
+.progressEmpty {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #666);
+}
+
+/* ---- Compact per-opponent summary (player panels) --------------------------- */
+
+.playerSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+  font-variant-numeric: tabular-nums;
+}
+
+.playerSummaryRow {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+/* ---- Barbarian attack banner ------------------------------------------------ */
+
+.attackBanner {
+  position: fixed;
+  top: var(--space-4, 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-md);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-on-accent, #fff);
+  background: var(--color-danger, #c0392b);
+}
+
+.attackBannerWon {
+  background: var(--color-success, #2f8f4e);
+}
+
+/* ---- Commodity picker dialog -------------------------------------------------- */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.pickerSummary {
+  margin: 0;
+  color: var(--color-text-muted, #666);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.pickerButtons {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}

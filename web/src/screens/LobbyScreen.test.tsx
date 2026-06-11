@@ -54,7 +54,38 @@ describe('LobbyScreen error surfacing', () => {
   });
 
   it('does not toast when there is no error', () => {
+    // Mark the game list as loaded first: the loading row's Spinner also has
+    // role="status" and would shadow this no-toast assertion.
+    act(() => {
+      useGameStore.getState().setGames([]);
+    });
     renderLobby();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('LobbyScreen game-list loading state', () => {
+  it('shows a loading row until the initial game list arrives', () => {
+    renderLobby();
+    // resetLobby leaves gamesLoaded false: no list yet, just the loading row.
+    expect(screen.getByTestId('game-list-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('game-list-empty')).not.toBeInTheDocument();
+
+    // The initial (empty) GAMESWITHOPTIONS arrives -> loading row is replaced
+    // by the regular empty state.
+    act(() => {
+      useGameStore.getState().setGames([]);
+    });
+    expect(screen.queryByTestId('game-list-loading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('game-list-empty')).toBeInTheDocument();
+  });
+
+  it('shows the populated list once games arrive', () => {
+    renderLobby();
+    act(() => {
+      useGameStore.getState().setGames([{ name: 'g1', options: '', started: false }]);
+    });
+    expect(screen.queryByTestId('game-list-loading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('game-list')).toBeInTheDocument();
   });
 });

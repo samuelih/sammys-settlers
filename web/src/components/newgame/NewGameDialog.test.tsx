@@ -156,4 +156,29 @@ describe('NewGameDialog', () => {
     await user.click(screen.getByTestId('newgame-cancel'));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it('shows a spinner in the options area while option discovery is in flight', () => {
+    render(
+      <NewGameDialog options={[]} optionsLoading onCreate={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(screen.getByTestId('newgame-options-loading')).toBeInTheDocument();
+    // No premature placeholders while loading.
+    expect(screen.queryByText('No additional options.')).toBeNull();
+    expect(screen.queryByTestId('newgame-prominent')).toBeNull();
+    // The name field still renders so the user can type while options load.
+    expect(screen.getByTestId('newgame-name')).toBeInTheDocument();
+  });
+
+  it('hides the spinner once options have loaded', () => {
+    render(
+      <NewGameDialog
+        options={sampleOptions()}
+        optionsLoading={false}
+        onCreate={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('newgame-options-loading')).toBeNull();
+    expect(screen.getByTestId('newgame-options')).toBeInTheDocument();
+  });
 });

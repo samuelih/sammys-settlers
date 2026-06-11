@@ -45,6 +45,28 @@ export interface GameSnapshot {
   myInventorySize: number;
   /** Robber hex coordinate (0 = unplaced). */
   robberHex: number;
+  /** Cities & Knights state, or null when this isn't a C&K game. */
+  ck: CKSnapshot | null;
+}
+
+/** Read-only Cities & Knights slice of a {@link GameSnapshot}. */
+export interface CKSnapshot {
+  /** Local player's commodity counts. */
+  commodities: { cloth: number; coin: number; paper: number };
+  /** Local player's knight counts by level (total + active). */
+  knights: {
+    level1: { total: number; active: number };
+    level2: { total: number; active: number };
+    level3: { total: number; active: number };
+  };
+  /** Local player's improvement-track levels (0..5). */
+  improvements: { trade: number; politics: number; science: number };
+  /** Game-level barbarian strength counter (0..7). */
+  barbarianStrength: number;
+  /** Metropolis owner seat per track (Trade/Politics/Science), -1 = unclaimed. */
+  metropolisOwners: number[];
+  /** Local player's progress-card hand as itypes (11..19). */
+  progressHand: number[];
 }
 
 /**
@@ -75,6 +97,36 @@ export function installTestHooks(): void {
       const myInv = cg.myInventory;
       const invSize =
         sumBag(myInv.playable) + sumBag(myInv.newCards) + sumBag(myInv.vpCards);
+      const myCk = myView != null ? myView.ck : null;
+      const ck: CKSnapshot | null = cg.isCKGame
+        ? {
+            commodities:
+              myCk != null
+                ? { ...myCk.commodities }
+                : { cloth: 0, coin: 0, paper: 0 },
+            knights: {
+              level1: {
+                total: myCk?.knights.lv1 ?? 0,
+                active: myCk?.knights.activeLv1 ?? 0,
+              },
+              level2: {
+                total: myCk?.knights.lv2 ?? 0,
+                active: myCk?.knights.activeLv2 ?? 0,
+              },
+              level3: {
+                total: myCk?.knights.lv3 ?? 0,
+                active: myCk?.knights.activeLv3 ?? 0,
+              },
+            },
+            improvements:
+              myCk != null
+                ? { ...myCk.improvements }
+                : { trade: 0, politics: 0, science: 0 },
+            barbarianStrength: cg.ckBarbarianStrength,
+            metropolisOwners: [...cg.ckMetropolisOwners],
+            progressHand: [...cg.myProgressHand],
+          }
+        : null;
       return {
         gameName: cg.gameName,
         gameState: cg.gameState,
@@ -84,6 +136,7 @@ export function installTestHooks(): void {
         deckDevCardCount: cg.deckDevCardCount,
         myInventorySize: invSize,
         robberHex: cg.board != null ? cg.board.robberHex : 0,
+        ck,
       };
     },
   };

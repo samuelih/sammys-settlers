@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button, Panel, useToast } from '../components';
 import { SeatLockState } from '../protocol';
@@ -105,13 +105,20 @@ export function GameRoom(): JSX.Element | null {
   const setError = useGameStore((s) => s.setError);
   const { showToast } = useToast();
 
+  // Pending state after clicking Start: the button shows "Starting game…" until
+  // the server's start broadcast advances the game state (Root then swaps to
+  // the started view and unmounts this room).
+  const [starting, setStarting] = useState(false);
+
   // Surface server-side rejections received while in the room (e.g. SOCStatusMessage
   // non-OK svalues from a sit/start request). Show once, then clear so it does not
-  // persist or re-fire. Hooks must run before the early return below.
+  // persist or re-fire. A rejection also ends the Start pending state so the
+  // button is usable again. Hooks must run before the early return below.
   useEffect(() => {
     if (error != null && error !== '') {
       showToast(error, { variant: 'danger' });
       setError(undefined);
+      setStarting(false);
     }
   }, [error, showToast, setError]);
 
@@ -124,7 +131,10 @@ export function GameRoom(): JSX.Element | null {
   const bots = seated.filter((p) => p !== null && p.isRobot).length;
   const iAmSeated = cg.mySeat >= 0;
 
-  const onStart = (): void => startGame();
+  const onStart = (): void => {
+    setStarting(true);
+    startGame();
+  };
   const onLeave = (): void => leaveGame();
 
   return (
@@ -172,10 +182,11 @@ export function GameRoom(): JSX.Element | null {
           variant="primary"
           size="lg"
           onClick={onStart}
-          disabled={!iAmSeated}
+          disabled={!iAmSeated || starting}
+          data-pending={starting ? 'true' : 'false'}
           data-testid="start-game"
         >
-          Start game
+          {starting ? 'Starting game…' : 'Start game'}
         </Button>
         {!iAmSeated && (
           <span className={styles.hint} data-testid="start-hint">

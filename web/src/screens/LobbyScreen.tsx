@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button, Panel, useToast } from '../components';
+import { Button, Panel, Spinner, useToast } from '../components';
 import { NewGameDialog, type NewGameScenario } from '../components/newgame';
 import type { GameOptionDescriptor } from '../protocol';
 import {
@@ -44,7 +44,10 @@ export function LobbyScreen(): JSX.Element {
   const serverVersion = useGameStore((s) => s.serverVersion);
   const serverVersionStr = useGameStore((s) => s.serverVersionStr);
   const games = useGameStore((s) => s.games);
+  const gamesLoaded = useGameStore((s) => s.gamesLoaded);
   const knownOptions = useGameStore((s) => s.knownOptions);
+  const optionsLoaded = useGameStore((s) => s.optionsLoaded);
+  const optionsRequested = useGameStore((s) => s.optionsRequested);
   const scenarios = useGameStore((s) => s.scenarios);
   const nickname = useGameStore((s) => s.nickname);
   const error = useGameStore((s) => s.error);
@@ -130,7 +133,12 @@ export function LobbyScreen(): JSX.Element {
       </div>
 
       <Panel title={`Open games (${games.length})`} flushBody>
-        {games.length === 0 ? (
+        {!gamesLoaded ? (
+          <div className={styles.loadingRow} data-testid="game-list-loading">
+            <Spinner size="sm" label="Loading games" />
+            <span>Fetching the game list…</span>
+          </div>
+        ) : games.length === 0 ? (
           <div className={styles.empty} data-testid="game-list-empty">
             <span className={styles.emptyMark} aria-hidden="true">
               ♜
@@ -182,6 +190,7 @@ export function LobbyScreen(): JSX.Element {
         <NewGameDialog
           open={dialogOpen}
           options={optionList}
+          optionsLoading={optionsRequested && !optionsLoaded}
           scenarios={scenarioList.length > 1 ? scenarioList : undefined}
           onCreate={handleCreate}
           onCancel={() => setDialogOpen(false)}

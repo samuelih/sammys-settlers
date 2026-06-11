@@ -314,7 +314,12 @@ describe('game log', () => {
     s.appendGameLog(GAME, 'It is your turn.');
     s.appendGameLog(GAME, '');
     s.appendGameLog(GAME, 'droid 1 rolled a 7.');
-    expect(cg().gameLog).toEqual(['It is your turn.', 'droid 1 rolled a 7.']);
+    expect(cg().gameLog.map((l) => l.text)).toEqual([
+      'It is your turn.',
+      'droid 1 rolled a 7.',
+    ]);
+    // Announcement lines are kind 'server' (player chat is 'chat').
+    expect(cg().gameLog.every((l) => l.kind === 'server')).toBe(true);
   });
 
   it('ignores log lines for a different game', () => {

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import type { GameOptionDescriptor } from '../../protocol/gameOptions';
 import { Button } from '../Button';
 import { Dialog } from '../Dialog';
+import { Spinner } from '../Spinner';
 import { OptionField } from './OptionField';
 import styles from './NewGameDialog.module.css';
 
@@ -19,6 +20,12 @@ export interface NewGameDialogProps {
   open?: boolean;
   /** Game options to render, one OptionField each. */
   options: GameOptionDescriptor[];
+  /**
+   * True while option discovery is still in flight (the options request was
+   * sent but the option infos haven't all arrived); shows a spinner in the
+   * options area instead of an empty/partial list.
+   */
+  optionsLoading?: boolean;
   /** Optional scenario choices; when provided, a scenario <select> is shown. */
   scenarios?: NewGameScenario[];
   /**
@@ -50,6 +57,7 @@ const DEFAULT_NICK = 'WebPlayer';
 export function NewGameDialog({
   open = true,
   options,
+  optionsLoading = false,
   scenarios,
   onCreate,
   onCancel,
@@ -158,7 +166,7 @@ export function NewGameDialog({
           </label>
         )}
 
-        {prominent.length > 0 && (
+        {!optionsLoading && prominent.length > 0 && (
           <div className={styles.prominent} data-testid="newgame-prominent">
             <h3 className={styles.sectionTitle}>Common options</h3>
             {prominent.map((opt) => (
@@ -174,7 +182,12 @@ export function NewGameDialog({
         <div className={styles.field}>
           <span className={styles.label}>Options</span>
           <div className={styles.optionList} data-testid="newgame-options">
-            {rest.length > 0 ? (
+            {optionsLoading ? (
+              <span className={styles.loading} data-testid="newgame-options-loading">
+                <Spinner size="sm" label="Loading game options" />
+                Loading game options…
+              </span>
+            ) : rest.length > 0 ? (
               rest.map((opt) => (
                 <OptionField
                   key={opt.key}

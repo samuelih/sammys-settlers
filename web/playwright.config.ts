@@ -14,10 +14,13 @@ import { defineConfig, devices } from '@playwright/test';
 // preview server failing fast if the dist/ output is missing).
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Specs that play vs bots each consume 3 of the server's 7 robot connections,
+  // so concurrent games exhaust the bot pool and games never fill. Run E2E
+  // serially against the single shared Java server.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   timeout: 30_000,
   expect: {

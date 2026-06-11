@@ -551,6 +551,107 @@ types). Examples: `1102|ga,2,3,S,1,1,3,2,T` (set), `1102|ga,1,0,E,106,2,T`
     in `,0,0`. Request/action type codes below 1000 are general; 1000+ are
     gametype-specific (see `SimpleRequestType` / `SimpleActionType`).
 
+## Ported messages (scenario special items — Cities & Knights phase)
+
+Wire strings for these two types are **hand-derived from the Java `toCmd()` /
+`parseDataStr()` sources** (derivations documented in
+`src/protocol/ck-messages.test.ts`), not live-captured. They carry the
+`SC_WOND` wonders, `SC_FTRI` gift ports, and the Cities & Knights state in
+`doc/Cities-and-Knights-Implemented.md`.
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1098 | `SOCInventoryItemAction` | both | `1098` SEP `game` SEP2 `pn` SEP2 `action` SEP2 `itemType` [SEP2 `rcode`] | `1098\|g,2,2,14` (ADD_PLAYABLE Warlord) / `1098\|g,2,6,16,3` (PLAYED isKept+isVP) | `SOCInventoryItemAction.java` |
+| 1099 | `SOCSetSpecialItem` | both | `1099` SEP `game` SEP2 `op` SEP2 `typeKey` SEP2 `gi` SEP2 `pi` SEP2 `pn` SEP2 `coord` SEP2 `level` SEP2 `sv` | `1099\|g,3,_CK_IMP/T,-1,0,-1,-1,0,<TAB>` (client OP_PICK) / `1099\|g,5,_CK_IMP/T,-1,0,2,-1,2,<TAB>` (OP_SET_PICK lv 2) | `SOCSetSpecialItem.java` |
+| 1094 | `SOCRemovePiece` | S→C | `1094` SEP `game` SEP2 `pn` SEP2 `ptype` SEP2 `coord` | `1094\|g,1,2,1029` (C&K city downgrade at node 0x405) | `SOCRemovePiece.java` |
+
+`SOCRemovePiece` (template3i; coord must be ≥ 0 or the Java constructor throws
+→ parse null) was introduced for `SC_PIRI` ship loss; the C&K barbarian attack
+reuses it for a **city downgrade**: `SOCRemovePiece(city)` followed by
+`SOCPutPiece(settlement)` at the same node (the web store replaces the city
+with the settlement in place, and the follow-up PUTPIECE dedupes).
+
+C&K constants in `constants.ts`: `SpecialItemOp` (SET=1, CLEAR=2, PICK=3,
+DECLINE=4, SET_PICK=5, CLEAR_PICK=6), `InventoryItemAction` (BUY=1,
+ADD_PLAYABLE=2, ADD_OTHER=3, PLAY=4, CANNOT_PLAY=5, PLAYED=6, PLACING_EXTRA=7,
+REMOVE_PLAYABLE=8, REMOVE_OTHER=9), `PlayerElementType.CK_*` (cloth/coin/paper
+counts 110–112, knight totals 113–115, active knights 116–118),
+`GameElementType.CK_BARBARIAN_STRENGTH` (11), `SimpleRequestType.CK_BUY_KNIGHT/
+CK_ACTIVATE_KNIGHT/CK_PROMOTE_KNIGHT` (1002–1004), `SimpleActionType
+.CK_BARBARIAN_ATTACK_RESULT/CK_METROPOLIS_CLAIMED/CK_DEFENDER_OF_CATAN`
+(1004–1006), `CKProgressCard` (itypes 11–19), `CKCommodity` (cloth=1, coin=2,
+paper=3), `CKImprovementTypeKey` (`_CK_IMP/T`, `_CK_IMP/P`, `_CK_IMP/S`), and
+the rule numbers `CK_BARBARIAN_ATTACK_THRESHOLD` (7), `CK_MAX_KNIGHTS` (6),
+`CK_PROGRESS_HAND_LIMIT` (4), `CK_METROPOLIS_LEVEL` (4),
+`CK_MIGHTY_KNIGHT_POLITICS_LEVEL` (3). All values verified against the Java
+sources and doc/Cities-and-Knights-Implemented.md.
+
+**Contract correction vs. doc/Cities-and-Knights-Implemented.md:** a non-VP
+progress-card draw is announced to the *other* players as **`ADD_PLAYABLE`
+with `itemType 0`** (the doc says `ADD_OTHER`); the web store accepts both.
+VP progress cards (Constitution 16 / Printer 19) are announced to all with
+`ADD_OTHER`, the real itype, and `isKept`+`isVP`. The C&K `SOCSimpleAction`
+events put the acting player in the message's `pn` field
+(`CK_METROPOLIS_CLAIMED`: pn=new owner, v1=track;
+`CK_DEFENDER_OF_CATAN`: pn=defender, v1=new SVP total); the store also
+accepts the doc's (v1, v2) wording as a fallback when pn is −1.
+
+**Scenario discovery:** `requestGameOptions()` also sends the SCENARIOINFO
+client request `1101|[|SC_NSHO|SC_4ISL|SC_FOG|SC_TTD|SC_CLVI|SC_PIRI|SC_FTRI|
+SC_WOND|SC_CK|?` so the New Game dialog can list scenarios (verified live on
+WS 8888: the server replies one `1101|<key>|minVers|lastModVers|opts|title
+[|longDesc]` per scenario — `SC_CK` arrives with title "Cities & Knights" —
+then the `1101|-` end marker).
+
+## Special-item format subtleties to preserve (verified against Java)
+
+33. **`SOCSetSpecialItem` always sends all 9 fields; null `sv` is EMPTYSTR.**
+    A null string value is sent as the TAB `EMPTYSTR` token and mapped back to
+    null on parse (`sv` is never `""` on the wire; the Java constructor rejects
+    `""`/unsafe strings via `isSingleLineAndSafe`). The Java constructor also
+    throws (→ parse returns null) when `pn != -1` with `pi == -1`, or when both
+    `gi` and `pi` are −1. Clients send `OP_PICK` with **`pn = -1`** (plus
+    `coord = -1`, `level = 0`, `sv` null — see `GameMessageSender
+    .pickSpecialItem`); the server fills the real values in its replies. The
+    combined ops are plain **`OP_SET_PICK = 5` / `OP_CLEAR_PICK = 6`**, not a
+    16+n bit encoding.
+
+34. **`SOCInventoryItemAction` overloads `rcode` as a flag bit field.** The
+    trailing `rcode` is omitted when 0. For `PLAY`/`CANNOT_PLAY` it's a plain
+    reason code (kept verbatim, round-trips byte-identically). For **every
+    other action** it carries `FLAG_ISKEPT (0x01) | FLAG_ISVP (0x02) |
+    FLAG_CANCPLAY (0x04)`, decoded into the `isKept`/`isVP`/`canCancelPlay`
+    booleans — and the parsed message's `reasonCode` is **rebuilt from those
+    three bits**, so higher bits are silently dropped (wire `rc=11` re-encodes
+    as `rc=3`; Java parity, not a byte identity). `itemType` may be negative
+    (SC_FTRI gift ports use the negative of the port type).
+
+## C&K store + GameScreen integration
+
+`store/gameStore.ts` reduces the C&K messages into `CurrentGame` (gated by
+`isCKGame`, true when the game's option string contains `_SC_CK` or
+`_CK_IMP`): commodities + knights into `PlayerView.ck` (PETypes 110–118),
+improvement levels from `SETSPECIALITEM` OP_SET/OP_SET_PICK (OP_DECLINE →
+error toast), `ckBarbarianStrength` (GEType 11, reset on attack),
+`ckMetropolisOwners`, `lastBarbarianAttack`, the local `myProgressHand` and
+per-player hidden counts / revealed VP cards from `INVENTORYITEMACTION`, the
+`ckPendingMonopoly` pick (set on our PLAYED of itype 11/12, cleared when the
+state leaves `WAITING_FOR_MONOPOLY`), and the `REMOVEPIECE` city downgrade.
+A `SIMPLEREQUEST` echoed with pn = −1 for the knight request types toasts a
+denial. Senders: `ckBuyKnight()` / `ckActivateKnight()` / `ckPromoteKnight()`
+(SOCSimpleRequest 1002–1004, values 0,0), `ckBuyImprovement(track)`
+(OP_PICK as `GameMessageSender.pickSpecialItem`), `ckPlayProgressCard(itype)`
+(INVENTORYITEMACTION PLAY), and `pickMonopoly(1..3)` doubling as the
+commodity pick. UI (`components/ck/CKPanel.tsx`, visible only when
+`isCKGame`): `ck-panel` with `ck-commodity-cloth|coin|paper`,
+`ck-build-trade|politics|science` (+ `ck-metropolis-*` badges), `ck-knights` +
+`ck-knight-buy|activate|promote`, `ck-barbarian` (attr `data-strength`),
+`ck-progress-play-<itype>`; per-opponent `ck-player-<pn>` summaries;
+`ck-barbarian-banner`; the Trade Monopoly picker `ck-commodity-pick`
+(`ck-pick-cloth|coin|paper`); and the sea-board `robber-or-pirate-dialog`
+(`choose-robber`/`choose-pirate`) for state 54. Store tests:
+`store/gameCK.test.ts`; UI tests: `screens/GameScreenCK.test.tsx`.
+
 ## Phase-4 store + GameScreen integration
 
 `store/gameStore.ts` now reduces the interaction messages above into per-game

@@ -115,6 +115,16 @@
   border-radius: var(--radius-pill, 999px);
 }
 
+/* ---- Loading row (before the initial game list arrives) ---------------- */
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-4, 1rem) var(--space-5, 1.5rem);
+  color: var(--color-text-muted, #666);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
 /* ---- Empty state ------------------------------------------------------- */
 .empty {
   display: flex;

@@ -117,7 +117,7 @@ describe('trade offers (MAKEOFFER / CLEAROFFER / REJECTOFFER / ACCEPTOFFER)', ()
     );
     const c = cg();
     expect(c.offers[3]).toBeNull();
-    expect(c.gameLog.some((l) => l.includes('accepted'))).toBe(true);
+    expect(c.gameLog.some((l) => l.text.includes('accepted'))).toBe(true);
   });
 
   it('CLEARTRADEMSG clears responses but not the offers themselves', () => {
@@ -288,7 +288,7 @@ describe('robber move (MOVEROBBER)', () => {
     useGameStore.getState().applyRobberyResult(
       new SOCRobberyResult(GAME, 0, 2, { kind: 'res', resType: Resource.SHEEP }, true, 1),
     );
-    expect(cg().gameLog.some((l) => l.includes('robbed') && l.includes('sheep'))).toBe(true);
+    expect(cg().gameLog.some((l) => l.text.includes('robbed') && l.text.includes('sheep'))).toBe(true);
   });
 });
 

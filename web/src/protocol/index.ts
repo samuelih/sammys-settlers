@@ -72,6 +72,7 @@ export {
 } from './messages/SOCDiceResultResources';
 export { SOCPutPiece } from './messages/SOCPutPiece';
 export { SOCMovePiece } from './messages/SOCMovePiece';
+export { SOCRemovePiece } from './messages/SOCRemovePiece';
 export { SOCRollDice } from './messages/SOCRollDice';
 export { SOCEndTurn } from './messages/SOCEndTurn';
 export { SOCBuildRequest } from './messages/SOCBuildRequest';
@@ -126,6 +127,14 @@ export { SOCSimpleRequest } from './messages/SOCSimpleRequest';
 export { SOCSimpleAction } from './messages/SOCSimpleAction';
 export { SOCDeclinePlayerRequest } from './messages/SOCDeclinePlayerRequest';
 export { SOCGameStats } from './messages/SOCGameStats';
+// Scenario special items (Cities & Knights, SC_WOND, SC_FTRI)
+export { SOCSetSpecialItem } from './messages/SOCSetSpecialItem';
+export {
+  SOCInventoryItemAction,
+  INVITEM_FLAG_ISKEPT,
+  INVITEM_FLAG_ISVP,
+  INVITEM_FLAG_CANCPLAY,
+} from './messages/SOCInventoryItemAction';
 
 // Resource-set + trade-offer model helpers used by the interaction messages.
 export {

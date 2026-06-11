@@ -1,6 +1,7 @@
 import { isGameStarted, useGameStore } from '../store/gameStore';
 import { useUiStore } from '../store/uiStore';
 import { ConnectScreen } from './ConnectScreen';
+import { DisconnectOverlay } from './DisconnectOverlay';
 import { GameRoom } from './GameRoom';
 import { GameScreen } from './GameScreen';
 import { LobbyScreen } from './LobbyScreen';
@@ -10,6 +11,9 @@ import { MapEditorScreen } from './MapEditorScreen';
  * Top-level router. Picks the screen based on the connection status and the
  * joined-game room state:
  *   * not connected                       -> ConnectScreen (connecting/error too)
+ *   * dropped (disconnected/error) while a game is joined
+ *                                         -> the stale game view + a modal
+ *                                            "Connection lost" overlay
  *   * connected, no game joined           -> LobbyScreen (version + game list)
  *   * connected, joined, not yet started  -> GameRoom (seats, sit/lock/start)
  *   * connected, joined, started          -> GameScreen (placeholder board view)
@@ -28,6 +32,18 @@ export function Root(): JSX.Element {
   }
 
   if (status !== 'connected') {
+    // The socket dropped while we were in a game: keep the (stale) game view
+    // underneath and show the "Connection lost" overlay with Reconnect / back.
+    // (A reconnect attempt resets the lobby first, clearing currentGame, so the
+    // 'connecting' state falls through to ConnectScreen as before.)
+    if (currentGame !== null && (status === 'disconnected' || status === 'error')) {
+      return (
+        <>
+          {isGameStarted(currentGame) ? <GameScreen /> : <GameRoom />}
+          <DisconnectOverlay />
+        </>
+      );
+    }
     return <ConnectScreen />;
   }
   if (currentGame === null) {
