@@ -410,3 +410,178 @@ starting with `_`, hides `unknown`-typed, hides `SC` which is the scenario
 picker) and keeps `SBL`, `PL`, `PLB`, `VP`, `BC`, `N7`, `NT`, `RD`, etc. Verified
 live: 23 keys in the defaults reply, 24 `1082` frames, **zero** `OTYPE_UNKNOWN`
 (test `net/liveDiscovery.test.ts`).
+
+## Ported messages (full in-game interactions — Phase 4)
+
+Every wire string below was captured **byte-for-byte from the real Java classes**
+(a small JVM harness that constructs each message and prints `toCmd()`), and each
+was additionally fed back through the **Java decoder** (`SOCMessage.toMsg`) and
+re-encoded to confirm it parses and round-trips identically (50/50 strings:
+`ok=50 mismatch=0 null=0`). The TS round-trip + known-wire-string tests live in
+`src/protocol/interaction-messages.test.ts`.
+
+Resource sets inside these messages are the five known amounts CLAY, ORE, SHEEP,
+WHEAT, WOOD (resource types 1..5) in that order; **UNKNOWN (type 6) is not
+included** in those 5-int blocks (the one exception is `SOCDiscard`, which carries
+a sixth UNKNOWN amount). See `messages/resourceSet.ts` (`ResourceSet`,
+`giveGetToInts`, `resourceSetFromInts`).
+
+### Trade
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1040 | `SOCBankTrade` | both | `1040` SEP `game` { SEP2 `give`×5 } { SEP2 `get`×5 } [SEP2 `pn`] | `1040\|ga,0,0,3,0,0,1,0,0,0,0` / `…,2` | `SOCBankTrade.java` |
+| 1041 | `SOCMakeOffer` | both | `1041` SEP `game` SEP2 `from` { SEP2 `to`(bool) }×maxPl { SEP2 `give`×5 } { SEP2 `get`×5 } | `1041\|ga,3,false,false,true,false,0,1,0,1,0,0,0,1,0,0` | `SOCMakeOffer.java` |
+| 1039 | `SOCAcceptOffer` | both | `1039` SEP `game` SEP2 `accepting` SEP2 `offering` [ { SEP2 `toAc`×5 } { SEP2 `toOf`×5 } ] | `1039\|ga,2,3` / `1039\|ga,2,3,0,0,2,0,0,1,0,0,0,4` | `SOCAcceptOffer.java` |
+| 1037 | `SOCRejectOffer` | both | `1037` SEP `game` SEP2 `pn` [SEP2 `reasonCode`] | `1037\|ga,1` / `1037\|ga,-1,2` | `SOCRejectOffer.java` |
+| 1038 | `SOCClearOffer` | both | `1038` SEP `game` SEP2 `pn` (−1 = all) | `1038\|ga,2` / `1038\|ga,-1` | `SOCClearOffer.java` |
+| 1042 | `SOCClearTradeMsg` | S→C | `1042` SEP `game` SEP2 `pn` (−1 = all) | `1042\|ga,3` / `1042\|ga,-1` | `SOCClearTradeMsg.java` |
+
+### Dev cards
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1045 | `SOCBuyDevCardRequest` | C→S | `1045` SEP `game` (the whole data portion is the game name) | `1045\|ga` | `SOCBuyDevCardRequest.java` |
+| 1046 | `SOCDevCardAction` | S→C | `1046` SEP `game` SEP2 `pn` SEP2 `action` SEP2 `cardType` [SEP2 `cardType`…] | `1046\|ga,3,0,9` (DRAW knight) / `1046\|ga,2,3,4,5,6` (multi VP) | `SOCDevCardAction.java` |
+| 1047 | `SOCDevCardCount` | S→C | `1047` SEP `game` SEP2 `numDevCards` | `1047\|ga,19` | `SOCDevCardCount.java` |
+| 1048 | `SOCSetPlayedDevCard` | S→C | `1048` SEP `game` SEP2 `pn` SEP2 `played`(bool) | `1048\|ga,2,true` | `SOCSetPlayedDevCard.java` |
+| 1049 | `SOCPlayDevCardRequest` | C→S | `1049` SEP `game` SEP2 `devCardType` | `1049\|ga,9` (knight) | `SOCPlayDevCardRequest.java` |
+| 1052 | `SOCPickResources` | both | `1052` SEP `game` { SEP2 `res`×5 } [SEP2 `pn` SEP2 `reasonCode`] | `1052\|ga,1,0,0,1,0` / `…,3,2` | `SOCPickResources.java` |
+| 1053 | `SOCPickResourceType` | C→S | `1053` SEP `game` SEP2 `resourceType` | `1053\|ga,3` (Monopoly sheep) | `SOCPickResourceType.java` |
+
+`SOCDevCardConstants` (TS `DevCardType` in `constants.ts`): `UNKNOWN=0`,
+`ROADS=1`, `DISC=2`, `MONO=3`, `CAP=4`, `MARKET=5`, `UNIV=6`, `TEMPLE=7`,
+`CHAPEL=8`, `KNIGHT=9` (CAP/MARKET/UNIV/TEMPLE/CHAPEL are the VP cards). Dev-card
+actions (TS `DevCardAction`): `DRAW=0`, `PLAY=1`, `ADD_NEW=2`, `ADD_OLD=3`,
+`CANNOT_PLAY=4`, `REMOVE_NEW=5`, `REMOVE_OLD=6`.
+
+### Robber / discard
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1029 | `SOCDiscardRequest` | S→C | `1029` SEP `game` SEP2 `numDiscards` | `1029\|ga,4` | `SOCDiscardRequest.java` |
+| 1033 | `SOCDiscard` | both | `1033` SEP `game` SEP2 [`p`pn SEP2] `clay` SEP2 `ore` SEP2 `sheep` SEP2 `wheat` SEP2 `wood` SEP2 `unknown` | `1033\|ga,2,0,1,0,0,0` / `1033\|ga,p3,2,0,1,0,0,0` | `SOCDiscard.java` |
+| 1034 | `SOCMoveRobber` | both | `1034` SEP `game` SEP2 `pn` SEP2 `coord` (positive robber, negative/0 pirate) | `1034\|ga,2,103` / `1034\|ga,2,-260` | `SOCMoveRobber.java` |
+| 1035 | `SOCChoosePlayer` | both | `1035` SEP `game` SEP2 `choice` (≥0 victim pn; −1 none, −2 robber, −3 pirate) | `1035\|ga,2` / `1035\|ga,-1` | `SOCChoosePlayer.java` |
+| 1036 | `SOCChoosePlayerRequest` | S→C | `1036` SEP `game` [SEP2 `NONE`] { SEP2 `choice`(bool) }×maxPl | `1036\|ga,false,true,false,true` / `1036\|ga,NONE,…` | `SOCChoosePlayerRequest.java` |
+| 1102 | `SOCRobberyResult` | S→C | `1102` SEP `game` SEP2 `perp` SEP2 `victim` SEP2 ⟨stolen⟩ SEP2 `T`/`F` [SEP2 `victimAmt` [SEP2 `extra`]] | `1102\|ga,2,3,R,3,1,T` | `SOCRobberyResult.java` |
+
+`SOCRobberyResult`'s ⟨stolen⟩ block is one of: `R` SEP2 resType SEP2 amount
+(single resource); `E` SEP2 peTypeValue SEP2 amount (player element, e.g. cloth
+= 106); or `S` { SEP2 resType SEP2 amount } (a resource set of only nonzero
+types). Examples: `1102|ga,2,3,S,1,1,3,2,T` (set), `1102|ga,1,0,E,106,2,T`
+(cloth), `1102|ga,1,2,R,6,5,F,3,7` (totals form with victimAmount + extraValue).
+
+### Misc
+
+| typeId | Message | Dir | Wire format | Example | Java source |
+|--------|---------|-----|-------------|---------|-------------|
+| 1061 | `SOCGameStats` | both | players: `1061` SEP `game` { SEP2 `score` } { SEP2 `robot`(bool) }; timing: `1061` SEP `game` SEP2 `t`stype { SEP2 `val` } | `1061\|ga,10,4,0,7,false,true,true,false` / `1061\|ga,t2,1700000000,1,0` | `SOCGameStats.java` |
+| 1089 | `SOCSimpleRequest` | both | `1089` SEP `game` SEP2 `pn` SEP2 `reqType` SEP2 `value1` SEP2 `value2` (all 4 ints always sent) | `1089\|ga,2,1,2,0` | `SOCSimpleRequest.java` |
+| 1090 | `SOCSimpleAction` | S→C | `1090` SEP `game` SEP2 `pn` SEP2 `actType` SEP2 `value1` SEP2 `value2` | `1090\|ga,3,1,18,0` (DEVCARD_BOUGHT) | `SOCSimpleAction.java` |
+| 1104 | `SOCDeclinePlayerRequest` | S→C | `1104` SEP `game` SEP2 `gameState` SEP2 `reasonCode` [SEP2 `detail1` SEP2 `detail2` [SEP2 `reasonText`]] | `1104\|ga,20,4,1,1543` / `1104\|ga,0,3,0,0,You can't, comma, here` | `SOCDeclinePlayerRequest.java` |
+
+## Phase-4 format subtleties to preserve (verified against Java)
+
+24. **Resource-set packing is five amounts CLAY..WOOD, UNKNOWN excluded.** Every
+    trade/pick message serializes a resource set as exactly the five amounts in
+    resource-type order 1..5 (`for (i = CLAY; i <= WOOD; i++)`). UNKNOWN (type 6)
+    is never part of those blocks. The lone exception is `SOCDiscard`, which
+    appends a **sixth** UNKNOWN amount (used to report the discard *total* to
+    other players as `UNKNOWN=total`).
+
+25. **`SOCMakeOffer`'s `to[]` length is implicit.** The boolean recipient array
+    has one element per player number (= game.maxPlayers, 4 or 6) but its length
+    is **not** sent. The parser computes it as *(tokens after `from`) − 10*,
+    because the trailing 10 tokens are always the two 5-int give/get blocks. The
+    booleans are Java `Boolean.toString`/`valueOf` (lowercase, and only the exact
+    case-insensitive string `"true"` parses as true).
+
+26. **`SOCChoosePlayerRequest` "NONE" marker + strict booleans.** An optional
+    leading `NONE` token (before the choice booleans) sets `canChooseNone`. Each
+    choice token is true **only when it exactly equals `"true"`** — Java uses
+    `tok.equals("true")` here (case-**sensitive**), unlike the `Boolean.valueOf`
+    used by `SOCMakeOffer`/`SOCSetPlayedDevCard`/`SOCGameStats`. A lone `NONE`
+    with no choices is garbled → null.
+
+27. **`SOCDiscard`'s player-number field is `p<pn>` near the START.** The v2.5+
+    player number rides a literal `p3`-style token placed right after the game
+    name (not at the end) so older clients drop the whole message instead of
+    misreading a trailing field. Parser: if the token after the game name starts
+    with `p`, it's the player number; then exactly 6 amounts follow.
+
+28. **Dev-card action numbering vs card-type numbering.** `SOCDevCardAction`'s
+    action field (`DRAW=0`, `PLAY=1`, `ADD_NEW=2`, `ADD_OLD=3`, `CANNOT_PLAY=4`,
+    `REMOVE_NEW=5`, `REMOVE_OLD=6`) is **distinct** from its card-type field
+    (`DevCardType`: `UNKNOWN=0`, `ROADS=1`, …, `KNIGHT=9`). NOTE the v2.0.00
+    swap: `KNIGHT` is **9** and `UNKNOWN` is **0** in the version we speak (they
+    were 0 and 9 in v1.x). The single-card form has exactly one card-type token;
+    a message with **2+** card-type tokens is the multi-card form (`cardTypes`),
+    used only at end-of-game to reveal VP cards. >100 card types → null (DoS
+    guard). A single-element multi-list constructs the single-card form.
+
+29. **`SOCRobberyResult`'s tail is order-and-zero-sensitive.** `victimAmount` and
+    `extraValue` are appended only when `(victimAmount != 0) || (extraValue != 0)`;
+    when appended, `victimAmount` always comes first, then `extraValue` is
+    appended **only if** `extraValue != 0`. So `…,T,0,4` (victimAmount 0 written
+    because extraValue 4 follows) is valid, but a bare `…,T,0` never appears. The
+    `T`/`F` boolean and the `R`/`E`/`S` type chars are single characters; anything
+    else is garbled → null.
+
+30. **`SOCRejectOffer` / `SOCPickResources` / `SOCDeclinePlayerRequest` optional
+    tails.** `SOCRejectOffer` omits `reasonCode` when 0. `SOCPickResources` emits
+    `pn` **and** `reasonCode` together, only when either is nonzero (a lone
+    trailing `pn` is garbled → null). `SOCDeclinePlayerRequest` emits the
+    `detail1,detail2[,reasonText]` tail only when a detail or the text is set;
+    `reasonText` is **last and may contain commas** — Java reads "the rest of the
+    string" for it (via an unlikely delimiter), strips one leading SEP2, and
+    right-trims trailing whitespace (leading whitespace of the text is preserved).
+
+31. **`SOCGameStats` has two shapes told apart by the first post-game token.** A
+    leading `t<stype>` token (e.g. `t2`) is the non-`TYPE_PLAYERS` form whose
+    remaining tokens are stat values (TYPE_TIMING stores unix seconds). A leading
+    **digit** is `TYPE_PLAYERS`: equal numbers of integer scores then boolean
+    robot flags, `maxPlayers = floor((tokensAfterGame) / 2)` (a trailing odd
+    token is ignored, matching Java). A `t1` (claiming TYPE_PLAYERS via the
+    t-form) is rejected → null.
+
+32. **`SOCSimpleRequest` / `SOCSimpleAction` always send all four ints.** They
+    extend `SOCMessageTemplate4i`, whose `toCmd` writes `pn, type, value1, value2`
+    unconditionally (even when the values are 0). So a "bare" request still ends
+    in `,0,0`. Request/action type codes below 1000 are general; 1000+ are
+    gametype-specific (see `SimpleRequestType` / `SimpleActionType`).
+
+## Phase-4 store + GameScreen integration
+
+`store/gameStore.ts` now reduces the interaction messages above into per-game
+state and exposes matching action senders; `screens/GameScreen.tsx` renders the
+UI. Store reducer tests: `store/gameInteractions.test.ts`; UI render tests:
+`screens/GameScreenInteractions.test.tsx`.
+
+* **Trade.** `MAKEOFFER`→`offers[from]`, `CLEAROFFER`/`CLEARTRADEMSG`/`ACCEPTOFFER`
+  clear offers/responses, `REJECTOFFER`→`offerResponses[pn]='reject'`. Senders:
+  `bankTrade(give,get)`, `makeOffer(give,get,toPlayers)`, `acceptOffer(fromPn)`,
+  `rejectOffer()`, `clearOffer()`. UI: `data-testid="trade-panel"` with
+  `bank-trade-give/ratio/get/submit`, `offer-give/get/propose`, and per-offer
+  `offer-<pn>` + `accept-offer-<pn>` / `reject-offer-<pn>`.
+* **Dev cards.** The local player's real inventory is built from
+  `DEVCARDACTION` (DRAW/ADD_NEW → new bag, ADD_OLD → playable bag, PLAY/REMOVE_*
+  → remove; VP cards CAP..CHAPEL → vpCards bag); opponents' `UNKNOWN` cards only
+  bump `PlayerView.devCardCount`. `DEVCARDCOUNT` and `SIMPLEACTION(DEVCARD_BOUGHT,
+  v1=remaining)` set the deck count. Senders: `buyDevCard()`, `playKnight()`,
+  `playRoadBuilding()`, `playMonopoly()`, `playYearOfPlenty()`,
+  `pickMonopoly(resType)`, `pickResources(resList)`. UI: `data-testid="devcard-panel"`
+  with `buy-devcard` and `play-knight`/`play-roadbuilding`/`play-monopoly`/`play-yop`.
+* **Robber/discard.** `MOVEROBBER` (positive→`board.robberHex`, negative→
+  `board.pirateHex` as abs), `CHOOSEPLAYERREQUEST`→`robVictims`,
+  `DISCARDREQUEST`→`discardRequired`, `ROBBERYRESULT`→game-log line. In
+  `PLACING_ROBBER`/`PLACING_PIRATE` the board's `onHexClick` calls
+  `moveRobber(hex, pirate?)`. Senders: `moveRobber(hexCoord,pirate?)`,
+  `choosePlayer(pn)`, `discard(resList)`. UI dialogs: `monopoly-dialog`,
+  `pick-resources-dialog`, `discard-dialog`, `rob-victim-dialog` (+ `rob-victim-<pn>`).
+* **Game over.** On the `GAMESTATE`/`TURN` transition to `OVER (1000)` the winner
+  is taken from `CURRENT_PLAYER`/`TURN.playerNumber`; `GAMESTATS (TYPE_PLAYERS)`
+  fills `finalScores`. UI overlay: `data-testid="game-over"` (+ `game-over-winner`,
+  `final-score-<pn>`).
+* **Debug.** `sendDebug(text)` sends a `SOCGameTextMsg` whose text is a debug
+  chat command (server runs them with `-Djsettlers.allow.debug=Y`).

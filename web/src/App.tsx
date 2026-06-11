@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
+
 import { AppFrame, Button, ToastProvider } from './components';
 import { Root } from './screens/Root';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { useSettingsStore } from './store/settingsStore';
 import { useUiStore } from './store/uiStore';
 
 /**
@@ -14,6 +17,21 @@ export default function App(): JSX.Element {
   const appView = useUiStore((s) => s.appView);
   const setAppView = useUiStore((s) => s.setAppView);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const themeMode = useSettingsStore((s) => s.theme);
+  const applyEffects = useSettingsStore((s) => s.applyEffects);
+
+  // Re-apply persisted settings to the document on mount (after rehydration),
+  // and keep the `system` theme in sync with the OS color-scheme preference.
+  useEffect(() => {
+    applyEffects();
+    if (themeMode !== 'system' || !window.matchMedia) {
+      return;
+    }
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (): void => applyEffects();
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, [applyEffects, themeMode]);
 
   const headerActions = (
     <>

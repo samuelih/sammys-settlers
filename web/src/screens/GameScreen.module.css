@@ -5,6 +5,7 @@
   padding: var(--space-4, 1rem);
   height: 100%;
   min-height: 0;
+  position: relative; /* anchor for the absolutely-positioned game-over overlay */
 }
 
 /* ---- Top bar: title, turn banner, dice, leave -------------------------- */
@@ -327,4 +328,255 @@
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+/* --- Phase 4 interaction panels --- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) 0;
+}
+
+.section + .section {
+  border-top: 1px solid var(--color-border, #cfc9bc);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text, #111);
+}
+
+.tradeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.select {
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #cfc9bc);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.tradeArrow {
+  color: var(--color-text-muted, #666);
+}
+
+/* Incoming offers */
+.offers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+  padding: var(--space-2, 0.5rem);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-surface-alt, #ece8df);
+  border: 1px solid var(--color-border, #cfc9bc);
+  border-left: 3px solid var(--offer-swatch, var(--color-accent, #2f7fb5));
+}
+
+.offerHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.offerTerms {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text, #111);
+}
+
+.offerActions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+}
+
+.offerRejected {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-danger, #b53737);
+  font-style: italic;
+}
+
+/* Dev card list */
+.devCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.devCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.devCardName {
+  color: var(--color-text, #111);
+}
+
+.devCardNew {
+  color: var(--color-text-muted, #666);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-style: italic;
+}
+
+.devCardEmpty {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #666);
+  font-style: italic;
+}
+
+/* Resource picker (monopoly / YOP / discard dialogs) */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2, 0.5rem);
+}
+
+.pickerCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  padding: var(--space-2, 0.5rem);
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #cfc9bc);
+  background: var(--color-surface-alt, #ece8df);
+}
+
+.pickerCell[data-resource='clay'] {
+  border-bottom: 3px solid var(--color-resource-clay);
+}
+.pickerCell[data-resource='ore'] {
+  border-bottom: 3px solid var(--color-resource-ore);
+}
+.pickerCell[data-resource='sheep'] {
+  border-bottom: 3px solid var(--color-resource-sheep);
+}
+.pickerCell[data-resource='wheat'] {
+  border-bottom: 3px solid var(--color-resource-wheat);
+}
+.pickerCell[data-resource='wood'] {
+  border-bottom: 3px solid var(--color-resource-wood);
+}
+
+.pickerLabel {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+}
+
+.stepperValue {
+  min-width: 1.25rem;
+  text-align: center;
+  font-weight: var(--font-weight-bold, 700);
+  font-variant-numeric: tabular-nums;
+}
+
+.pickerSummary {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #666);
+}
+
+.monopolyButtons {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+/* Victim chooser */
+.victims {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+/* Game-over overlay */
+.gameOver {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 24, 0.6);
+  z-index: var(--z-overlay, 50);
+}
+
+.gameOverCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-5, 1.5rem);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-surface, #fff);
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.35));
+  min-width: 18rem;
+  max-width: 26rem;
+}
+
+.gameOverTitle {
+  margin: 0;
+  font-size: var(--font-size-xl, 1.5rem);
+  font-family: var(--font-display, sans-serif);
+  color: var(--color-text, #111);
+}
+
+.gameOverWinner {
+  margin: 0;
+  font-size: var(--font-size-md, 1rem);
+  color: var(--color-text, #111);
+}
+
+.finalScores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.finalScoreRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.finalScoreRow[data-winner='true'] {
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.finalScoreName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

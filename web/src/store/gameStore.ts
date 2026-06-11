@@ -69,6 +69,36 @@ import {
   mergeDefaultValue,
   parseDefaultsKeys,
   serializeOptions,
+  // Phase 4 — full in-game interactions
+  DevCardAction,
+  DevCardType,
+  GameStatsType,
+  Resource,
+  type ResourceValue,
+  SimpleActionType,
+  SOCAcceptOffer,
+  SOCBankTrade,
+  SOCBuyDevCardRequest,
+  SOCChoosePlayer,
+  SOCChoosePlayerRequest,
+  SOCClearOffer,
+  SOCClearTradeMsg,
+  SOCDevCardAction,
+  SOCDevCardCount,
+  SOCDiscard,
+  SOCDiscardRequest,
+  SOCGameStats,
+  SOCMakeOffer,
+  SOCMoveRobber,
+  SOCPickResources,
+  SOCPickResourceType,
+  SOCPlayDevCardRequest,
+  SOCRejectOffer,
+  SOCRobberyResult,
+  SOCSimpleAction,
+  type TradeOffer,
+  type ResourceSet,
+  resourceSet,
 } from '../protocol';
 import {
   type BoardModel,
@@ -174,6 +204,69 @@ export interface CurrentGame {
   deckDevCardCount: number;
   /** Rolling chat/announcement log (server text + chat), newest last. */
   gameLog: string[];
+
+  // --- In-game interactions (Phase 4) ---
+
+  /**
+   * The local player's development-card inventory (only the local player sees
+   * real card types; opponents' cards arrive as UNKNOWN counts in
+   * {@link PlayerView.devCardCount}). Built from DEVCARDACTION DRAW/PLAY/ADD.
+   */
+  myInventory: DevCardInventory;
+  /**
+   * Current trade offers indexed by the offering player's seat number; null =
+   * no live offer from that seat. Populated from MAKEOFFER / cleared by
+   * CLEAROFFER / CLEARTRADEMSG. Length maxPlayers.
+   */
+  offers: (TradeOffer | null)[];
+  /**
+   * Per-seat trade response to the local player's current offer, indexed by
+   * responder seat: 'accept' (rare — accept is a server broadcast),
+   * 'reject' (REJECTOFFER), or null (no response yet). Cleared with the offer.
+   */
+  offerResponses: (OfferResponse | null)[];
+  /**
+   * Number of cards the local player must discard, or 0 when not required.
+   * Set by DISCARDREQUEST, cleared once the local SOCDiscard is sent / state
+   * leaves WAITING_FOR_DISCARDS.
+   */
+  discardRequired: number;
+  /**
+   * When the local player must choose a robbery victim (CHOOSEPLAYERREQUEST),
+   * the seat numbers of the candidate victims; null when no choice is pending.
+   */
+  robVictims: number[] | null;
+  /** True if the victim chooser also offers a "steal from no one" option. */
+  robCanChooseNone: boolean;
+  /**
+   * The winner's seat number once the game is OVER (from CURRENT_PLAYER at the
+   * OVER transition), or -1 if not over / unknown.
+   */
+  winnerPlayerNumber: number;
+  /**
+   * Final per-seat scores from GAMESTATS (TYPE_PLAYERS) at game over, indexed
+   * by seat number; null until the final-stats message arrives.
+   */
+  finalScores: number[] | null;
+}
+
+/** A response by another seat to the local player's outstanding trade offer. */
+export type OfferResponse = 'accept' | 'reject';
+
+/**
+ * The local player's dev-card inventory. "Old" cards were drawn on a previous
+ * turn and are playable now; "new" cards were drawn this turn and can't be
+ * played until next turn. Each is a multiset keyed by {@link DevCardType}.
+ * Victory-point cards (CAP..CHAPEL) are kept in {@link vpCards} since they're
+ * never "played" and just count toward VP.
+ */
+export interface DevCardInventory {
+  /** Playable dev cards (drawn on a prior turn), keyed by card type -> count. */
+  playable: Record<number, number>;
+  /** New dev cards (drawn this turn; not yet playable), keyed by type -> count. */
+  newCards: Record<number, number>;
+  /** Victory-point cards held, keyed by card type -> count. */
+  vpCards: Record<number, number>;
 }
 
 /** A resolved dice roll. d1/d2 are 0 when only the total is known. */
@@ -323,6 +416,35 @@ export interface GameStoreState {
   applyLargestArmy: (gameName: string, playerNumber: number) => void;
   /** Append a line to the rolling game log. */
   appendGameLog: (gameName: string, line: string) => void;
+
+  // --- In-game interaction reducers (Phase 4) ---
+
+  /** Record/replace one seat's live trade offer (from SOCMakeOffer). */
+  applyMakeOffer: (msg: SOCMakeOffer) => void;
+  /** Clear one seat's (or all) live trade offer + responses (SOCClearOffer). */
+  applyClearOffer: (gameName: string, playerNumber: number) => void;
+  /** Record a seat's rejection of the local player's offer (SOCRejectOffer). */
+  applyRejectOffer: (gameName: string, playerNumber: number) => void;
+  /** Clear pending trade responses in the UI (from SOCClearTradeMsg). */
+  applyClearTradeMsg: (gameName: string, playerNumber: number) => void;
+  /** Apply an accepted trade (clears the offer); responses cleared (SOCAcceptOffer). */
+  applyAcceptOffer: (msg: SOCAcceptOffer) => void;
+  /** Update the local dev-card inventory / opponents' counts (SOCDevCardAction). */
+  applyDevCardAction: (msg: SOCDevCardAction) => void;
+  /** Set the deck dev-card count for older-style DEVCARDCOUNT messages. */
+  applyDevCardCount: (gameName: string, count: number) => void;
+  /** Set/clear the local player's discard requirement (from SOCDiscardRequest). */
+  applyDiscardRequest: (gameName: string, numDiscards: number) => void;
+  /** Move the robber/pirate to a hex on the board (from SOCMoveRobber). */
+  applyMoveRobber: (msg: SOCMoveRobber) => void;
+  /** Set the victim-chooser candidate list (from SOCChoosePlayerRequest). */
+  applyChoosePlayerRequest: (msg: SOCChoosePlayerRequest) => void;
+  /** Clear the pending victim chooser (after a choice is sent / state moves on). */
+  clearRobVictims: (gameName: string) => void;
+  /** Record a robbery result into the game log (from SOCRobberyResult). */
+  applyRobberyResult: (msg: SOCRobberyResult) => void;
+  /** Record final per-seat scores + winner at game over (from SOCGameStats). */
+  applyGameStats: (msg: SOCGameStats) => void;
 }
 
 /**
@@ -414,7 +536,44 @@ function makeCurrentGame(
     lastInitSettlement: null,
     deckDevCardCount: 0,
     gameLog: [],
+    myInventory: emptyInventory(),
+    offers: new Array<TradeOffer | null>(maxPlayers).fill(null),
+    offerResponses: new Array<OfferResponse | null>(maxPlayers).fill(null),
+    discardRequired: 0,
+    robVictims: null,
+    robCanChooseNone: false,
+    winnerPlayerNumber: -1,
+    finalScores: null,
   };
+}
+
+/** A fresh, empty dev-card inventory. */
+function emptyInventory(): DevCardInventory {
+  return { playable: {}, newCards: {}, vpCards: {} };
+}
+
+/** True if the card type is a Victory-Point card (CAP..CHAPEL, 4..8). */
+function isVpCard(cardType: number): boolean {
+  return cardType >= DevCardType.CAP && cardType <= DevCardType.CHAPEL;
+}
+
+/** Add `delta` (may be negative) to `bag[key]`, clamping at 0; deletes empties. */
+function bumpBag(bag: Record<number, number>, key: number, delta: number): Record<number, number> {
+  const next = { ...bag };
+  const v = (next[key] ?? 0) + delta;
+  if (v > 0) {
+    next[key] = v;
+  } else {
+    delete next[key];
+  }
+  return next;
+}
+
+/** Total number of cards held across all three bags of an inventory. */
+export function inventorySize(inv: DevCardInventory): number {
+  const sum = (bag: Record<number, number>): number =>
+    Object.values(bag).reduce((a, b) => a + b, 0);
+  return sum(inv.playable) + sum(inv.newCards) + sum(inv.vpCards);
 }
 
 /**
@@ -494,6 +653,11 @@ function applyElementToView(
       return { ...view, ships: applyElementAction(view.ships, action, amount) };
     case PlayerElementType.NUMKNIGHTS:
       return { ...view, knights: applyElementAction(view.knights, action, amount) };
+    case PlayerElementType.NUM_PICK_GOLD_HEX_RESOURCES:
+      return {
+        ...view,
+        numPickGoldRes: applyElementAction(view.numPickGoldRes, action, amount),
+      };
     default:
       return view; // flags / scenario / not-shown element types: ignore
   }
@@ -720,7 +884,19 @@ export const useGameStore = create<GameStoreState>((set) => ({
       if (state === cg.gameState) {
         return {};
       }
-      return { currentGame: { ...cg, gameState: state } };
+      // On the transition to OVER, the winner is the current player (the server
+      // sets GAMEELEMENTS(CURRENT_PLAYER) just before GAMESTATE OVER; see
+      // doc/Message-Sequences-for-Game-Actions.md "Game over").
+      const winnerPlayerNumber =
+        state === GameState.OVER && cg.currentPlayerNumber >= 0
+          ? cg.currentPlayerNumber
+          : cg.winnerPlayerNumber;
+      // Leaving WAITING_FOR_DISCARDS clears any stale discard requirement.
+      const discardRequired =
+        state !== GameState.WAITING_FOR_DISCARDS ? 0 : cg.discardRequired;
+      return {
+        currentGame: { ...cg, gameState: state, winnerPlayerNumber, discardRequired },
+      };
     }),
 
   clearCurrentGame: (gameName) =>
@@ -911,13 +1087,22 @@ export const useGameStore = create<GameStoreState>((set) => ({
         return {};
       }
       const gameState = msg.gameState > 0 ? msg.gameState : cg.gameState;
+      // A SOCTurn that announces OVER (won at start of own turn) names the winner.
+      const winnerPlayerNumber =
+        gameState === GameState.OVER ? msg.playerNumber : cg.winnerPlayerNumber;
       return {
         currentGame: {
           ...cg,
           currentPlayerNumber: msg.playerNumber,
           gameState,
-          // A new turn clears the previous turn's dice display.
+          // A new turn clears the previous turn's dice display and any stale
+          // trade offers / responses / discard prompt.
           lastDice: null,
+          offers: new Array<TradeOffer | null>(cg.maxPlayers).fill(null),
+          offerResponses: new Array<OfferResponse | null>(cg.maxPlayers).fill(null),
+          discardRequired: 0,
+          robVictims: null,
+          winnerPlayerNumber,
         },
       };
     }),
@@ -969,7 +1154,370 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       return { currentGame: { ...cg, gameLog } };
     }),
+
+  // --- In-game interaction reducers (Phase 4) ---
+
+  applyMakeOffer: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const from = msg.offer.from;
+      if (from < 0 || from >= cg.offers.length) {
+        return {};
+      }
+      const offers = cg.offers.slice();
+      offers[from] = msg.offer;
+      // A fresh offer clears prior responses to that seat's earlier offer.
+      const offerResponses = cg.offerResponses.slice();
+      offerResponses[from] = null;
+      return { currentGame: { ...cg, offers, offerResponses } };
+    }),
+
+  applyClearOffer: (gameName, playerNumber) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      if (playerNumber < 0) {
+        // -1 = clear all offers + responses.
+        return {
+          currentGame: {
+            ...cg,
+            offers: new Array<TradeOffer | null>(cg.maxPlayers).fill(null),
+            offerResponses: new Array<OfferResponse | null>(cg.maxPlayers).fill(null),
+          },
+        };
+      }
+      if (playerNumber >= cg.offers.length) {
+        return {};
+      }
+      const offers = cg.offers.slice();
+      offers[playerNumber] = null;
+      const offerResponses = cg.offerResponses.slice();
+      offerResponses[playerNumber] = null;
+      return { currentGame: { ...cg, offers, offerResponses } };
+    }),
+
+  applyRejectOffer: (gameName, playerNumber) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null || playerNumber < 0 || playerNumber >= cg.offerResponses.length) {
+        return {};
+      }
+      const offerResponses = cg.offerResponses.slice();
+      offerResponses[playerNumber] = 'reject';
+      return { currentGame: { ...cg, offerResponses } };
+    }),
+
+  applyClearTradeMsg: (gameName, playerNumber) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      // Clear trade RESPONSES (not the offers themselves), per seat or all (-1).
+      if (playerNumber < 0) {
+        return {
+          currentGame: {
+            ...cg,
+            offerResponses: new Array<OfferResponse | null>(cg.maxPlayers).fill(null),
+          },
+        };
+      }
+      if (playerNumber >= cg.offerResponses.length) {
+        return {};
+      }
+      const offerResponses = cg.offerResponses.slice();
+      offerResponses[playerNumber] = null;
+      return { currentGame: { ...cg, offerResponses } };
+    }),
+
+  applyAcceptOffer: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      // The trade completed; the offering seat's offer is gone and the matching
+      // resource PLAYERELEMENT updates arrive separately. Clear the offer +
+      // responses; record a log line.
+      const offers = cg.offers.slice();
+      if (msg.offering >= 0 && msg.offering < offers.length) {
+        offers[msg.offering] = null;
+      }
+      const offerResponses = new Array<OfferResponse | null>(cg.maxPlayers).fill(null);
+      const line = `${seatLabel(cg, msg.accepting)} accepted ${seatLabel(cg, msg.offering)}'s trade offer.`;
+      const gameLog = pushLog(cg.gameLog, line);
+      return { currentGame: { ...cg, offers, offerResponses, gameLog } };
+    }),
+
+  applyDevCardAction: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      // Opponents' dev cards arrive as UNKNOWN (type 0); only update the local
+      // player's real inventory. The devCardCount (in PlayerView) is driven by
+      // PLAYERELEMENT-less derivation here too, so keep the per-player count.
+      const isMine = msg.playerNumber === cg.mySeat && cg.mySeat >= 0;
+      let myInventory = cg.myInventory;
+      let playerViews = cg.playerViews;
+
+      // Per-seat dev-card count delta (how many cards the action adds/removes).
+      const countDelta = devCountDelta(msg.actionType);
+      if (msg.playerNumber >= 0 && countDelta !== 0) {
+        playerViews = updateView(playerViews, msg.playerNumber, (v) => ({
+          ...v,
+          devCardCount: Math.max(0, v.devCardCount + countDelta),
+        }));
+      }
+
+      if (isMine && msg.cardTypes === null && msg.cardType !== DevCardType.UNKNOWN) {
+        myInventory = applyInventoryAction(myInventory, msg.actionType, msg.cardType);
+      } else if (isMine && msg.cardTypes !== null) {
+        // Multi-card reveal (end of game): treat each as the same action.
+        for (const ct of msg.cardTypes) {
+          myInventory = applyInventoryAction(myInventory, msg.actionType, ct);
+        }
+      }
+
+      if (myInventory === cg.myInventory && playerViews === cg.playerViews) {
+        return {};
+      }
+      return { currentGame: { ...cg, myInventory, playerViews } };
+    }),
+
+  applyDevCardCount: (gameName, count) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      return { currentGame: { ...cg, deckDevCardCount: count } };
+    }),
+
+  applyDiscardRequest: (gameName, numDiscards) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null) {
+        return {};
+      }
+      return { currentGame: { ...cg, discardRequired: numDiscards } };
+    }),
+
+  applyMoveRobber: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null || cg.board === null) {
+        return {};
+      }
+      // Positive coord => robber hex; negative/0 => pirate (store its abs coord).
+      const board =
+        msg.coordinates > 0
+          ? { ...cg.board, robberHex: msg.coordinates }
+          : { ...cg.board, pirateHex: -msg.coordinates };
+      return { currentGame: { ...cg, board } };
+    }),
+
+  applyChoosePlayerRequest: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const robVictims: number[] = [];
+      for (let pn = 0; pn < msg.choices.length; ++pn) {
+        if (msg.choices[pn]) {
+          robVictims.push(pn);
+        }
+      }
+      return {
+        currentGame: { ...cg, robVictims, robCanChooseNone: msg.canChooseNone },
+      };
+    }),
+
+  clearRobVictims: (gameName) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, gameName);
+      if (cg === null || cg.robVictims === null) {
+        return {};
+      }
+      return { currentGame: { ...cg, robVictims: null, robCanChooseNone: false } };
+    }),
+
+  applyRobberyResult: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null) {
+        return {};
+      }
+      const line = robberyLogLine(cg, msg);
+      const gameLog = pushLog(cg.gameLog, line);
+      return { currentGame: { ...cg, gameLog } };
+    }),
+
+  applyGameStats: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null || msg.statType !== GameStatsType.TYPE_PLAYERS) {
+        return {}; // only final player scores are shown
+      }
+      const finalScores = [...msg.scores];
+      // Pick the winner as the highest score if not already known from the
+      // OVER transition (a robustness fallback).
+      let winnerPlayerNumber = cg.winnerPlayerNumber;
+      if (winnerPlayerNumber < 0) {
+        let best = -1;
+        let bestScore = -1;
+        for (let pn = 0; pn < finalScores.length; ++pn) {
+          if (finalScores[pn] > bestScore) {
+            bestScore = finalScores[pn];
+            best = pn;
+          }
+        }
+        winnerPlayerNumber = best;
+      }
+      return { currentGame: { ...cg, finalScores, winnerPlayerNumber } };
+    }),
 }));
+
+/** Per-seat dev-card-count delta for a {@link DevCardAction}. */
+function devCountDelta(action: number): number {
+  switch (action) {
+    case DevCardAction.DRAW:
+    case DevCardAction.ADD_NEW:
+    case DevCardAction.ADD_OLD:
+      return 1;
+    case DevCardAction.PLAY:
+    case DevCardAction.REMOVE_NEW:
+    case DevCardAction.REMOVE_OLD:
+      return -1;
+    default:
+      return 0; // CANNOT_PLAY
+  }
+}
+
+/**
+ * Apply one {@link SOCDevCardAction} to the local player's inventory, returning
+ * a new inventory. VP cards live in their own bag (never "played"); other cards
+ * go to playable (drawn previously) or newCards (drawn this turn).
+ *
+ *  * DRAW / ADD_NEW: a new card this turn (not yet playable), unless it's a VP card.
+ *  * ADD_OLD: a playable (old) card, unless a VP card.
+ *  * PLAY / REMOVE_OLD: remove from the playable bag (fall back to newCards).
+ *  * REMOVE_NEW: remove from the newCards bag.
+ */
+function applyInventoryAction(
+  inv: DevCardInventory,
+  action: number,
+  cardType: number,
+): DevCardInventory {
+  if (isVpCard(cardType)) {
+    switch (action) {
+      case DevCardAction.DRAW:
+      case DevCardAction.ADD_NEW:
+      case DevCardAction.ADD_OLD:
+        return { ...inv, vpCards: bumpBag(inv.vpCards, cardType, 1) };
+      case DevCardAction.REMOVE_NEW:
+      case DevCardAction.REMOVE_OLD:
+        return { ...inv, vpCards: bumpBag(inv.vpCards, cardType, -1) };
+      default:
+        return inv;
+    }
+  }
+
+  switch (action) {
+    case DevCardAction.DRAW:
+    case DevCardAction.ADD_NEW:
+      return { ...inv, newCards: bumpBag(inv.newCards, cardType, 1) };
+    case DevCardAction.ADD_OLD:
+      return { ...inv, playable: bumpBag(inv.playable, cardType, 1) };
+    case DevCardAction.PLAY:
+    case DevCardAction.REMOVE_OLD:
+      if ((inv.playable[cardType] ?? 0) > 0) {
+        return { ...inv, playable: bumpBag(inv.playable, cardType, -1) };
+      }
+      return { ...inv, newCards: bumpBag(inv.newCards, cardType, -1) };
+    case DevCardAction.REMOVE_NEW:
+      return { ...inv, newCards: bumpBag(inv.newCards, cardType, -1) };
+    default:
+      return inv;
+  }
+}
+
+/** Append a line to a capped game-log array (immutable). */
+function pushLog(log: readonly string[], line: string): string[] {
+  if (line === '') {
+    return [...log];
+  }
+  const out = [...log, line];
+  if (out.length > GAME_LOG_MAX) {
+    out.splice(0, out.length - GAME_LOG_MAX);
+  }
+  return out;
+}
+
+/** Human-readable name for a seat number in the current game. */
+function seatLabel(cg: CurrentGame, pn: number): string {
+  if (pn < 0 || pn >= cg.playerViews.length) {
+    return 'someone';
+  }
+  const v = cg.playerViews[pn];
+  return v.seated && v.name !== '' ? v.name : `Seat ${pn + 1}`;
+}
+
+/** Build a game-log line describing a {@link SOCRobberyResult}. */
+function robberyLogLine(cg: CurrentGame, msg: SOCRobberyResult): string {
+  const perp = seatLabel(cg, msg.perpPN);
+  const victim = seatLabel(cg, msg.victimPN);
+  if (msg.stolen.kind === 'res') {
+    const amt = Math.abs(msg.amount);
+    const res = resourceName(msg.stolen.resType);
+    return `${perp} robbed ${amt} ${res} from ${victim}.`;
+  }
+  if (msg.stolen.kind === 'peType') {
+    return `${perp} robbed ${Math.abs(msg.amount)} from ${victim}.`;
+  }
+  // Resource set (multi).
+  const rs = msg.stolen.resSet;
+  const parts: string[] = [];
+  const order: [number, ResourceValue][] = [
+    [rs.clay, Resource.CLAY],
+    [rs.ore, Resource.ORE],
+    [rs.sheep, Resource.SHEEP],
+    [rs.wheat, Resource.WHEAT],
+    [rs.wood, Resource.WOOD],
+  ];
+  for (const [amt, type] of order) {
+    if (amt > 0) {
+      parts.push(`${amt} ${resourceName(type)}`);
+    }
+  }
+  const what = parts.length > 0 ? parts.join(', ') : 'resources';
+  return `${perp} robbed ${what} from ${victim}.`;
+}
+
+/** Lower-case display name for a resource type (CLAY..WOOD). */
+export function resourceName(type: number): string {
+  switch (type) {
+    case Resource.CLAY:
+      return 'clay';
+    case Resource.ORE:
+      return 'ore';
+    case Resource.SHEEP:
+      return 'sheep';
+    case Resource.WHEAT:
+      return 'wheat';
+    case Resource.WOOD:
+      return 'wood';
+    default:
+      return 'resource';
+  }
+}
 
 /**
  * Return the current game iff it matches `gameName` (after marker stripping),
@@ -1399,8 +1947,121 @@ export function connectStore(
     useGameStore.getState().appendGameLog(t.game, line);
   });
 
+  // --- Full in-game interaction messages (Phase 4) ---
+
+  // Trade
+  conn.on(MessageType.MAKEOFFER, (msg: SOCMessage) => {
+    useGameStore.getState().applyMakeOffer(msg as SOCMakeOffer);
+  });
+
+  conn.on(MessageType.CLEAROFFER, (msg: SOCMessage) => {
+    const c = msg as SOCClearOffer;
+    useGameStore.getState().applyClearOffer(c.game, c.playerNumber);
+  });
+
+  conn.on(MessageType.REJECTOFFER, (msg: SOCMessage) => {
+    const r = msg as SOCRejectOffer;
+    useGameStore.getState().applyRejectOffer(r.game, r.playerNumber);
+  });
+
+  conn.on(MessageType.CLEARTRADEMSG, (msg: SOCMessage) => {
+    const c = msg as SOCClearTradeMsg;
+    useGameStore.getState().applyClearTradeMsg(c.game, c.playerNumber);
+  });
+
+  conn.on(MessageType.ACCEPTOFFER, (msg: SOCMessage) => {
+    useGameStore.getState().applyAcceptOffer(msg as SOCAcceptOffer);
+  });
+
+  conn.on(MessageType.BANKTRADE, (msg: SOCMessage) => {
+    // The traded resources arrive as PLAYERELEMENT updates; just log the trade.
+    const bt = msg as SOCBankTrade;
+    if (bt.playerNumber < 0) {
+      return; // <--- Early return: our own request echo, not an announcement ---
+    }
+    const st = useGameStore.getState();
+    const cg = st.currentGame;
+    if (cg === null) {
+      return;
+    }
+    const give = describeResourceSet(bt.give);
+    const get = describeResourceSet(bt.get);
+    st.appendGameLog(bt.game, `${seatLabel(cg, bt.playerNumber)} traded ${give} for ${get} with the bank.`);
+  });
+
+  // Dev cards
+  conn.on(MessageType.DEVCARDACTION, (msg: SOCMessage) => {
+    useGameStore.getState().applyDevCardAction(msg as SOCDevCardAction);
+  });
+
+  conn.on(MessageType.DEVCARDCOUNT, (msg: SOCMessage) => {
+    const d = msg as SOCDevCardCount;
+    useGameStore.getState().applyDevCardCount(d.game, d.numDevCards);
+  });
+
+  // Robber / discard
+  conn.on(MessageType.DISCARDREQUEST, (msg: SOCMessage) => {
+    const d = msg as SOCDiscardRequest;
+    useGameStore.getState().applyDiscardRequest(d.game, d.numDiscards);
+  });
+
+  conn.on(MessageType.MOVEROBBER, (msg: SOCMessage) => {
+    useGameStore.getState().applyMoveRobber(msg as SOCMoveRobber);
+  });
+
+  conn.on(MessageType.CHOOSEPLAYERREQUEST, (msg: SOCMessage) => {
+    useGameStore.getState().applyChoosePlayerRequest(msg as SOCChoosePlayerRequest);
+  });
+
+  conn.on(MessageType.ROBBERYRESULT, (msg: SOCMessage) => {
+    useGameStore.getState().applyRobberyResult(msg as SOCRobberyResult);
+  });
+
+  // Misc
+  conn.on(MessageType.SIMPLEACTION, (msg: SOCMessage) => {
+    const a = msg as SOCSimpleAction;
+    const st = useGameStore.getState();
+    const cg = st.currentGame;
+    if (cg === null) {
+      return;
+    }
+    if (a.actType === SimpleActionType.DEVCARD_BOUGHT) {
+      // value1 = remaining unbought cards in the deck.
+      st.applyDevCardCount(a.game, a.value1);
+      st.appendGameLog(a.game, `${seatLabel(cg, a.playerNumber)} bought a development card.`);
+    } else if (a.actType === SimpleActionType.RSRC_TYPE_MONOPOLIZED) {
+      // value1 = total taken, value2 = resource type.
+      st.appendGameLog(
+        a.game,
+        `${seatLabel(cg, a.playerNumber)} monopolized ${a.value1} ${resourceName(a.value2)}.`,
+      );
+    }
+  });
+
+  conn.on(MessageType.GAMESTATS, (msg: SOCMessage) => {
+    useGameStore.getState().applyGameStats(msg as SOCGameStats);
+  });
+
   conn.connect();
   return conn;
+}
+
+/** Describe a resource set as "3 ore" / "1 sheep, 2 wood" / "nothing" for the log. */
+function describeResourceSet(rs: ResourceSet): string {
+  const order: [number, ResourceValue][] = [
+    [rs.clay, Resource.CLAY],
+    [rs.ore, Resource.ORE],
+    [rs.sheep, Resource.SHEEP],
+    [rs.wheat, Resource.WHEAT],
+    [rs.wood, Resource.WOOD],
+  ];
+  const parts: string[] = [];
+  for (const [amt, type] of order) {
+    if (amt > 0) {
+      parts.push(`${amt} ${resourceName(type)}`);
+    }
+  }
+  return parts.length > 0 ? parts.join(', ') : 'nothing';
 }
 
 /**
@@ -1688,4 +2349,258 @@ export function endTurn(): void {
   conn.send(new SOCEndTurn(cg.gameName));
 }
 
-export { PieceTypeConst, GameState };
+// ---------------------------------------------------------------------------
+// Phase 4 — full in-game interaction action senders.
+//
+// Each builds the right SOCMessage and sends it; the server's broadcast then
+// updates the store via the reducers above. Resource sets are the five known
+// amounts CLAY..WOOD (UNKNOWN excluded), matching the Java messages.
+// ---------------------------------------------------------------------------
+
+/** Build a {@link ResourceSet} from a CLAY..WOOD count record. */
+function toResourceSet(amounts: Partial<Record<ResourceValue, number>>): ResourceSet {
+  return resourceSet(
+    amounts[Resource.CLAY] ?? 0,
+    amounts[Resource.ORE] ?? 0,
+    amounts[Resource.SHEEP] ?? 0,
+    amounts[Resource.WHEAT] ?? 0,
+    amounts[Resource.WOOD] ?? 0,
+  );
+}
+
+/**
+ * Request a bank/port trade: give one resource set, get another. Sends
+ * SOCBankTrade (pn omitted, -1); the server validates the ratio and broadcasts
+ * the resulting SOCBankTrade + PLAYERELEMENT updates.
+ *
+ * @param give  resources offered to the bank/port (CLAY..WOOD counts)
+ * @param get   resources requested from the bank/port (CLAY..WOOD counts)
+ */
+export function bankTrade(
+  give: Partial<Record<ResourceValue, number>>,
+  get: Partial<Record<ResourceValue, number>>,
+): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCBankTrade(cg.gameName, toResourceSet(give), toResourceSet(get)));
+}
+
+/**
+ * Propose a player-to-player trade. Sends SOCMakeOffer offering `give` for
+ * `get` to the seats flagged in `toPlayers`; the server broadcasts the offer.
+ *
+ * @param give       resources the local player offers (CLAY..WOOD counts)
+ * @param get        resources wanted in return (CLAY..WOOD counts)
+ * @param toPlayers  per-seat flags: true = offer made to that seat
+ */
+export function makeOffer(
+  give: Partial<Record<ResourceValue, number>>,
+  get: Partial<Record<ResourceValue, number>>,
+  toPlayers: boolean[],
+): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  const offer: TradeOffer = {
+    from: cg.mySeat,
+    to: toPlayers,
+    give: toResourceSet(give),
+    get: toResourceSet(get),
+  };
+  conn.send(new SOCMakeOffer(cg.gameName, offer));
+}
+
+/**
+ * Accept the trade offer made by `fromPn`. Sends SOCAcceptOffer (accepting is
+ * filled by the server); the server broadcasts the completed trade.
+ *
+ * @param fromPn  the offering seat whose offer to accept
+ */
+export function acceptOffer(fromPn: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  conn.send(new SOCAcceptOffer(cg.gameName, cg.mySeat, fromPn));
+}
+
+/**
+ * Reject all outstanding trade offers ("no thanks"). Sends SOCRejectOffer; the
+ * server fills in the rejecting player number and broadcasts.
+ */
+export function rejectOffer(): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  // playerNumber is ignored by the server from the client; send our seat.
+  conn.send(new SOCRejectOffer(cg.gameName, cg.mySeat));
+}
+
+/**
+ * Retract the local player's own trade offer. Sends SOCClearOffer with our seat;
+ * the server broadcasts the clear.
+ */
+export function clearOffer(): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  conn.send(new SOCClearOffer(cg.gameName, cg.mySeat));
+}
+
+/** Request to buy a development card. Sends SOCBuyDevCardRequest. */
+export function buyDevCard(): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCBuyDevCardRequest(cg.gameName));
+}
+
+/** Internal: send a SOCPlayDevCardRequest for the given card type. */
+function playDevCard(devCardType: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCPlayDevCardRequest(cg.gameName, devCardType));
+}
+
+/** Play a Knight/Soldier card. Server moves to PLACING_ROBBER (or pirate). */
+export function playKnight(): void {
+  playDevCard(DevCardType.KNIGHT);
+}
+
+/** Play a Road Building card. Server moves to PLACING_FREE_ROAD1. */
+export function playRoadBuilding(): void {
+  playDevCard(DevCardType.ROADS);
+}
+
+/**
+ * Play a Monopoly card. The server moves to WAITING_FOR_MONOPOLY; the UI then
+ * calls {@link pickMonopoly} with the chosen resource type.
+ */
+export function playMonopoly(): void {
+  playDevCard(DevCardType.MONO);
+}
+
+/**
+ * Play a Year of Plenty / Discovery card. The server moves to
+ * WAITING_FOR_DISCOVERY; the UI then calls {@link pickResources} with two picks.
+ */
+export function playYearOfPlenty(): void {
+  playDevCard(DevCardType.DISC);
+}
+
+/**
+ * Pick free resources (Year of Plenty discovery, or a gold-hex pick). Sends
+ * SOCPickResources with the chosen CLAY..WOOD amounts.
+ *
+ * @param amounts  CLAY..WOOD counts to pick (must total the required number)
+ */
+export function pickResources(amounts: Partial<Record<ResourceValue, number>>): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCPickResources(cg.gameName, toResourceSet(amounts)));
+}
+
+/**
+ * Pick the resource type to monopolize (Monopoly card). Sends
+ * SOCPickResourceType; the server takes that resource from all other players.
+ *
+ * @param resType  a {@link Resource} value (CLAY..WOOD)
+ */
+export function pickMonopoly(resType: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCPickResourceType(cg.gameName, resType));
+}
+
+/**
+ * Move the robber (positive hex coord) or pirate (negative coord) to `hexCoord`.
+ * Sends SOCMoveRobber for the local player. When `pirate` is true the coordinate
+ * is negated before sending so the server treats it as a pirate move.
+ *
+ * @param hexCoord  0xRRCC hex coordinate (positive)
+ * @param pirate    when true, send as a pirate move (negative coordinate)
+ */
+export function moveRobber(hexCoord: number, pirate = false): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null || cg.mySeat < 0) {
+    return; // <--- Early return: not seated ---
+  }
+  const coord = pirate ? -Math.abs(hexCoord) : hexCoord;
+  conn.send(new SOCMoveRobber(cg.gameName, cg.mySeat, coord));
+}
+
+/**
+ * Choose a player to rob from (after moving the robber). Sends SOCChoosePlayer
+ * with the victim seat number, then clears the local victim chooser.
+ *
+ * @param pn  the chosen victim seat number, or a ChoosePlayerChoice special
+ */
+export function choosePlayer(pn: number): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  conn.send(new SOCChoosePlayer(cg.gameName, pn));
+  useGameStore.getState().clearRobVictims(cg.gameName);
+}
+
+/**
+ * Discard the chosen resources after a 7 is rolled. Sends SOCDiscard with the
+ * five CLAY..WOOD amounts (no player number from the client) and clears the
+ * local discard requirement.
+ *
+ * @param amounts  CLAY..WOOD counts to discard (must total the required number)
+ */
+export function discard(amounts: Partial<Record<ResourceValue, number>>): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  // From the client, no player number (pn = -1); five amounts + unknown=0.
+  conn.send(new SOCDiscard(cg.gameName, -1, toResourceSet(amounts)));
+  useGameStore.getState().applyDiscardRequest(cg.gameName, 0);
+}
+
+/**
+ * Send a debug chat command (e.g. "rsrcs: 1 0 1 0 1 #0", "*FREEPLACE* 1") as a
+ * SOCGameTextMsg in the joined game. The server runs it when debug is enabled
+ * (the dev server runs with -Djsettlers.allow.debug=Y). Useful for setting up
+ * board states for testing interactions.
+ *
+ * @param text  the debug command text (as typed into a game's chat box)
+ */
+export function sendDebug(text: string): void {
+  const conn = connection;
+  const cg = useGameStore.getState().currentGame;
+  if (conn === null || cg === null) {
+    return; // <--- Early return: not in a game ---
+  }
+  const nick = useGameStore.getState().nickname;
+  conn.send(new SOCGameTextMsg(cg.gameName, nick, text));
+}
+
+export { PieceTypeConst, GameState, DevCardType, Resource };

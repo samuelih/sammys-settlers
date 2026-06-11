@@ -274,3 +274,42 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ===================================================================== *
+ *  Settings-driven preferences (Phase 4). Set on <html> by
+ *  store/settingsStore.ts:
+ *    --font-scale                  typography multiplier (font-size slider)
+ *    [data-render-quality='low']   flatten shadows + kill animation (weak GPUs)
+ *  (data-theme / data-theme-cb are handled by the theme blocks above.)
+ * ===================================================================== */
+
+/* Typography scale. The font-size slider sets --font-scale on :root; the
+ * document base font-size multiplies by it so all rem-based type tracks. */
+:root {
+  --font-scale: 1;
+}
+
+html {
+  font-size: calc(100% * var(--font-scale, 1));
+}
+
+/* Low rendering-quality mode: drop shadows + suppress motion so the board and
+ * UI stay cheap to paint. Board components also read [data-render-quality]. */
+:root[data-render-quality='low'],
+[data-render-quality='low'] {
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --transition-fast: 0ms;
+  --transition-base: 0ms;
+  --transition-slow: 0ms;
+}
+
+[data-render-quality='low'] *,
+[data-render-quality='low'] *::before,
+[data-render-quality='low'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+}

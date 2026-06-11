@@ -131,6 +131,62 @@ export const MessageType = {
   MOVEPIECE: 1093,
   /** {@link SOCGameElements} — several game-status fields at once (multi). @since 2.0.00 */
   GAMEELEMENTS: 1096,
+
+  // --- Full in-game interactions (Phase 4) ---
+
+  // Trade
+  /** {@link SOCRejectOffer} — reject all offers ("no thanks"), or server reply-reason code. */
+  REJECTOFFER: 1037,
+  /** {@link SOCClearOffer} — retract an offer, or server clears offers from displays. */
+  CLEAROFFER: 1038,
+  /** {@link SOCAcceptOffer} — accept a trade offer; from server may include traded resources. */
+  ACCEPTOFFER: 1039,
+  /** {@link SOCBankTrade} — request/announce a trade with the bank or a port. */
+  BANKTRADE: 1040,
+  /** {@link SOCMakeOffer} — make/update or announce a player trade offer. */
+  MAKEOFFER: 1041,
+  /** {@link SOCClearTradeMsg} — clear trade messages/responses in client UI. */
+  CLEARTRADEMSG: 1042,
+
+  // Dev cards
+  /** {@link SOCBuyDevCardRequest} — client asks to buy a development card. */
+  BUYDEVCARDREQUEST: 1045,
+  /** {@link SOCDevCardAction} — a player is drawing/playing/adding/removing a dev card. */
+  DEVCARDACTION: 1046,
+  /** {@link SOCDevCardCount} — number of dev cards left in the deck (older clients). */
+  DEVCARDCOUNT: 1047,
+  /** {@link SOCSetPlayedDevCard} — set the "played a dev card this turn" flag (older clients). */
+  SETPLAYEDDEVCARD: 1048,
+  /** {@link SOCPlayDevCardRequest} — client asks to play a development card. */
+  PLAYDEVCARDREQUEST: 1049,
+  /** {@link SOCPickResources} — resources picked (Year of Plenty / Gold Hex). */
+  PICKRESOURCES: 1052,
+  /** {@link SOCPickResourceType} — resource type chosen (Monopoly). */
+  PICKRESOURCETYPE: 1053,
+
+  // Robber / discard
+  /** {@link SOCDiscardRequest} — server asks a player to discard N cards. */
+  DISCARDREQUEST: 1029,
+  /** {@link SOCDiscard} — the resources a player chose to discard. */
+  DISCARD: 1033,
+  /** {@link SOCMoveRobber} — move the robber (positive coord) or pirate (negative). */
+  MOVEROBBER: 1034,
+  /** {@link SOCChoosePlayer} — client's choice of whom to rob / robber-or-pirate. */
+  CHOOSEPLAYER: 1035,
+  /** {@link SOCChoosePlayerRequest} — server prompts player to choose a victim. */
+  CHOOSEPLAYERREQUEST: 1036,
+  /** {@link SOCRobberyResult} — server reports a robbery's victim and what was stolen. @since 2.5.00 */
+  ROBBERYRESULT: 1102,
+
+  // Misc
+  /** {@link SOCGameStats} — game stats (final scores / timing), or a request for them. */
+  GAMESTATS: 1061,
+  /** {@link SOCSimpleRequest} — generic player request / server prompt with 2 detail values. @since 1.1.18 */
+  SIMPLEREQUEST: 1089,
+  /** {@link SOCSimpleAction} — generic in-game action/event from server with 2 detail values. @since 1.1.19 */
+  SIMPLEACTION: 1090,
+  /** {@link SOCDeclinePlayerRequest} — server declines a player's request, with a reason. @since 2.5.00 */
+  DECLINEPLAYERREQUEST: 1104,
 } as const;
 
 /**
@@ -561,3 +617,188 @@ export const GameElementType = {
  */
 export type GameElementTypeValue =
   (typeof GameElementType)[keyof typeof GameElementType];
+
+/**
+ * Development-card type constants from {@code soc.game.SOCDevCardConstants}.
+ *<P>
+ * IMPORTANT: In v2.0.00 the values of {@link #UNKNOWN} and {@link #KNIGHT} were
+ * swapped to make room for more card types. The web client speaks v2.7.00, so
+ * these are the post-swap values: {@code UNKNOWN=0}, {@code KNIGHT=9}. The
+ * legacy v1.x values ({@code KNIGHT=0}, {@code UNKNOWN=9}) are exposed as
+ * {@link #KNIGHT_FOR_VERS_1_X} / {@link #UNKNOWN_FOR_VERS_1_X} for completeness;
+ * the server only sends them to v1.x clients, which we are not.
+ *<P>
+ * CAP/MARKET/UNIV/TEMPLE/CHAPEL (4..8) are the Victory-Point card types.
+ * (Before v2.0.00, MARKET was {@code LIB}; before v2.5.00, TEMPLE was {@code TEMP};
+ * before v2.0.00, CHAPEL was {@code TOW}.)
+ */
+export const DevCardType = {
+  /** Minimum valid card type ({@link #UNKNOWN}). Value 0. */
+  MIN: 0,
+  /** Dev card of unknown type (reporting to other players). Value 0. */
+  UNKNOWN: 0,
+  /** Lowest "known" card type ({@link #ROADS}). Value 1. */
+  MIN_KNOWN: 1,
+  /** Road Building card. Value 1. */
+  ROADS: 1,
+  /** Discovery / Year of Plenty card. Value 2. */
+  DISC: 2,
+  /** Monopoly card. Value 3. */
+  MONO: 3,
+  /** Capitol / Governor's House / Great Hall VP card. Value 4. */
+  CAP: 4,
+  /** Market VP card (was {@code LIB} before v2.0.00). Value 5. */
+  MARKET: 5,
+  /** University VP card. Value 6. */
+  UNIV: 6,
+  /** Temple / Library VP card (was {@code TEMP} before v2.5.00). Value 7. */
+  TEMPLE: 7,
+  /** Tower / Chapel VP card (was {@code TOW} before v2.0.00). Value 8. */
+  CHAPEL: 8,
+  /** Knight / Soldier / Robber card. Value 9 (was 0 before v2.0.00). */
+  KNIGHT: 9,
+  /** One past the highest defined card type ({@link #KNIGHT}). Value 10. */
+  MAXPLUSONE: 10,
+  /** Legacy v1.x value for {@link #KNIGHT}. Value 0. */
+  KNIGHT_FOR_VERS_1_X: 0,
+  /** Legacy v1.x value for {@link #UNKNOWN}. Value 9. */
+  UNKNOWN_FOR_VERS_1_X: 9,
+} as const;
+
+/**
+ * Type of a {@link DevCardType} value.
+ */
+export type DevCardTypeValue = (typeof DevCardType)[keyof typeof DevCardType];
+
+/**
+ * {@code SOCDevCardAction} action constants: what's happening to the card.
+ * Verified against {@code SOCDevCardAction.java}.
+ */
+export const DevCardAction = {
+  /** DRAW (Buy): add as new to player's hand. Value 0. */
+  DRAW: 0,
+  /** PLAY: remove as old from player's hand. Value 1. */
+  PLAY: 1,
+  /** ADD_NEW: add as new to player's hand. Value 2. */
+  ADD_NEW: 2,
+  /** ADD_OLD: add as old to player's hand. Value 3. */
+  ADD_OLD: 3,
+  /** CANNOT_PLAY: bot can't play that card now (sent only to the bot; pn=-1). Value 4. @since 1.1.17 */
+  CANNOT_PLAY: 4,
+  /** REMOVE_NEW: remove a new card from the hand (undo). Value 5. @since 2.7.00 */
+  REMOVE_NEW: 5,
+  /** REMOVE_OLD: remove an old card from the hand (undo). Value 6. @since 2.7.00 */
+  REMOVE_OLD: 6,
+} as const;
+
+/**
+ * Type of a {@link DevCardAction} value.
+ */
+export type DevCardActionValue =
+  (typeof DevCardAction)[keyof typeof DevCardAction];
+
+/**
+ * Special {@link SOCChoosePlayer#choice} values from {@code SOCChoosePlayer.java}.
+ * A non-negative choice is a victim player number; these negatives are special.
+ */
+export const ChoosePlayerChoice = {
+  /** Chose to not rob from anyone (some scenarios). Value -1. @since 2.0.00 */
+  CHOICE_NO_PLAYER: -1,
+  /** In WAITING_FOR_ROBBER_OR_PIRATE: move the robber. Value -2. @since 2.0.00 */
+  CHOICE_MOVE_ROBBER: -2,
+  /** In WAITING_FOR_ROBBER_OR_PIRATE: move the pirate ship. Value -3. @since 2.0.00 */
+  CHOICE_MOVE_PIRATE: -3,
+} as const;
+
+/**
+ * Reply/decline reason codes for {@link SOCRejectOffer} (the {@code REASON_*}
+ * constants in {@code SOCRejectOffer.java}). Standard codes are &gt; 0; values
+ * &lt; 0 are reserved for third-party bots/forks. @since 2.5.00
+ */
+export const RejectOfferReason = {
+  /** Can't offer/accept/bank-trade now (usually wrong resources). Value 1. */
+  REASON_CANNOT_MAKE_TRADE: 1,
+  /** Can't trade now because it isn't the client's turn. Value 2. */
+  REASON_NOT_YOUR_TURN: 2,
+  /** Can't make this trade offer now. Value 3. */
+  REASON_CANNOT_MAKE_OFFER: 3,
+} as const;
+
+/**
+ * Reason codes for {@link SOCPickResources} when announced from server (the
+ * {@code REASON_*} constants in {@code SOCPickResources.java}). @since 2.5.00
+ */
+export const PickResourcesReason = {
+  /** Generic pick. Value 1. */
+  REASON_GENERIC: 1,
+  /** Discovery / Year of Plenty (received from the bank). Value 2. */
+  REASON_DISCOVERY: 2,
+  /** Gold Hex pick. Value 3. */
+  REASON_GOLD_HEX: 3,
+} as const;
+
+/**
+ * Reason codes for {@link SOCDeclinePlayerRequest} (the {@code REASON_*}
+ * constants in {@code SOCDeclinePlayerRequest.java}). @since 2.5.00
+ */
+export const DeclineReason = {
+  /** Not covered by other reason codes. Value 0. */
+  REASON_OTHER: 0,
+  /** Game rules/conditions prevent it for the rest of the game. Value 1. */
+  REASON_NOT_THIS_GAME: 1,
+  /** Not the player's turn. Value 2. */
+  REASON_NOT_YOUR_TURN: 2,
+  /** Player is current but can't act right now (game state). Value 3. */
+  REASON_NOT_NOW: 3,
+  /** Requested location/coordinate isn't permitted ("can't build here"). Value 4. */
+  REASON_LOCATION: 4,
+  /** Right turn/state but wrong specifics (e.g. invalid victim). Value 5. */
+  REASON_SPECIFICS: 5,
+} as const;
+
+/**
+ * Request-type codes for {@link SOCSimpleRequest} (the constants in
+ * {@code SOCSimpleRequest.java}). Codes below 1000 are general; 1000+ are
+ * gametype-specific.
+ */
+export const SimpleRequestType = {
+  /** Server prompts client to pick free resources from a gold hex. Value 1. @since 2.0.00 */
+  PROMPT_PICK_RESOURCES: 1,
+  /** Current player wants to attack their pirate fortress (SC_PIRI). Value 1000. @since 1.1.18 */
+  SC_PIRI_FORT_ATTACK: 1000,
+  /** Current player wants to place a trade port they've been given (SC_FTRI). Value 1001. @since 2.0.00 */
+  TRADE_PORT_PLACE: 1001,
+} as const;
+
+/**
+ * Action-type codes for {@link SOCSimpleAction} (the constants in
+ * {@code SOCSimpleAction.java}). Codes below 1000 are general; 1000+ are
+ * gametype-specific.
+ */
+export const SimpleActionType = {
+  /** Current player bought a dev card; value1 = cards remaining. Value 1. @since 1.1.19 */
+  DEVCARD_BOUGHT: 1,
+  /** Bank/port trade succeeded (bots only; deprecated in v2.0.00). Value 2. @since 1.1.19 */
+  TRADE_SUCCESSFUL: 2,
+  /** Current player monopolized a resource; v1=total, v2=resType. Value 3. @since 2.0.00 */
+  RSRC_TYPE_MONOPOLIZED: 3,
+  /** A board edge became (or stopped being) a Special Edge. Value 4. @since 2.0.00 */
+  BOARD_EDGE_SET_SPECIAL: 4,
+  /** Pirate-fortress attack result (SC_PIRI). Value 1001. @since 2.0.00 */
+  SC_PIRI_FORT_ATTACK_RESULT: 1001,
+  /** Current player removed a trade port from the board (SC_FTRI). Value 1002. @since 2.0.00 */
+  TRADE_PORT_REMOVED: 1002,
+  /** Player undid placing/moving a ship by a Village (SC_CLVI). Value 1003. @since 2.7.00 */
+  SC_CLVI_VILLAGE_PLAYER_REMOVED: 1003,
+} as const;
+
+/**
+ * Statistics-type codes for {@link SOCGameStats} (the {@code TYPE_*} constants
+ * in {@code SOCGameStats.java}).
+ */
+export const GameStatsType = {
+  /** Final player scores + robot flags at end of game. Value 1. */
+  TYPE_PLAYERS: 1,
+  /** Game timing (created/started/finished as unix seconds). Value 2. @since 2.7.00 */
+  TYPE_TIMING: 2,
+} as const;

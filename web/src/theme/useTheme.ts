@@ -1,47 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
-// Theme management hook. Reflects the active theme onto the document root
-// via `data-theme` so the CSS-variable overrides in tokens.css take effect.
-// Persists the choice in localStorage and falls back to the OS preference.
+import { resolveTheme, useSettingsStore } from '../store/settingsStore';
+import type { ThemeMode as SettingsThemeMode } from '../store/settingsStore';
 
+// Theme hook. Thin adapter over the single source of truth in
+// `store/settingsStore` (which persists the choice and reflects it onto the
+// document root via `data-theme`, resolving `system` against the OS). Kept so
+// the header theme toggle (AppFrame) has a simple light/dark API; the full
+// theme/colorblind/sound/etc. controls live in SettingsScreen.
+
+/** Concrete applied theme for the header toggle (no `system`). */
 export type ThemeMode = 'light' | 'dark';
 
-const STORAGE_KEY = 'jsettlers.theme';
-
-function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
-  }
-  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
-}
-
 export function useTheme(): {
+  /** The currently *applied* theme (`system` resolved to light/dark). */
   theme: ThemeMode;
+  /** Set an explicit light/dark theme. */
   setTheme: (mode: ThemeMode) => void;
+  /** Flip between the applied light and dark themes. */
   toggleTheme: () => void;
 } {
-  const [theme, setThemeState] = useState<ThemeMode>(getInitialTheme);
+  const mode = useSettingsStore((s) => s.theme);
+  const setMode = useSettingsStore((s) => s.setTheme);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // ignore storage failures (e.g. private mode)
-    }
-  }, [theme]);
+  const theme = resolveTheme(mode);
 
-  const setTheme = useCallback((mode: ThemeMode) => setThemeState(mode), []);
+  const setTheme = useCallback(
+    (next: ThemeMode) => setMode(next as SettingsThemeMode),
+    [setMode],
+  );
   const toggleTheme = useCallback(
-    () => setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark')),
-    [],
+    () => setMode(theme === 'dark' ? 'light' : 'dark'),
+    [setMode, theme],
   );
 
   return { theme, setTheme, toggleTheme };

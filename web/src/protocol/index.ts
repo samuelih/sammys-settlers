@@ -92,6 +92,50 @@ export {
   SERVER_FOR_CHAT,
 } from './messages/SOCGameTextMsg';
 
+// Full in-game interactions (Phase 4). Each self-registers its parser on import.
+// Trade
+export { SOCBankTrade } from './messages/SOCBankTrade';
+export { SOCMakeOffer, type TradeOffer } from './messages/SOCMakeOffer';
+export { SOCAcceptOffer } from './messages/SOCAcceptOffer';
+export { SOCRejectOffer } from './messages/SOCRejectOffer';
+export { SOCClearOffer } from './messages/SOCClearOffer';
+export { SOCClearTradeMsg } from './messages/SOCClearTradeMsg';
+// Dev cards
+export { SOCBuyDevCardRequest } from './messages/SOCBuyDevCardRequest';
+export {
+  SOCDevCardAction,
+  DEVCARD_MAX_MULTIPLE,
+} from './messages/SOCDevCardAction';
+export { SOCDevCardCount } from './messages/SOCDevCardCount';
+export { SOCSetPlayedDevCard } from './messages/SOCSetPlayedDevCard';
+export { SOCPlayDevCardRequest } from './messages/SOCPlayDevCardRequest';
+export { SOCPickResources } from './messages/SOCPickResources';
+export { SOCPickResourceType } from './messages/SOCPickResourceType';
+// Robber / discard
+export { SOCMoveRobber } from './messages/SOCMoveRobber';
+export { SOCChoosePlayer } from './messages/SOCChoosePlayer';
+export { SOCChoosePlayerRequest } from './messages/SOCChoosePlayerRequest';
+export { SOCDiscard } from './messages/SOCDiscard';
+export { SOCDiscardRequest } from './messages/SOCDiscardRequest';
+export {
+  SOCRobberyResult,
+  type RobberyStolen,
+} from './messages/SOCRobberyResult';
+// Misc
+export { SOCSimpleRequest } from './messages/SOCSimpleRequest';
+export { SOCSimpleAction } from './messages/SOCSimpleAction';
+export { SOCDeclinePlayerRequest } from './messages/SOCDeclinePlayerRequest';
+export { SOCGameStats } from './messages/SOCGameStats';
+
+// Resource-set + trade-offer model helpers used by the interaction messages.
+export {
+  type ResourceSet,
+  emptyResourceSet,
+  resourceSet,
+  getAmount as resourceGetAmount,
+  setAmount as resourceSetAmount,
+} from './messages/resourceSet';
+
 // Game-option model (descriptor type + (de)serialization helpers).
 export {
   type GameOptType,

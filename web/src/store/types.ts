@@ -66,6 +66,11 @@ export interface PlayerView {
   longestRoad: boolean;
   /** True if this player currently holds Largest Army. */
   largestArmy: boolean;
+  /**
+   * Number of resources this player must pick from a gold hex (sea board); 0
+   * when not picking. From SOCPlayerElement(NUM_PICK_GOLD_HEX_RESOURCES).
+   */
+  numPickGoldRes: number;
 }
 
 /**
@@ -107,5 +112,6 @@ export function makePlayerView(playerNumber: number): PlayerView {
     vp: 0,
     longestRoad: false,
     largestArmy: false,
+    numPickGoldRes: 0,
   };
 }

@@ -45,17 +45,23 @@ CP="build/classes/java/main:build/resources/main:src/main/resources:$GSON:$JWS:$
 LOG=/tmp/js-web-server.log
 : > "$LOG"
 
+# JVM system properties (must precede the main class). allow.debug is read via
+# System.getProperty (not a program arg) and enables the "debug" chat user, which
+# E2E tests use to deterministically grant resources/dev cards / free-place pieces.
+JVM_ARGS=(-Djsettlers.allow.debug=Y)
+
+# SOCServer reads jsettlers.* options as PROGRAM args (parsed by parseCmdline).
 ARGS=(soc.server.SOCServer
   "-Djsettlers.port=$JS_TCP_PORT"
   "-Djsettlers.websocket.port=$JS_WS_PORT"
   "-Djsettlers.startrobots=$JS_BOTS")
 
-echo "Starting JSettlers server: TCP=$JS_TCP_PORT WS=$JS_WS_PORT bots=$JS_BOTS"
+echo "Starting JSettlers server: TCP=$JS_TCP_PORT WS=$JS_WS_PORT bots=$JS_BOTS (debug user enabled)"
 if [ "$FOREGROUND" = "1" ]; then
-  exec "$JAVA_BIN" -cp "$CP" "${ARGS[@]}"
+  exec "$JAVA_BIN" "${JVM_ARGS[@]}" -cp "$CP" "${ARGS[@]}"
 fi
 
-"$JAVA_BIN" -cp "$CP" "${ARGS[@]}" > "$LOG" 2>&1 &
+"$JAVA_BIN" "${JVM_ARGS[@]}" -cp "$CP" "${ARGS[@]}" > "$LOG" 2>&1 &
 PID=$!
 echo "PID=$PID  log=$LOG"
 
