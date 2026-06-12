@@ -139,15 +139,18 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
         }
         if (!bumped) break;
       }
-      await discard.click().catch(() => undefined);
+      await discard.click({ timeout: 2_000 }).catch(() => undefined);
       await page.waitForTimeout(300);
       continue;
     }
 
     // Reject incoming trade offers: the offering bot waits for our answer.
+    // The click MUST be time-bounded: an offer can be answered by another bot
+    // and detach between .all() and .click(), and an unbounded click would
+    // then retry until the test timeout — a fake "stall".
     const rejects = await page.locator('[data-testid^="reject-offer-"]').all();
     if (rejects.length > 0) {
-      for (const r of rejects) await r.click().catch(() => undefined);
+      for (const r of rejects) await r.click({ timeout: 2_000 }).catch(() => undefined);
       await page.waitForTimeout(200);
       continue;
     }
@@ -157,7 +160,7 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
         // ROLL_OR_CARD
         const roll = page.getByTestId('roll-dice');
         if (await roll.count()) {
-          await roll.click().catch(() => undefined);
+          await roll.click({ timeout: 2_000 }).catch(() => undefined);
           rolls++;
         }
         await page.waitForTimeout(400);
@@ -165,7 +168,7 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
       }
       if (s.gameState === 20) {
         // PLAY1: end our turn
-        await page.getByTestId('end-turn').first().click().catch(() => undefined);
+        await page.getByTestId('end-turn').first().click({ timeout: 2_000 }).catch(() => undefined);
         await page.waitForTimeout(400);
         continue;
       }
@@ -177,7 +180,7 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
       }
       if (s.gameState === 54) {
         // WAITING_FOR_ROBBER_OR_PIRATE
-        await page.getByTestId('choose-robber').click().catch(() => undefined);
+        await page.getByTestId('choose-robber').click({ timeout: 2_000 }).catch(() => undefined);
         await page.waitForTimeout(300);
         continue;
       }
@@ -187,7 +190,7 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
         for (const h of await page.locator('[data-testid^="hex-"]').all()) {
           const kind = await h.getAttribute('data-hexkind');
           if (kind === null || !LAND_KINDS.has(kind)) continue;
-          await h.click().catch(() => undefined);
+          await h.click({ timeout: 2_000 }).catch(() => undefined);
           break;
         }
         await page.waitForTimeout(300);
@@ -196,7 +199,7 @@ test('SC_CK game vs bots: bots survive many C&K rounds without stalling', async 
       if (s.gameState === 51 || s.gameState === 55) {
         // Choosing a robbery victim
         const victims = await page.locator('[data-testid^="rob-victim-"]').all();
-        if (victims.length > 0) await victims[0].click().catch(() => undefined);
+        if (victims.length > 0) await victims[0].click({ timeout: 2_000 }).catch(() => undefined);
         await page.waitForTimeout(300);
         continue;
       }

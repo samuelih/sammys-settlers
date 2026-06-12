@@ -240,7 +240,7 @@ public class Version {
   /**
    * Print the JSettlers version banner and attribution text. Formerly inside {@code SOCPlayerClient}, {@code SOCServer}.
    * @param out  {@link System#out} or {@link System#err}
-   * @param progname  "Java Settlers Server " or "Java Settlers Client ", including trailing space
+   * @param progname  "Sammy's Settlers Server " or "Sammy's Settlers Client ", including trailing space
    * @since 1.1.18
    */
   public static void printVersionText(PrintStream out, final String progname)

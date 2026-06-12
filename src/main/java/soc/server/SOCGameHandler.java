@@ -1170,7 +1170,7 @@ public class SOCGameHandler extends GameHandler
             if ((! scd.sentPostAuthWelcome) || (c.getVersion() < SOCStringManager.VERSION_FOR_I18N))
             {
                 c.put(new SOCStatusMessage
-                       (SOCStatusMessage.SV_OK, srv.getClientWelcomeMessage(c)));  // "Welcome to Java Settlers of Catan!"
+                       (SOCStatusMessage.SV_OK, srv.getClientWelcomeMessage(c)));  // "Welcome to Sammy's Settlers of Catan!"
                 scd.sentPostAuthWelcome = true;
             }
         }

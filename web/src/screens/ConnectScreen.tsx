@@ -34,7 +34,7 @@ export function ConnectScreen(): JSX.Element {
     <div className={styles.wrap} data-testid="connect-screen">
       <div className={styles.hero}>
         <span className={styles.eyebrow}>Settlers of Catan</span>
-        <h1 className={styles.heroTitle}>Welcome to JSettlers</h1>
+        <h1 className={styles.heroTitle}>Welcome to Sammy's Settlers</h1>
         <p className={styles.heroSubtitle}>
           Connect to a game server to play against friends or bots.
         </p>

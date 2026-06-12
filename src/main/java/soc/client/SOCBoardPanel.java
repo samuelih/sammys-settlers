@@ -9698,7 +9698,7 @@ import javax.swing.KeyStroke;
       /** create a new BoardPopupMenu on this board */
       public BoardPopupMenu(SOCBoardPanel bpanel)
       {
-        super ("JSettlers");
+        super ("Sammy's Settlers");
         bp = bpanel;
 
         buildRoadItem = new MenuItem(strings.get("board.build.road"));  // "Build Road"

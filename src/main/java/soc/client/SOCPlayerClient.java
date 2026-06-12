@@ -262,9 +262,9 @@ public class SOCPlayerClient
             // Must set "OSX look and feel" items before calling any AWT code
             // or setting a platform look and feel.
 
-            System.setProperty("apple.awt.application.name", "JSettlers");
+            System.setProperty("apple.awt.application.name", "Sammy's Settlers");
                 // Required on OSX 10.7 or so and newer; works for apple java 6
-            System.setProperty("com.apple.mrj.application.apple.menu.about.name", "JSettlers");
+            System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Sammy's Settlers");
                 // Works for earlier OSX versions
         }
         else if (! IS_PLATFORM_WINDOWS)
@@ -1107,7 +1107,7 @@ public class SOCPlayerClient
         final String host;  // from args, if not empty
         final int port;
 
-        Version.printVersionText(System.out, "Java Settlers Client ");
+        Version.printVersionText(System.out, "Sammy's Settlers Client ");
 
         if (args.length != 0)
         {
@@ -1139,7 +1139,7 @@ public class SOCPlayerClient
         } catch (Exception e) {}
 
         client = new SOCPlayerClient();
-        JFrame frame = new JFrame(client.strings.get("pcli.main.title", Version.version()));  // "JSettlers client {0}"
+        JFrame frame = new JFrame(client.strings.get("pcli.main.title", Version.version()));  // "Sammy's Settlers client {0}"
 
         final int displayScale = SwingMainDisplay.checkDisplayScaleFactor(frame);
         SwingMainDisplay.scaleUIManagerFonts(displayScale);

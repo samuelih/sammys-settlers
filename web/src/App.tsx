@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AppFrame, Button, ToastProvider } from './components';
 import { Root } from './screens/Root';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { isGameStarted, useGameStore } from './store/gameStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useUiStore } from './store/uiStore';
 
@@ -19,6 +20,13 @@ export default function App(): JSX.Element {
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const themeMode = useSettingsStore((s) => s.theme);
   const applyEffects = useSettingsStore((s) => s.applyEffects);
+
+  // A started game owns the whole viewport (immersive "table" view); the
+  // GameScreen carries its own rail with settings/theme/leave controls.
+  const inStartedGame = useGameStore(
+    (s) => s.currentGame !== null && isGameStarted(s.currentGame),
+  );
+  const immersive = inStartedGame && appView !== 'mapEditor';
 
   // Re-apply persisted settings to the document on mount (after rehydration),
   // and keep the `system` theme in sync with the OS color-scheme preference.
@@ -57,7 +65,7 @@ export default function App(): JSX.Element {
 
   return (
     <ToastProvider>
-      <AppFrame headerActions={headerActions}>
+      <AppFrame headerActions={headerActions} immersive={immersive}>
         <Root />
         <SettingsScreen />
       </AppFrame>

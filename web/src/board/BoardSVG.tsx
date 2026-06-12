@@ -3,6 +3,7 @@ import type { BoardModel, BoardPiece } from './types';
 import {
   HALFDELTA_X,
   HALFDELTA_Y,
+  HEXY_OFF_SLOPE,
   TOP_MARGIN,
   nodeToPixel,
   edgeToPixel,
@@ -59,11 +60,12 @@ export function BoardSVG({
 }: BoardSVGProps): JSX.Element {
   // Board width/height are in half-hex units; pixels = units * HALFDELTA.
   // Pad by one half-hex + the top margin so apex points and edge pieces near
-  // the border aren't clipped.
+  // the border aren't clipped; the bottom additionally needs the hex slope
+  // height since bottom-row S apexes hang below the linear grid extent.
   const padX = HALFDELTA_X;
   const padY = HALFDELTA_Y;
   const viewW = board.width * HALFDELTA_X + padX * 2;
-  const viewH = board.height * HALFDELTA_Y + TOP_MARGIN + padY * 2;
+  const viewH = board.height * HALFDELTA_Y + TOP_MARGIN + HEXY_OFF_SLOPE + padY * 2;
   const viewBox = `${-padX} ${-padY} ${viewW} ${viewH}`;
 
   const colorOf = (pn: number): string => playerColors[pn] ?? 'var(--hex-fill-unknown)';

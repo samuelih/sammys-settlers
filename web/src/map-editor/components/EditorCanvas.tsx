@@ -14,7 +14,7 @@ import {
   hexToPixel,
   type GridHexCell,
 } from '../editorGrid';
-import { hexPolygonPoints, HALFDELTA_X, HALFDELTA_Y, TOP_MARGIN } from '../../board/coords';
+import { hexPolygonPoints, HALFDELTA_X, HALFDELTA_Y, HEX_CENTER_DY, HEXY_OFF_SLOPE, TOP_MARGIN } from '../../board/coords';
 import styles from '../../screens/MapEditorScreen.module.css';
 
 /** Which interaction the canvas is in: placing hexes/dice, ports, robber, pirate. */
@@ -96,11 +96,11 @@ function HexCell({
           onClick={tool === 'dice' ? handle : undefined}
           onContextMenu={handle}
         >
-          <circle className={styles.diceToken} cx={cx} cy={cy + HALFDELTA_Y * 0.1} r={tokenR} />
+          <circle className={styles.diceToken} cx={cx} cy={cy + HEX_CENTER_DY} r={tokenR} />
           <text
             className={`${styles.diceText}${hot ? ` ${styles.diceTextHot}` : ''}`}
             x={cx}
-            y={cy + HALFDELTA_Y * 0.1 + tokenR * 0.35}
+            y={cy + HEX_CENTER_DY + tokenR * 0.35}
             fontSize={tokenR * 1.1}
           >
             {diceNum}
@@ -296,7 +296,8 @@ function computeViewBox(cells: GridHexCell[]): { viewBox: string } {
     if (x - HALFDELTA_X < minX) minX = x - HALFDELTA_X;
     if (y - HALFDELTA_Y < minY) minY = y - HALFDELTA_Y;
     if (x + HALFDELTA_X > maxX) maxX = x + HALFDELTA_X;
-    if (y + HALFDELTA_Y > maxY) maxY = y + HALFDELTA_Y;
+    // S apex hangs one slope-height below the linear grid extent.
+    if (y + HALFDELTA_Y + HEXY_OFF_SLOPE > maxY) maxY = y + HALFDELTA_Y + HEXY_OFF_SLOPE;
   }
   const pad = HALFDELTA_X;
   const x = minX - pad;

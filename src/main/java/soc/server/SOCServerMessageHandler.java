@@ -452,7 +452,7 @@ public class SOCServerMessageHandler
             // else isPlayerRole: auth/connection.setData done by handleAUTHREQUEST's call to authOrRejectClientUser
         }
 
-        final String txt = srv.getClientWelcomeMessage(c);  // "Welcome to Java Settlers of Catan!"
+        final String txt = srv.getClientWelcomeMessage(c);  // "Welcome to Sammy's Settlers of Catan!"
         if (0 == (authResult & SOCServer.AUTH_OR_REJECT__SET_USERNAME))
             c.put(new SOCStatusMessage
                 (SOCStatusMessage.SV_OK, txt));
@@ -1246,7 +1246,7 @@ public class SOCServerMessageHandler
             else if (cmdTxtUC.startsWith("*VERSION*"))
             {
                 srv.messageToPlayer(c, gaName, SOCServer.PN_REPLY_TO_UNDETERMINED,
-                    "Java Settlers Server " +Version.versionNumber()
+                    "Sammy's Settlers Server " +Version.versionNumber()
                     + " (" + Version.version() + ") build " + Version.buildnum());
             }
             else if (cmdTxtUC.startsWith("*STATS*"))
@@ -2355,7 +2355,7 @@ public class SOCServerMessageHandler
         /**
          * Tell the client that everything is good to go
          */
-        final String txt = srv.getClientWelcomeMessage(c);  // "Welcome to Java Settlers of Catan!"
+        final String txt = srv.getClientWelcomeMessage(c);  // "Welcome to Sammy's Settlers of Catan!"
         if (! mustSetUsername)
         {
             if ((! scd.sentPostAuthWelcome) || (c.getVersion() < SOCStringManager.VERSION_FOR_I18N))

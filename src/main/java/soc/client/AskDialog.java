@@ -178,7 +178,7 @@ public abstract class AskDialog extends JDialog
      *                 Cannot be null, use the other constructor if not asking
      *                 about a specific game.
      * @param titlebar Title bar text; if text contains \n, only the portion before \n is used.
-     *                 If begins with \n, title is "JSettlers" instead.
+     *                 If begins with \n, title is "Sammy's Settlers" instead.
      * @param prompt   Prompting text shown above buttons, or null.
      *                 Can be multi-line, use "\n" within your string to separate them.
      *                 If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
@@ -232,7 +232,7 @@ public abstract class AskDialog extends JDialog
      * @param cli      Player client interface; will be used for actions in subclasses when dialog buttons are chosen
      * @param parent   SOCPlayerClient or other parent frame or dialog
      * @param titlebar Title bar text; if text contains \n, only the portion before \n is used.
-     *            If begins with \n, title is "JSettlers" instead.
+     *            If begins with \n, title is "Sammy's Settlers" instead.
      * @param prompt   Prompting text shown above buttons, or null.
      *            Can be multi-line, use "\n" within your string to separate them.
      *            If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
@@ -264,7 +264,7 @@ public abstract class AskDialog extends JDialog
      * @param cli      Player client interface; will be used for actions in subclasses when dialog buttons are chosen
      * @param gamePI   Current game's player interface
      * @param titlebar Title bar text; if text contains \n, only the portion before \n is used.
-     *            If begins with \n, title is "JSettlers" instead.
+     *            If begins with \n, title is "Sammy's Settlers" instead.
      * @param prompt   Prompting text shown above buttons, or null.
      *            Can be multi-line, use "\n" within your string to separate them.
      *            If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
@@ -300,7 +300,7 @@ public abstract class AskDialog extends JDialog
      * @param md       Player client's main display; will be used for actions in subclasses when dialog buttons are chosen
      * @param parent   SOCPlayerClient or other parent frame or dialog
      * @param titlebar Title bar text; if text contains \n, only the portion before \n is used.
-     *              If begins with \n, title is "JSettlers" instead.
+     *              If begins with \n, title is "Sammy's Settlers" instead.
      * @param prompt   Prompting text shown above buttons, or null.
      *              Can be multi-line, use "\n" within your string to separate them.
      *              If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
@@ -791,7 +791,7 @@ public abstract class AskDialog extends JDialog
      * @param f  A string, possibly containing \n.
      *     See return javadoc for behavior if {@code f} starts with \n.
      * @return  {@code f}'s first line, or all of {@code f} if no \n;
-     *     if {@code f} starts with \n, returns "JSettlers" to avoid an empty title.
+     *     if {@code f} starts with \n, returns "Sammy's Settlers" to avoid an empty title.
      * @since 1.1.07
      */
     public static String firstLine(String f)
@@ -801,7 +801,7 @@ public abstract class AskDialog extends JDialog
         if (i == -1)
             return f;
         else if (i == 0)  // avoid blank title: added in v1.1.20
-            return "JSettlers";
+            return "Sammy's Settlers";
         else
             return f.substring(0, i);
     }

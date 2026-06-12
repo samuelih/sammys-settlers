@@ -227,7 +227,7 @@ import soc.util.Version;
         gbc.gridwidth = GridBagConstraints.REMAINDER;
 
         topText = new JLabel(strings.get("pcli.cpp.welcomeheading"), SwingConstants.CENTER);
-            // "Welcome to JSettlers!  Please choose an option."
+            // "Welcome to Sammy's Settlers!  Please choose an option."
         gbl.setConstraints(topText, gbc);
         modeButtonsContainer.add(topText);
 
@@ -290,7 +290,7 @@ import soc.util.Version;
         add(bpContainer, BorderLayout.CENTER);
         JLabel verl = new JLabel
             (strings.get("pcli.cpp.jsettlers.versionbuild", Version.version(), Version.buildnum()), SwingConstants.CENTER);
-            // "JSettlers " + Version.version() + " build " + Version.buildnum()
+            // "Sammy's Settlers " + Version.version() + " build " + Version.buildnum()
         if (miscLabelFGColor != null)
             verl.setForeground(miscLabelFGColor);
         add(verl, BorderLayout.SOUTH);

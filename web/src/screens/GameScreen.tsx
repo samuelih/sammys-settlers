@@ -65,8 +65,20 @@ import {
   sendChat,
   useGameStore,
 } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
+import { useUiStore } from '../store/uiStore';
+import { useTheme } from '../theme/useTheme';
 import { playSound } from '../util/sound';
 import styles from './GameScreen.module.css';
+
+/** Emoji icon for each resource key (used on cards, chips and pickers). */
+const RESOURCE_ICONS: Record<string, string> = {
+  clay: '🧱',
+  ore: '🪨',
+  sheep: '🐑',
+  wheat: '🌾',
+  wood: '🌲',
+};
 
 /** Resource picker order + display labels (CLAY..WOOD). */
 const RESOURCE_PICK: ReadonlyArray<{ type: ResourceValue; key: string; label: string }> = [
@@ -372,6 +384,8 @@ function PlayerPanel({
   metropolisTracks?: number[];
 }): JSX.Element {
   const pn = view.playerNumber;
+  const displayName = view.seated ? view.name : `Seat ${pn + 1}`;
+  const initial = view.seated && view.name !== '' ? view.name[0].toUpperCase() : '·';
   return (
     <li
       className={`${styles.playerPanel} ${isCurrent ? styles.playerCurrent : ''}`}
@@ -379,16 +393,19 @@ function PlayerPanel({
       data-current={isCurrent ? 'true' : 'false'}
       data-seated={view.seated ? 'true' : 'false'}
       data-robot={view.isRobot ? 'true' : 'false'}
+      style={{ ['--seat-color' as string]: view.color }}
     >
       <div className={styles.playerHead}>
         <span
-          className={styles.swatch}
+          className={styles.avatar}
           data-testid={`player-swatch-${pn}`}
           style={{ backgroundColor: view.color }}
           aria-hidden="true"
-        />
+        >
+          {initial}
+        </span>
         <span className={styles.playerName} data-testid={`player-name-${pn}`}>
-          {view.seated ? view.name : `Seat ${pn + 1}`}
+          {displayName}
           {view.isRobot && <span className={styles.botTag}> (bot)</span>}
           {isMe && <span className={styles.youTag}> (you)</span>}
         </span>
@@ -398,25 +415,31 @@ function PlayerPanel({
       </div>
 
       <div className={styles.playerStats}>
-        <span className={styles.stat} data-testid={`player-resources-${pn}`}>
-          <span className={styles.statLabel}>Cards</span>
+        <span className={styles.stat} data-testid={`player-resources-${pn}`} title="Resource cards">
+          <span className={styles.statIcon} aria-hidden="true">🎴</span>
           <span className={styles.statValue}>{view.resourceTotal}</span>
         </span>
         <span className={styles.stat} title="Development cards">
-          <span className={styles.statLabel}>Dev</span>
+          <span className={styles.statIcon} aria-hidden="true">📜</span>
           <span className={styles.statValue}>{view.devCardCount}</span>
         </span>
         <span className={styles.stat} title="Knights played">
-          <span className={styles.statLabel}>Army</span>
+          <span className={styles.statIcon} aria-hidden="true">⚔️</span>
           <span className={styles.statValue}>{view.knights}</span>
         </span>
-      </div>
-
-      <div className={styles.playerPieces}>
-        <span className={styles.piece} title="Roads remaining">R {view.roads}</span>
-        <span className={styles.piece} title="Settlements remaining">S {view.settlements}</span>
-        <span className={styles.piece} title="Cities remaining">C {view.cities}</span>
-        <span className={styles.piece} title="Ships remaining">Sh {view.ships}</span>
+        <span className={styles.statDivider} aria-hidden="true" />
+        <span className={styles.piece} title="Roads remaining">
+          <span className={styles.statIcon} aria-hidden="true">🛣️</span> {view.roads}
+        </span>
+        <span className={styles.piece} title="Settlements remaining">
+          <span className={styles.statIcon} aria-hidden="true">🏠</span> {view.settlements}
+        </span>
+        <span className={styles.piece} title="Cities remaining">
+          <span className={styles.statIcon} aria-hidden="true">🏰</span> {view.cities}
+        </span>
+        <span className={styles.piece} title="Ships remaining">
+          <span className={styles.statIcon} aria-hidden="true">⛵</span> {view.ships}
+        </span>
       </div>
 
       <div className={styles.awards}>
@@ -446,18 +469,22 @@ function PlayerPanel({
   );
 }
 
-/** The local player's per-resource hand breakdown. */
+/** The local player's hand as a row of resource "cards" in the action bar. */
 function MyResources({ view }: { view: PlayerView }): JSX.Element {
   return (
     <div className={styles.myResources} data-testid="my-resources">
       {RESOURCE_ROWS.map(({ key, label }) => (
         <span
           key={key}
-          className={styles.resChip}
+          className={`${styles.resCard} ${view.resources[key] === 0 ? styles.resCardEmpty : ''}`}
           data-testid={`my-res-${key}`}
           data-resource={key}
+          title={label}
+          aria-label={`${label}: ${view.resources[key]}`}
         >
-          <span className={styles.resLabel}>{label}</span>
+          <span className={styles.resIcon} aria-hidden="true">
+            {RESOURCE_ICONS[key]}
+          </span>
           <span className={styles.resValue}>{view.resources[key]}</span>
         </span>
       ))}
@@ -471,16 +498,17 @@ function MyResources({ view }: { view: PlayerView }): JSX.Element {
  * server/announcement lines render as plain text.
  */
 function GameLog({ lines }: { lines: readonly GameLogEntry[] }): JSX.Element {
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const logRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    // scrollIntoView is unavailable in some non-browser test environments (jsdom).
-    const end = endRef.current;
-    if (end != null && typeof end.scrollIntoView === 'function') {
-      end.scrollIntoView({ block: 'end' });
+    // Scroll only the log container itself (scrollIntoView would also scroll
+    // every scrollable ancestor, yanking the whole sidebar to the bottom).
+    const log = logRef.current;
+    if (log != null) {
+      log.scrollTop = log.scrollHeight;
     }
   }, [lines.length]);
   return (
-    <div className={styles.log} data-testid="game-log" role="log" aria-live="polite">
+    <div ref={logRef} className={styles.log} data-testid="game-log" role="log" aria-live="polite">
       {lines.length === 0 ? (
         <p className={styles.logEmpty}>No game messages yet.</p>
       ) : (
@@ -497,7 +525,6 @@ function GameLog({ lines }: { lines: readonly GameLogEntry[] }): JSX.Element {
           </p>
         ))
       )}
-      <div ref={endRef} />
     </div>
   );
 }
@@ -665,6 +692,14 @@ export function GameScreen(): JSX.Element | null {
   // null game internally.
   const rollSeq = useGameFeedback(cg);
 
+  // Rail controls (settings / sound / theme), since the app header is hidden
+  // while a game is in progress (immersive mode).
+  const soundEnabled = useSettingsStore((s) => s.soundEnabled);
+  const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+
   if (cg === null) {
     return null; // <--- Early return: no joined game ---
   }
@@ -676,38 +711,80 @@ export function GameScreen(): JSX.Element | null {
     isMyTurn &&
     (hl.nodes.length > 0 || hl.edges.length > 0 || hl.onHexClick !== undefined);
 
+  const currentColor =
+    cg.currentPlayerNumber >= 0 && cg.currentPlayerNumber < cg.playerViews.length
+      ? cg.playerViews[cg.currentPlayerNumber].color
+      : 'transparent';
+
   return (
     <div className={styles.wrap} data-testid="game-started">
-      <header className={styles.topbar}>
-        <h2 className={styles.title} data-testid="game-name">
-          {cg.gameName}
-        </h2>
-        <div
-          className={`${styles.turnBanner} ${isMyTurn ? styles.turnMine : ''}`}
-          data-testid="turn-banner"
-          data-current-player={cg.currentPlayerNumber}
+      {/* Slim icon rail (replaces the app header while in-game) */}
+      <nav className={styles.rail} aria-label="Game menu">
+        <span className={styles.railMark} aria-hidden="true" title={cg.gameName}>
+          ⬢
+        </span>
+        <button
+          type="button"
+          className={styles.railBtn}
+          title="Settings"
+          aria-label="Settings"
+          onClick={() => setSettingsOpen(true)}
         >
-          <span className={styles.turnPlayer}>{currentPlayerName(cg)}</span>
-          <span className={styles.turnState}>{gameStateLabel(cg.gameState)}</span>
-        </div>
-        <DiceDisplay
-          d1={cg.lastDice?.d1 ?? 0}
-          d2={cg.lastDice?.d2 ?? 0}
-          total={cg.lastDice?.total ?? null}
-          rollSeq={rollSeq}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          className={styles.leave}
+          ⚙
+        </button>
+        <button
+          type="button"
+          className={styles.railBtn}
+          title={soundEnabled ? 'Mute sounds' : 'Unmute sounds'}
+          aria-label={soundEnabled ? 'Mute sounds' : 'Unmute sounds'}
+          aria-pressed={soundEnabled}
+          onClick={() => setSoundEnabled(!soundEnabled)}
+        >
+          {soundEnabled ? '🔊' : '🔇'}
+        </button>
+        <button
+          type="button"
+          className={styles.railBtn}
+          title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+          onClick={toggleTheme}
+        >
+          {isDark ? '☀' : '☾'}
+        </button>
+        <span className={styles.railSpacer} />
+        <button
+          type="button"
+          className={`${styles.railBtn} ${styles.railLeave}`}
+          title="Leave game"
+          aria-label="Leave game"
           onClick={() => setConfirmLeave(true)}
           data-testid="leave-game"
         >
-          Leave
-        </Button>
-      </header>
+          🚪
+        </button>
+      </nav>
 
-      <div className={styles.body}>
+      {/* Center stage: floating turn pill over the board, action bar below */}
+      <div className={styles.stage}>
+        <div className={styles.stageTop}>
+          <span className={styles.gameName} data-testid="game-name">
+            {cg.gameName}
+          </span>
+          <div
+            className={`${styles.turnBanner} ${isMyTurn ? styles.turnMine : ''}`}
+            data-testid="turn-banner"
+            data-current-player={cg.currentPlayerNumber}
+          >
+            <span
+              className={styles.turnDot}
+              style={{ backgroundColor: currentColor }}
+              aria-hidden="true"
+            />
+            <span className={styles.turnPlayer}>{currentPlayerName(cg)}</span>
+            <span className={styles.turnState}>{gameStateLabel(cg.gameState)}</span>
+          </div>
+        </div>
+
         <div className={styles.boardWrap} data-testid="board-wrap">
           {cg.board !== null ? (
             <BoardSVG
@@ -728,62 +805,69 @@ export function GameScreen(): JSX.Element | null {
           )}
         </div>
 
-        <aside className={styles.sidebar}>
-          <Panel title="Actions">
+        <div className={styles.actionBar}>
+          {myView !== null && <MyResources view={myView} />}
+          {myView !== null && <span className={styles.actionDivider} aria-hidden="true" />}
+          <div className={styles.actionMain}>
             <GameControls cg={cg} myView={myView} isMyTurn={isMyTurn} />
-          </Panel>
-
-          <Panel title="Players" flushBody>
-            <ul className={styles.players} data-testid="player-panels">
-              {cg.playerViews.map((view) => (
-                <PlayerPanel
-                  key={view.playerNumber}
-                  view={view}
-                  isCurrent={view.playerNumber === cg.currentPlayerNumber}
-                  isMe={view.playerNumber === cg.mySeat}
-                  ckEnabled={cg.isCKGame}
-                  metropolisTracks={
-                    cg.isCKGame
-                      ? cg.ckMetropolisOwners
-                          .map((owner, track) => (owner === view.playerNumber ? track : -1))
-                          .filter((t) => t >= 0)
-                      : []
-                  }
-                />
-              ))}
-            </ul>
-          </Panel>
-
-          {cg.isCKGame && (
-            <Panel title="Cities & Knights">
-              <CKPanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
-            </Panel>
-          )}
-
-          {myView !== null && (
-            <Panel title="Your hand">
-              <MyResources view={myView} />
-            </Panel>
-          )}
-
-          {myView !== null && (
-            <Panel title="Trade">
-              <TradePanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
-            </Panel>
-          )}
-
-          {myView !== null && (
-            <Panel title="Development cards">
-              <DevCardPanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
-            </Panel>
-          )}
-
-          <Panel title="Game log" flushBody>
-            <GameLog lines={cg.gameLog} />
-            <ChatInput />
-          </Panel>
-        </aside>
+          </div>
+          <DiceDisplay
+            d1={cg.lastDice?.d1 ?? 0}
+            d2={cg.lastDice?.d2 ?? 0}
+            total={cg.lastDice?.total ?? null}
+            rollSeq={rollSeq}
+          />
+        </div>
       </div>
+
+      {/* Right sidebar: players, expansion panels, trade, dev cards, log */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sideScroll}>
+        <Panel title="Players" flushBody className={styles.sidePanel}>
+          <ul className={styles.players} data-testid="player-panels">
+            {cg.playerViews.map((view) => (
+              <PlayerPanel
+                key={view.playerNumber}
+                view={view}
+                isCurrent={view.playerNumber === cg.currentPlayerNumber}
+                isMe={view.playerNumber === cg.mySeat}
+                ckEnabled={cg.isCKGame}
+                metropolisTracks={
+                  cg.isCKGame
+                    ? cg.ckMetropolisOwners
+                        .map((owner, track) => (owner === view.playerNumber ? track : -1))
+                        .filter((t) => t >= 0)
+                    : []
+                }
+              />
+            ))}
+          </ul>
+        </Panel>
+
+        {cg.isCKGame && (
+          <Panel title="Cities & Knights" className={styles.sidePanel}>
+            <CKPanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
+          </Panel>
+        )}
+
+        {myView !== null && (
+          <Panel title="Trade" className={styles.sidePanel}>
+            <TradePanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
+          </Panel>
+        )}
+
+        {myView !== null && (
+          <Panel title="Development cards" className={styles.sidePanel}>
+            <DevCardPanel cg={cg} myView={myView} isMyTurn={isMyTurn} />
+          </Panel>
+        )}
+        </div>
+
+        <Panel title="Game log" flushBody className={`${styles.sidePanel} ${styles.logPanel}`}>
+          <GameLog lines={cg.gameLog} />
+          <ChatInput />
+        </Panel>
+      </aside>
 
       {/* Leave-game confirmation */}
       {confirmLeave && (
@@ -866,9 +950,11 @@ function GameControls({
         <p className={styles.prompt} data-testid="controls-prompt">
           Your turn — roll the dice.
         </p>
-        <Button variant="primary" onClick={rollDice} data-testid="roll-dice">
-          Roll dice
-        </Button>
+        <div className={styles.controlButtons}>
+          <Button variant="primary" size="lg" onClick={rollDice} data-testid="roll-dice">
+            🎲 Roll dice
+          </Button>
+        </div>
       </div>
     );
   }
@@ -894,38 +980,44 @@ function GameControls({
         <p className={styles.prompt} data-testid="controls-prompt">
           Build, then end your turn.
         </p>
-        <div className={styles.buildBar}>
-          <Button
-            size="sm"
-            variant="secondary"
+        <div className={styles.controlButtons}>
+          <button
+            type="button"
+            className={styles.buildBtn}
             data-testid="build-road"
+            title="Build a road — 1 clay, 1 wood"
             disabled={!can || myView.roads <= 0 || !canAfford(myView, COSTS.road)}
             onClick={() => buildRequest(PieceTypeConst.ROAD)}
           >
-            Road
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
+            <span className={styles.buildIcon} aria-hidden="true">🛣️</span>
+            <span className={styles.buildLabel}>Road</span>
+          </button>
+          <button
+            type="button"
+            className={styles.buildBtn}
             data-testid="build-settlement"
+            title="Build a settlement — 1 clay, 1 wood, 1 sheep, 1 wheat"
             disabled={!can || myView.settlements <= 0 || !canAfford(myView, COSTS.settlement)}
             onClick={() => buildRequest(PieceTypeConst.SETTLEMENT)}
           >
-            Settlement
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
+            <span className={styles.buildIcon} aria-hidden="true">🏠</span>
+            <span className={styles.buildLabel}>Settle</span>
+          </button>
+          <button
+            type="button"
+            className={styles.buildBtn}
             data-testid="build-city"
+            title="Build a city — 3 ore, 2 wheat"
             disabled={!can || myView.cities <= 0 || !canAfford(myView, COSTS.city)}
             onClick={() => buildRequest(PieceTypeConst.CITY)}
           >
-            City
+            <span className={styles.buildIcon} aria-hidden="true">🏰</span>
+            <span className={styles.buildLabel}>City</span>
+          </button>
+          <Button variant="primary" size="lg" onClick={endTurn} data-testid="end-turn">
+            End turn
           </Button>
         </div>
-        <Button variant="primary" onClick={endTurn} data-testid="end-turn">
-          End turn
-        </Button>
       </div>
     );
   }
@@ -950,14 +1042,16 @@ function GameControls({
         <p className={styles.prompt} data-testid="controls-prompt">
           Click a highlighted spot to place.
         </p>
-        <Button
-          size="sm"
-          variant="ghost"
-          data-testid="cancel-build"
-          onClick={() => cancelBuild(pieceType)}
-        >
-          Cancel
-        </Button>
+        <div className={styles.controlButtons}>
+          <Button
+            size="sm"
+            variant="ghost"
+            data-testid="cancel-build"
+            onClick={() => cancelBuild(pieceType)}
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     );
   }
@@ -967,9 +1061,11 @@ function GameControls({
       <p className={styles.prompt} data-testid="controls-prompt">
         {gameStateLabel(st)}
       </p>
-      <Button variant="ghost" size="sm" onClick={endTurn} data-testid="end-turn">
-        End turn
-      </Button>
+      <div className={styles.controlButtons}>
+        <Button variant="ghost" size="sm" onClick={endTurn} data-testid="end-turn">
+          End turn
+        </Button>
+      </div>
     </div>
   );
 }
@@ -1075,9 +1171,16 @@ function TradePanel({
   // Trades are only allowed during the current player's PLAY1 phase.
   const canTrade = isMyTurn && cg.gameState === GameState.PLAY1;
 
+  // Only offers addressed to the local player are actionable; bot-to-bot
+  // offers (to[mySeat] false) resolve on their own and shouldn't show buttons.
   const incoming = cg.offers
     .map((offer, pn) => ({ offer, pn }))
-    .filter((o) => o.offer !== null && o.pn !== cg.mySeat);
+    .filter(
+      (o) =>
+        o.offer !== null &&
+        o.pn !== cg.mySeat &&
+        (o.offer.to[cg.mySeat] ?? false),
+    );
 
   return (
     <div className={styles.section} data-testid="trade-panel">
@@ -1478,6 +1581,9 @@ function ResourceStepperGrid({
     <div className={styles.pickerGrid}>
       {RESOURCE_PICK.map((r) => (
         <div key={r.type} className={styles.pickerCell} data-resource={r.key}>
+          <span className={styles.pickerIcon} aria-hidden="true">
+            {RESOURCE_ICONS[r.key]}
+          </span>
           <span className={styles.pickerLabel}>{r.label}</span>
           <div className={styles.stepper}>
             <Button
@@ -1626,7 +1732,7 @@ function MonopolyDialog(): JSX.Element {
               data-testid={`monopoly-${r.key}`}
               onClick={() => pickMonopoly(r.type)}
             >
-              {r.label}
+              {RESOURCE_ICONS[r.key]} {r.label}
             </Button>
           ))}
         </div>

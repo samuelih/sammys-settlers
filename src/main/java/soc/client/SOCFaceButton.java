@@ -725,7 +725,7 @@ import java.net.URL;
 
         public FaceButtonPopupMenu(SOCFaceButton fbutton)
         {
-          super ("JSettlers");
+          super ("Sammy's Settlers");
           fb = fbutton;
 
           changeFaceItem = new MenuItem(/*I*/"Change face..."/*18N*/);

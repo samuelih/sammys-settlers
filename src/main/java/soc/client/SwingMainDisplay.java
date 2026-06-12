@@ -2204,7 +2204,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
      *<P>
      * If {@code clearStatus} is true and the most recent Server Status code is "OK",
      * will have status line show the text from that message: Typically something like
-     * "Welcome to JSettlers!".
+     * "Welcome to Sammy's Settlers!".
      */
     public void clearWaitingStatus(final boolean clearStatus)
     {
@@ -2917,7 +2917,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
             /**
              * When the local-server info label is clicked,
              * show a popup with more info.
-             * Also give that popup an About JSettlers button, since when running a server
+             * Also give that popup an About Sammy's Settlers button, since when running a server
              * there's nothing clickable to show that info.
              * @since 1.1.12
              */
@@ -2927,7 +2927,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
                 final AskDialog infoDia = new AskDialog
                     (SwingMainDisplay.this,
                      NotifyDialog.getParentWindow(SwingMainDisplay.this.getGUIContainer()),
-                     strings.get("pcli.main.title.localserver", "", tportStr),  // "JSettlers server {0} - port {1}"
+                     strings.get("pcli.main.title.localserver", "", tportStr),  // "Sammy's Settlers server {0} - port {1}"
                      strings.get("pcli.localserver.dialog", tportStr),
                      /*      "Other players connecting to your server\n" +
                              "need only your IP address and port number.\n" +
@@ -2935,7 +2935,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
                              "Make sure your firewall allows inbound traffic on " +
                              "port {0}."
                      */
-                     strings.get("dialog.about.title"),  // "About JSettlers"
+                     strings.get("dialog.about.title"),  // "About Sammy's Settlers"
                      strings.get("base.ok"),
                      false, true)
                 {
@@ -2992,7 +2992,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
                 {
                     ((Frame) parent).setTitle
                         (strings.get("pcli.main.title.localserver", Version.version(), tportStr));
-                        // "JSettlers server {0} - port {1}"
+                        // "Sammy's Settlers server {0} - port {1}"
                 } catch (Throwable t) {
                     // no titlebar change is fine
                 }

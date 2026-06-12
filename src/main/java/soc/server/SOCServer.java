@@ -489,7 +489,7 @@ public class SOCServer extends Server
      * or create their first game. This text appears on the client's
      * main panel status line.
      *<P>
-     * Default text in english is "Welcome to Java Settlers of Catan!".
+     * Default text in english is "Welcome to Sammy's Settlers of Catan!".
      * Custom message is not currently localizable.
      *<P>
      * Text can't start with digit or comma, to ensure correct handling
@@ -1769,7 +1769,7 @@ public class SOCServer extends Server
     private void initSocServer(String dbUserName, String dbPassword)
         throws SocketException, EOFException, SQLException, IllegalArgumentException, IllegalStateException
     {
-        Version.printVersionText(System.err, "Java Settlers Server ");
+        Version.printVersionText(System.err, "Sammy's Settlers Server ");
         if (Version.versionNumber() == 0)
         {
             throw new IllegalStateException("Packaging error: Cannot determine JSettlers version");
@@ -7450,7 +7450,7 @@ public class SOCServer extends Server
     }
 
     /**
-     * Localize the standard "Welcome to Java Settlers of Catan!" text,
+     * Localize the standard "Welcome to Sammy's Settlers of Catan!" text,
      * or return the custom welcome text from {@link #PROP_JSETTLERS_ADMIN_WELCOME}
      * if set.
      *
@@ -7464,7 +7464,7 @@ public class SOCServer extends Server
     {
         String welcomeText = props.getProperty(PROP_JSETTLERS_ADMIN_WELCOME);
         if (welcomeText == null)
-            welcomeText = c.getLocalized("netmsg.status.welcome");  // "Welcome to Java Settlers of Catan!"
+            welcomeText = c.getLocalized("netmsg.status.welcome");  // "Welcome to Sammy's Settlers of Catan!"
 
         return welcomeText;
     }
@@ -7727,7 +7727,7 @@ public class SOCServer extends Server
             if (welcomeText == null)
             {
                 txt.append(' ');
-                txt.append(c.getLocalized("netmsg.status.welcome"));  // "Welcome to Java Settlers of Catan!"
+                txt.append(c.getLocalized("netmsg.status.welcome"));  // "Welcome to Sammy's Settlers of Catan!"
             }
             c.put(SOCStatusMessage.buildForVersion
                     (SOCStatusMessage.SV_OK_DEBUG_MODE_ON, cvers, txt.toString()));
@@ -8259,7 +8259,7 @@ public class SOCServer extends Server
                 c.put(new SOCStatusMessage
                     (SOCStatusMessage.SV_OK_SET_NICKNAME,
                      c.getData() + SOCMessage.sep2_char +
-                     getClientWelcomeMessage(c)));  // "Welcome to Java Settlers of Catan!"
+                     getClientWelcomeMessage(c)));  // "Welcome to Sammy's Settlers of Catan!"
 
             if (isTakingOver)
             {
@@ -10768,7 +10768,7 @@ public class SOCServer extends Server
 
             if (arg.equals("-V") || arg.equalsIgnoreCase("--version"))
             {
-                Version.printVersionText(System.err, "Java Settlers Server ");
+                Version.printVersionText(System.err, "Sammy's Settlers Server ");
                 hasStartupPrintAndExit = true;
             }
             else if (arg.equalsIgnoreCase("-h") || arg.equals("?") || arg.equals("-?")
@@ -11523,7 +11523,7 @@ public class SOCServer extends Server
 
         if (longFormat)
         {
-            Version.printVersionText(System.err, "Java Settlers Server ");
+            Version.printVersionText(System.err, "Sammy's Settlers Server ");
         }
         System.err.println("usage: java soc.server.SOCServer [option...] port_number max_connections [dbUser [dbPass]]");
         if (longFormat)

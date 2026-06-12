@@ -408,6 +408,58 @@ html {
   }
 }
 
+/* ===================================================================== *
+ *  Game-table tokens (in-game immersive UI).
+ *
+ *  The live game screen renders as a full-viewport "table": an ocean
+ *  backdrop, a slim icon rail, floating card panels and a bottom action
+ *  bar. These tokens own that look so light/dark theming keeps working.
+ * ===================================================================== */
+:root {
+  /* Ocean backdrop (radial: glow -> mid -> deep edges). */
+  --ocean-glow: #3f93d4;
+  --ocean-mid: #2a76b4;
+  --ocean-deep: #1b5587;
+
+  /* Floating panel surfaces over the ocean. */
+  --table-panel-bg: rgba(252, 250, 244, 0.97);
+  --table-panel-border: rgba(255, 255, 255, 0.55);
+  --table-panel-shadow: 0 6px 24px rgba(8, 30, 48, 0.35);
+
+  /* Left icon rail. */
+  --rail-bg: rgba(9, 33, 53, 0.82);
+  --rail-icon: #d7e9f7;
+  --rail-icon-hover: rgba(255, 255, 255, 0.16);
+
+  /* Bottom action bar + resource cards. */
+  --actionbar-bg: rgba(252, 250, 244, 0.97);
+  --rescard-text: #ffffff;
+
+  /* Turn banner pill. */
+  --turn-pill-bg: rgba(252, 250, 244, 0.95);
+  --turn-pill-mine: #ffd76a;
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'] {
+  --ocean-glow: #1f5079;
+  --ocean-mid: #173d5e;
+  --ocean-deep: #0e2840;
+
+  --table-panel-bg: rgba(30, 36, 44, 0.96);
+  --table-panel-border: rgba(255, 255, 255, 0.08);
+  --table-panel-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+
+  --rail-bg: rgba(8, 18, 28, 0.88);
+  --rail-icon: #b9cfe0;
+  --rail-icon-hover: rgba(255, 255, 255, 0.1);
+
+  --actionbar-bg: rgba(30, 36, 44, 0.96);
+
+  --turn-pill-bg: rgba(30, 36, 44, 0.95);
+  --turn-pill-mine: #d9a937;
+}
+
 /* Reduced-motion / low-quality: no dice tumble. */
 @media (prefers-reduced-motion: reduce) {
   .jsboard-dice-animated,

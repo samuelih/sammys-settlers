@@ -71,7 +71,7 @@ import soc.util.Version;
              false, true);
         this.cli = cli;
         setModal(false);
-        setTitle(strings.get("dialog.about.title"));  // "About JSettlers"
+        setTitle(strings.get("dialog.about.title"));  // "About Sammy's Settlers"
     }
 
     /**

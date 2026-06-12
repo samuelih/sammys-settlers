@@ -47,7 +47,7 @@ public class NotifyDialog extends AskDialog
      * @param gamePI   Current game's player interface, or another Frame or Dialog for our parent window,
      *                 or null to look for cli's Frame/Dialog as parent
      * @param promptText  Prompt text appearing above button; also used for the dialog title.
-     *                 If multiple lines, first line is title; if begins with \n, title is "JSettlers".
+     *                 If multiple lines, first line is title; if begins with \n, title is "Sammy's Settlers".
      *                 If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
      * @param btnText  Button text, or null for "OK"
      * @param hasDefault  Button is default (responds to Enter)
@@ -74,7 +74,7 @@ public class NotifyDialog extends AskDialog
      * @param gamePI   Current game's player interface, or another Frame or Dialog for our parent window,
      *                 or null to look for cli's Frame/Dialog as parent
      * @param promptText  Prompt text appearing above button; also used for the dialog title.
-     *                 If multiple lines, first line is title; if begins with \n, title is "JSettlers".
+     *                 If multiple lines, first line is title; if begins with \n, title is "Sammy's Settlers".
      *                 If starts with {@code "<html>"} (case-sensitive), will use a {@link JLabel} to render as HTML.
      * @param btnText  Button text, or null for "OK"
      * @param hasDefault  Button is default (responds to Enter)

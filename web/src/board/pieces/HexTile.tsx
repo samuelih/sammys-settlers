@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { hexKind, type BoardHex, type HexKind } from '../types';
-import { hexToPixel, hexPolygonPoints, dicePipCount, HALFDELTA_X, HALFDELTA_Y } from '../coords';
+import { hexToPixel, hexPolygonPoints, dicePipCount, HALFDELTA_X, HALFDELTA_Y, HEX_CENTER_DY } from '../coords';
 import styles from '../BoardSVG.module.css';
 import { ResourceMotif } from './ResourceMotif';
 
@@ -82,6 +82,8 @@ export interface HexTileProps {
  */
 export function HexTile({ hex, onClick }: HexTileProps): JSX.Element {
   const { x: cx, y: cy } = hexToPixel(hex.coord);
+  // The hexagon's visual center sits half a slope-height below the grid center.
+  const vy = cy + HEX_CENTER_DY;
   const kind = hexKind(hex.hexType);
   const points = hexPolygonPoints(cx, cy);
   const showNumber = hex.diceNum >= 2 && hex.diceNum <= 12 && hex.diceNum !== 7;
@@ -107,13 +109,13 @@ export function HexTile({ hex, onClick }: HexTileProps): JSX.Element {
 
       {showNumber && (
         <g data-testid={`dice-${hex.coord}`} className={styles.diceTokenGroup} pointerEvents="none">
-          <circle className={styles.diceTokenShadow} cx={cx} cy={cy + 0.9} r={tokenR} />
-          <circle className={styles.diceToken} cx={cx} cy={cy} r={tokenR} />
-          <circle className={styles.diceTokenRing} cx={cx} cy={cy} r={tokenR * 0.86} />
+          <circle className={styles.diceTokenShadow} cx={cx} cy={vy + 0.9} r={tokenR} />
+          <circle className={styles.diceToken} cx={cx} cy={vy} r={tokenR} />
+          <circle className={styles.diceTokenRing} cx={cx} cy={vy} r={tokenR * 0.86} />
           <text
             className={`${styles.diceNum}${hot ? ` ${styles.diceNumHot}` : ''}`}
             x={cx}
-            y={cy - tokenR * 0.28}
+            y={vy - tokenR * 0.28}
             fontSize={tokenR * 0.95}
           >
             {hex.diceNum}
@@ -123,7 +125,7 @@ export function HexTile({ hex, onClick }: HexTileProps): JSX.Element {
               key={i}
               className={hot ? styles.dicePipHot : styles.dicePip}
               cx={cx + dx}
-              cy={cy + tokenR * 0.55}
+              cy={vy + tokenR * 0.55}
               r={1}
             />
           ))}

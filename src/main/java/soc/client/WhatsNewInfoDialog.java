@@ -81,7 +81,7 @@ public class WhatsNewInfoDialog extends NotifyDialog
     {
         super(cli.getMainDisplay(), null, buildHTML(cli), null, true);  // super checks for null mainDisplay
         setModal(false);
-        setTitle(strings.get("dialog.whatsnew.title"));  // "What's New: Recent Versions of JSettlers"
+        setTitle(strings.get("dialog.whatsnew.title"));  // "What's New: Recent Versions of Sammy's Settlers"
     }
 
     /**
@@ -94,7 +94,7 @@ public class WhatsNewInfoDialog extends NotifyDialog
     private static String buildHTML(final SOCPlayerClient cli)
     {
         StringBuilder sb = new StringBuilder("<html><body>\n<H3>");
-        sb.append(strings.get("dialog.whatsnew.title"));  // "What's New: Recent Versions of JSettlers"
+        sb.append(strings.get("dialog.whatsnew.title"));  // "What's New: Recent Versions of Sammy's Settlers"
         sb.append("</H3>\n");
 
         try

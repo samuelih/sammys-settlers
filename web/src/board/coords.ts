@@ -9,11 +9,15 @@
  *     share one square (row, col) grid; a coordinate is `(row << 8) | col`.
  *
  *  2. **Pixel mapping** ported from `soc.client.SOCBoardPanel` (the large-board
- *     branch): the mapping is linear, `x = col * HALFDELTA_X`,
- *     `y = row * HALFDELTA_Y + TOP_MARGIN`. The SAME mapping is used for hex
- *     centers, node corners and edge endpoints, which is what keeps pieces
- *     aligned to their hexes. Hexes are POINTY-TOP: vertical W/E sides, sloped
- *     NW/NE/SW/SE sides; the hex spans 2 grid units wide and 2 tall.
+ *     branch): the base mapping is linear, `x = col * HALFDELTA_X`,
+ *     `y = row * HALFDELTA_Y + TOP_MARGIN`, shared by hex centers, node corners
+ *     and edge endpoints — which is what keeps pieces aligned to their hexes.
+ *     On top of that, "Y"-parity nodes are drawn {@link HEXY_OFF_SLOPE} px
+ *     lower (SOCBoardPanel.nodeToXY). That vertical stagger is what makes the
+ *     tiles hexagons: a hex's N apex and NE/NW shoulders share grid row r-1,
+ *     so without it every tile would collapse into a rectangle. Hexes are
+ *     POINTY-TOP: vertical W/E sides, sloped NW/NE/SW/SE sides; a hex spans
+ *     2 grid columns wide and 2 grid rows + the slope height tall.
  *
  * Coordinate-direction rules (from SOCBoardLarge javadoc / source):
  *  - Edge direction by (r, c): "|" (vertical) if r is odd; otherwise with
@@ -39,6 +43,14 @@ export const HALFDELTA_Y = 23;
 export const DELTA_X = HALFDELTA_X * 2;
 /** Full hex pixel height (2 rows). */
 export const DELTA_Y = HALFDELTA_Y * 2;
+/**
+ * Vertical height of a hex's sloped top/bottom, in board pixels. From
+ * SOCBoardPanel.HEXY_OFF_SLOPE_HEIGHT. Nodes whose (row/2, col) parities
+ * differ ("Y" nodes) are drawn this much lower than the linear grid mapping;
+ * on a hex that staggers the apexes against the shoulders, turning the tile
+ * from a rectangle into a pointy-top hexagon. See {@link nodeToPixel}.
+ */
+export const HEXY_OFF_SLOPE = 16;
 /**
  * Top pixel margin so row-0 nodes/edges aren't clipped. SOCBoardPanel uses
  * `halfdeltaY + 9` (HALF_HEXHEIGHT) for the hex slope; we use a clean
@@ -272,9 +284,23 @@ export function hexToPixel(coord: number): Point {
   return gridToPixel(coord >> 8, coord & 0xff);
 }
 
-/** Pixel position of a node corner — same mapping as {@link hexToPixel}. */
+/**
+ * Pixel position of a node corner: the linear grid mapping, plus the
+ * {@link HEXY_OFF_SLOPE} drop for "Y"-parity nodes. Ported from
+ * {@code SOCBoardPanel.nodeToXY} (large-board branch):
+ * `if ((r/2) % 2 != c % 2) hy += HEXY_OFF_SLOPE_HEIGHT;`
+ *
+ * On a hex this lowers the NE/NW shoulders and the S apex relative to the
+ * N apex and SE/SW shoulders, producing the pointy-top hexagon shape.
+ */
 export function nodeToPixel(coord: number): Point {
-  return gridToPixel(coord >> 8, coord & 0xff);
+  const r = coord >> 8;
+  const c = coord & 0xff;
+  const p = gridToPixel(r, c);
+  if (Math.floor(r / 2) % 2 !== c % 2) {
+    p.y += HEXY_OFF_SLOPE;
+  }
+  return p;
 }
 
 /** Internal: the one true (row, col) -> pixel mapping. */
@@ -317,36 +343,52 @@ export function edgeToPixel(coord: number): EdgePixels {
 }
 
 /**
- * SVG `points` attribute string for a hexagon centered at (cx, cy), matching
- * the EXACT node geometry of the JSettlers large board.
+ * Vertical offset from a hex's linear grid center ({@link hexToPixel}) to its
+ * VISUAL center. The slope drop ({@link HEXY_OFF_SLOPE}) lowers the S apex but
+ * not the N apex, so the hexagon's vertical midpoint sits half a slope below
+ * the grid center. Add this to `hexToPixel(...).y` when centering decorations
+ * (dice token, robber, etc.) inside the tile.
+ */
+export const HEX_CENTER_DY = HEXY_OFF_SLOPE / 2;
+
+/**
+ * SVG `points` attribute string for a hexagon centered at (cx, cy) — the
+ * LINEAR grid center from {@link hexToPixel} — matching the EXACT node
+ * geometry of the JSettlers large board.
  *
  * Deriving the corners from the node deltas ({@link NODE_DELTAS_TO_HEX}) mapped
- * through the grid (col±1 → ±HALFDELTA_X, row±1 → ±HALFDELTA_Y) gives, relative
- * to the hex center:
- *   N  ( 0,            -HALFDELTA_Y)   NE (+HALFDELTA_X, -HALFDELTA_Y)
- *   SE (+HALFDELTA_X,  +HALFDELTA_Y)   S  ( 0,           +HALFDELTA_Y)
- *   SW (-HALFDELTA_X,  +HALFDELTA_Y)   NW (-HALFDELTA_X,  -HALFDELTA_Y)
+ * through {@link nodeToPixel} (col±1 → ±HALFDELTA_X, row±1 → ±HALFDELTA_Y, plus
+ * the "Y"-node {@link HEXY_OFF_SLOPE} drop on the NE/NW shoulders and S apex)
+ * gives, relative to the hex grid center:
+ *   N  ( 0,            -HALFDELTA_Y)                    (apex)
+ *   NE (+HALFDELTA_X,  -HALFDELTA_Y + HEXY_OFF_SLOPE)   (shoulder)
+ *   SE (+HALFDELTA_X,  +HALFDELTA_Y)                    (shoulder)
+ *   S  ( 0,            +HALFDELTA_Y + HEXY_OFF_SLOPE)   (apex)
+ *   SW (-HALFDELTA_X,  +HALFDELTA_Y)                    (shoulder)
+ *   NW (-HALFDELTA_X,  -HALFDELTA_Y + HEXY_OFF_SLOPE)   (shoulder)
  *
- * This is a "pointy-top" hexagon in the JSettlers sense: the N and S corners
- * are single apexes at column c (centered), while the NE/NW and SE/SW shoulders
- * sit one column out at the same rows as the apexes. The W and E SIDES are the
- * vertical segments NW→SW and NE→SE. Listed clockwise from the N apex, the six
- * corners are exactly the {@link getAdjacentNodesToHex} order, so a piece drawn
- * at any node lands on a hex corner.
+ * A true "pointy-top" hexagon: single N/S apexes at column c, shoulders one
+ * column out and one slope-height toward the middle, with vertical W and E
+ * sides (NW→SW and NE→SE). Listed clockwise from the N apex, the six corners
+ * are exactly the {@link getAdjacentNodesToHex} order mapped through
+ * {@link nodeToPixel}, so a piece drawn at any node lands on a hex corner.
  *
- * @param scale optional radial scale (default 1); e.g. 0.9 yields an inset
- *   hexagon outline used for a decorative inner bevel.
+ * @param scale optional radial scale (default 1) about the hex's VISUAL center
+ *   (cy + {@link HEX_CENTER_DY}); e.g. 0.9 yields an inset hexagon outline
+ *   used for a decorative inner bevel.
  */
 export function hexPolygonPoints(cx: number, cy: number, scale = 1): string {
+  const yc = cy + HEX_CENTER_DY;
   const hx = HALFDELTA_X * scale;
-  const hy = HALFDELTA_Y * scale;
+  const yApex = (HALFDELTA_Y + HEX_CENTER_DY) * scale;
+  const yShoulder = (HALFDELTA_Y - HEX_CENTER_DY) * scale;
   const pts: Array<[number, number]> = [
-    [cx, cy - hy], // N
-    [cx + hx, cy - hy], // NE
-    [cx + hx, cy + hy], // SE
-    [cx, cy + hy], // S
-    [cx - hx, cy + hy], // SW
-    [cx - hx, cy - hy], // NW
+    [cx, yc - yApex], // N
+    [cx + hx, yc - yShoulder], // NE
+    [cx + hx, yc + yShoulder], // SE
+    [cx, yc + yApex], // S
+    [cx - hx, yc + yShoulder], // SW
+    [cx - hx, yc - yShoulder], // NW
   ];
   return pts.map(([x, y]) => `${round(x)},${round(y)}`).join(' ');
 }

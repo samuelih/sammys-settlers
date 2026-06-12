@@ -16,6 +16,8 @@ import {
   portFacingOffset,
   HALFDELTA_X,
   HALFDELTA_Y,
+  HEXY_OFF_SLOPE,
+  HEX_CENTER_DY,
   TOP_MARGIN,
   FACING_NE,
   FACING_E,
@@ -131,9 +133,17 @@ describe('pixel mapping (SOCBoardPanel large-board port)', () => {
     });
   });
 
-  it('nodeToPixel uses the SAME mapping as hexToPixel', () => {
-    const coord = coordOf(2, 4);
-    expect(nodeToPixel(coord)).toEqual(hexToPixel(coord));
+  it('nodeToPixel drops "Y"-parity nodes by HEXY_OFF_SLOPE (SOCBoardPanel.nodeToXY)', () => {
+    // node (2,4): s = r/2 = 1, c = 4 -> parities differ -> +HEXY_OFF_SLOPE
+    expect(nodeToPixel(coordOf(2, 4))).toEqual({
+      x: 4 * HALFDELTA_X,
+      y: 2 * HALFDELTA_Y + TOP_MARGIN + HEXY_OFF_SLOPE,
+    });
+    // node (2,5): s = 1, c = 5 -> parities match -> linear mapping
+    expect(nodeToPixel(coordOf(2, 5))).toEqual({
+      x: 5 * HALFDELTA_X,
+      y: 2 * HALFDELTA_Y + TOP_MARGIN,
+    });
   });
 
   it('edgeToPixel endpoints are the two end-node pixels; vertical edge is ~90deg', () => {
@@ -158,13 +168,33 @@ describe('pixel mapping (SOCBoardPanel large-board port)', () => {
 });
 
 describe('hexPolygonPoints', () => {
-  it('produces 6 comma-pairs centered on (cx,cy)', () => {
+  it('produces a true pointy-top hexagon (apexes offset from shoulders)', () => {
     const pts = hexPolygonPoints(100, 100).split(' ');
     expect(pts).toHaveLength(6);
-    // N apex is centered horizontally, HALFDELTA_Y above center
+    // N apex is centered horizontally, HALFDELTA_Y above the grid center
     expect(pts[0]).toBe(`100,${100 - HALFDELTA_Y}`);
-    // SE shoulder is HALFDELTA_X right, HALFDELTA_Y below
+    // NE shoulder is HALFDELTA_X right, one slope-height BELOW the N apex —
+    // without this stagger the tile would render as a rectangle
+    expect(pts[1]).toBe(`${100 + HALFDELTA_X},${100 - HALFDELTA_Y + HEXY_OFF_SLOPE}`);
+    // SE shoulder is HALFDELTA_X right, HALFDELTA_Y below the grid center
     expect(pts[2]).toBe(`${100 + HALFDELTA_X},${100 + HALFDELTA_Y}`);
+    // S apex hangs one slope-height below the SE/SW shoulders
+    expect(pts[3]).toBe(`100,${100 + HALFDELTA_Y + HEXY_OFF_SLOPE}`);
+    // All 6 corners distinct, spanning 4 distinct y values (rectangle has 2)
+    expect(new Set(pts).size).toBe(6);
+    expect(new Set(pts.map((p) => p.split(',')[1])).size).toBe(4);
+  });
+
+  it('scales the inset bevel about the visual center', () => {
+    const parse = (s: string): number[][] => s.split(' ').map((p) => p.split(',').map(Number));
+    const full = parse(hexPolygonPoints(100, 100));
+    const inset = parse(hexPolygonPoints(100, 100, 0.5));
+    const yc = 100 + HEX_CENTER_DY;
+    full.forEach(([fx, fy], i) => {
+      const [ix, iy] = inset[i];
+      expect(ix - 100).toBeCloseTo((fx - 100) / 2, 6);
+      expect(iy - yc).toBeCloseTo((fy - yc) / 2, 6);
+    });
   });
 
   it('corners coincide with the real hex node pixels', () => {

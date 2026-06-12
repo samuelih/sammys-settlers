@@ -4,12 +4,17 @@ import { useTheme } from '../theme/useTheme';
 import styles from './AppFrame.module.css';
 
 export interface AppFrameProps {
-  /** App title shown in the header. Defaults to "JSettlers". */
+  /** App title shown in the header. Defaults to "Sammy's Settlers". */
   title?: ReactNode;
   /** Optional content rendered in the header between the title and actions. */
   headerSlot?: ReactNode;
   /** Optional extra header actions placed before the theme toggle. */
   headerActions?: ReactNode;
+  /**
+   * Immersive mode (in-game): hide the app bar and let the content own the
+   * full viewport, with no max-width and no page scroll.
+   */
+  immersive?: boolean;
   /** Main page content. */
   children?: ReactNode;
 }
@@ -21,13 +26,22 @@ export interface AppFrameProps {
  * root (see useTheme / tokens.css).
  */
 export function AppFrame({
-  title = 'JSettlers',
+  title = "Sammy's Settlers",
   headerSlot,
   headerActions,
+  immersive = false,
   children,
 }: AppFrameProps): JSX.Element {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+
+  if (immersive) {
+    return (
+      <div className={`${styles.frame} ${styles.frameImmersive}`} data-testid="app-shell">
+        <main className={styles.mainImmersive}>{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.frame} data-testid="app-shell">

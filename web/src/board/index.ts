@@ -7,6 +7,8 @@ export {
   HALFDELTA_Y,
   DELTA_X,
   DELTA_Y,
+  HEXY_OFF_SLOPE,
+  HEX_CENTER_DY,
   TOP_MARGIN,
   rowOf,
   colOf,

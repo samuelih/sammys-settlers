@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { hexToPixel, HALFDELTA_X } from '../coords';
+import { hexToPixel, HALFDELTA_X, HEX_CENTER_DY } from '../coords';
 import styles from '../BoardSVG.module.css';
 
 export interface MarkerProps {
@@ -15,7 +15,8 @@ export interface MarkerProps {
  * `prefers-reduced-motion` / low-quality mode via CSS).
  */
 export function Robber({ hexCoord }: MarkerProps): JSX.Element {
-  const { x: cx, y: cy } = hexToPixel(hexCoord);
+  const { x: cx, y } = hexToPixel(hexCoord);
+  const cy = y + HEX_CENTER_DY; // hexagon's visual center
   const s = HALFDELTA_X * 0.52;
   return (
     <g data-testid="robber" className={styles.marker} transform={`translate(${cx} ${cy})`} pointerEvents="none">
@@ -31,7 +32,8 @@ export function Robber({ hexCoord }: MarkerProps): JSX.Element {
  * set. Slides smoothly between hexes like the robber.
  */
 export function Pirate({ hexCoord }: MarkerProps): JSX.Element {
-  const { x: cx, y: cy } = hexToPixel(hexCoord);
+  const { x: cx, y } = hexToPixel(hexCoord);
+  const cy = y + HEX_CENTER_DY; // hexagon's visual center
   const s = HALFDELTA_X * 0.56;
   return (
     <g data-testid="pirate" className={styles.marker} transform={`translate(${cx} ${cy})`} pointerEvents="none">

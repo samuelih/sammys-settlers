@@ -154,7 +154,7 @@ public class SOCClientData
     private boolean sentGameList;
 
     /**
-     * Has the server already sent a "Welcome to JSettlers!" status message to client,
+     * Has the server already sent a "Welcome to Sammy's Settlers!" status message to client,
      * after user authenticated, for a newly joined or created game or channel?
      * Is tracked to skip sending for later games/channels.
      *<P>

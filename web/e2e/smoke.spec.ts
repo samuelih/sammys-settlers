@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 // command to start the Java server for protocol/E2E tests.)
 test('app shell renders', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle('JSettlers');
+  await expect(page).toHaveTitle("Sammy's Settlers");
   await expect(page.getByTestId('app-shell')).toBeVisible();
   await expect(page.getByTestId('theme-toggle')).toBeVisible();
 });
