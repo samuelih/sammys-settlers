@@ -22,6 +22,7 @@ import {
   SOCBoardLayout2,
   SOCChoosePlayerRequest,
   SOCDevCardAction,
+  SOCDiscard,
   SOCGameStats,
   SOCMakeOffer,
   SOCMoveRobber,
@@ -340,6 +341,50 @@ describe('choose-player + discard requirements', () => {
     // Moving past discards (e.g. into PLACING_ROBBER) clears the requirement.
     s.setGameState(GAME, GameState.PLACING_ROBBER);
     expect(cg().discardRequired).toBe(0);
+  });
+
+  it('DISCARD confirmation subtracts the local player\'s exact discarded cards', () => {
+    const s = useGameStore.getState();
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.CLAY, 3));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.ORE, 2));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.SHEEP, 1));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.WHEAT, 2));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.WOOD, 2));
+    s.setGameState(GAME, GameState.WAITING_FOR_DISCARDS);
+    s.applyDiscardRequest(GAME, 5);
+
+    s.applyDiscard(new SOCDiscard(GAME, 0, resourceSet(2, 1, 0, 1, 1)));
+
+    expect(cg().discardRequired).toBe(0);
+    expect(cg().playerViews[0].resources).toMatchObject({
+      clay: 1,
+      ore: 1,
+      sheep: 1,
+      wheat: 1,
+      wood: 1,
+    });
+    expect(cg().playerViews[0].resourceTotal).toBe(5);
+    expect(cg().gameLog.at(-1)?.text).toContain('discarded 2 clay, 1 ore, 1 wheat, 1 wood');
+  });
+
+  it('DISCARD confirmation subtracts only hidden totals for other players', () => {
+    const s = useGameStore.getState();
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 1, PlayerElementAction.SET, PlayerElementType.RESOURCE_COUNT, 9));
+    s.setGameState(GAME, GameState.WAITING_FOR_DISCARDS);
+    s.applyDiscardRequest(GAME, 4);
+
+    s.applyDiscard(new SOCDiscard(GAME, 1, resourceSet(0, 0, 0, 0, 0, 4)));
+
+    expect(cg().discardRequired).toBe(4);
+    expect(cg().playerViews[1].resourceTotal).toBe(5);
+    expect(cg().playerViews[1].resources).toMatchObject({
+      clay: 0,
+      ore: 0,
+      sheep: 0,
+      wheat: 0,
+      wood: 0,
+    });
+    expect(cg().gameLog.at(-1)?.text).toContain('discarded 4 resources');
   });
 });
 

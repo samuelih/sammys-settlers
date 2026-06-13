@@ -596,6 +596,8 @@ export interface GameStoreState {
   applySetPlayedDevCard: (gameName: string, playerNumber: number, played: boolean) => void;
   /** Set/clear the local player's discard requirement (from SOCDiscardRequest). */
   applyDiscardRequest: (gameName: string, numDiscards: number) => void;
+  /** Apply a confirmed discard to the player's visible hand state (from SOCDiscard). */
+  applyDiscard: (msg: SOCDiscard) => void;
   /** Move the robber/pirate to a hex on the board (from SOCMoveRobber). */
   applyMoveRobber: (msg: SOCMoveRobber) => void;
   /** Set the victim-chooser candidate list (from SOCChoosePlayerRequest). */
@@ -909,6 +911,49 @@ function applyElementToView(
 /** Total known resources in a protocol resource set. */
 function resourceSetTotal(rs: ResourceSet): number {
   return rs.clay + rs.ore + rs.sheep + rs.wheat + rs.wood;
+}
+
+/** Total known plus UNKNOWN resources in a protocol resource set. */
+function resourceSetTotalAll(rs: ResourceSet): number {
+  return resourceSetTotal(rs) + rs.unknown;
+}
+
+/** Subtract a confirmed discard from a player's visible hand state. */
+function applyDiscardToView(
+  view: PlayerView,
+  discard: ResourceSet,
+  revealBreakdown: boolean,
+): PlayerView {
+  const totalLost = resourceSetTotalAll(discard);
+  if (!revealBreakdown) {
+    return { ...view, resourceTotal: Math.max(0, view.resourceTotal - totalLost) };
+  }
+
+  const resources: ResourceCounts = {
+    clay: Math.max(0, view.resources.clay - discard.clay),
+    ore: Math.max(0, view.resources.ore - discard.ore),
+    sheep: Math.max(0, view.resources.sheep - discard.sheep),
+    wheat: Math.max(0, view.resources.wheat - discard.wheat),
+    wood: Math.max(0, view.resources.wood - discard.wood),
+  };
+
+  // A local exact discard should not include UNKNOWN, but keep the displayed
+  // total correct if a compatibility/server edge case ever sends one.
+  let unknownLeft = Math.max(0, discard.unknown);
+  for (const field of ['clay', 'ore', 'sheep', 'wheat', 'wood'] as Array<keyof ResourceCounts>) {
+    if (unknownLeft <= 0) {
+      break;
+    }
+    const take = Math.min(resources[field], unknownLeft);
+    resources[field] -= take;
+    unknownLeft -= take;
+  }
+
+  return {
+    ...view,
+    resources,
+    resourceTotal: resources.clay + resources.ore + resources.sheep + resources.wheat + resources.wood,
+  };
 }
 
 /** Apply a known resource gain/loss pair to a player's visible hand state. */
@@ -1863,6 +1908,33 @@ export const useGameStore = create<GameStoreState>((set) => ({
         return {};
       }
       return { currentGame: { ...cg, discardRequired: numDiscards } };
+    }),
+
+  applyDiscard: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null || msg.playerNumber < 0) {
+        return {};
+      }
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) =>
+        applyDiscardToView(v, msg.resources, msg.playerNumber === cg.mySeat),
+      );
+      if (playerViews === cg.playerViews) {
+        return {};
+      }
+      const isMine = msg.playerNumber === cg.mySeat && cg.mySeat >= 0;
+      const gameLog = pushLog(cg.gameLog, {
+        text: `${seatLabel(cg, msg.playerNumber)} discarded ${describeDiscardResources(msg.resources)}.`,
+        kind: 'server',
+      });
+      return {
+        currentGame: {
+          ...cg,
+          playerViews,
+          gameLog,
+          discardRequired: isMine ? 0 : cg.discardRequired,
+        },
+      };
     }),
 
   applyMoveRobber: (msg) =>
@@ -2876,6 +2948,10 @@ export function connectStore(
     useGameStore.getState().applyDiscardRequest(d.game, d.numDiscards);
   });
 
+  conn.on(MessageType.DISCARD, (msg: SOCMessage) => {
+    useGameStore.getState().applyDiscard(msg as SOCDiscard);
+  });
+
   conn.on(MessageType.MOVEROBBER, (msg: SOCMessage) => {
     useGameStore.getState().applyMoveRobber(msg as SOCMoveRobber);
   });
@@ -2990,6 +3066,16 @@ function describeResourceSet(rs: ResourceSet): string {
     }
   }
   return parts.length > 0 ? parts.join(', ') : 'nothing';
+}
+
+/** Describe a discard resource set, including UNKNOWN-only public messages. */
+function describeDiscardResources(rs: ResourceSet): string {
+  const known = describeResourceSet(rs);
+  if (rs.unknown <= 0) {
+    return known;
+  }
+  const unknown = `${rs.unknown} resource${rs.unknown === 1 ? '' : 's'}`;
+  return known === 'nothing' ? unknown : `${known}, ${unknown}`;
 }
 
 /**
