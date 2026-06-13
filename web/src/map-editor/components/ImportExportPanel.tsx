@@ -101,7 +101,9 @@ export function ImportExportPanel({ map, issues, onLoad, sampleJson }: ImportExp
   };
 
   const handleDownload = (): void => {
-    downloadJson(exportText.length > 0 ? exportText : serializeMapJson(map));
+    const json = serializeMapJson(map);
+    setExportText(json);
+    downloadJson(json);
     setError(null);
   };
 
@@ -128,6 +130,12 @@ export function ImportExportPanel({ map, issues, onLoad, sampleJson }: ImportExp
       },
       () => setError(`Could not copy ${label.toLowerCase()}.`),
     );
+  };
+
+  const handleCopyJson = (): void => {
+    const json = serializeMapJson(map);
+    setExportText(json);
+    copyText(json, 'JSON');
   };
 
   return (
@@ -200,7 +208,7 @@ export function ImportExportPanel({ map, issues, onLoad, sampleJson }: ImportExp
           <Button
             size="sm"
             variant="secondary"
-            onClick={() => copyText(exportText.length > 0 ? exportText : serializeMapJson(map), 'JSON')}
+            onClick={handleCopyJson}
           >
             Copy JSON
           </Button>

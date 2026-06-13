@@ -13,6 +13,7 @@ import {
   validate,
   boardSizeForMap,
   minimumBoardSizeForMap,
+  mapWithInferredLandAreas,
   MIN_BOARD_HEIGHT,
   MIN_BOARD_WIDTH,
   MAX_BOARD_HEIGHT,
@@ -22,7 +23,8 @@ import {
   placeHex,
   clearHex,
   setHexDice,
-  placePort,
+  setHexLandArea,
+  placePortAutoFacing,
   clearPort,
   toggleRobber,
   togglePirate,
@@ -39,6 +41,7 @@ import { EditorCanvas, type EditorTool } from '../map-editor/components/EditorCa
 import { EditorPalette } from '../map-editor/components/EditorPalette';
 import { ValidationPanel } from '../map-editor/components/ValidationPanel';
 import { ImportExportPanel } from '../map-editor/components/ImportExportPanel';
+import { MapReadinessPanel } from '../map-editor/components/MapReadinessPanel';
 import styles from './MapEditorScreen.module.css';
 
 /**
@@ -85,6 +88,9 @@ export function MapEditorScreen(): JSX.Element {
           indexOfHexAt(m, coord) >= 0 ? setHexDice(m, coord, alt ? 0 : diceNum) : m,
         );
         break;
+      case 'area':
+        setMap((m) => (alt ? m : setHexLandArea(m, coord, landArea)));
+        break;
       case 'robber':
         setMap((m) => (alt ? clearRobberAt(m, coord) : toggleRobber(m, coord)));
         break;
@@ -103,11 +109,13 @@ export function MapEditorScreen(): JSX.Element {
     if (tool !== 'port') {
       return;
     }
-    setMap((m) => (alt ? clearPort(m, edge) : placePort(m, edge, portType, portFacing)));
+    setMap((m) => (alt ? clearPort(m, edge) : placePortAutoFacing(m, edge, portType, portFacing)));
   };
 
   // --- Metadata + IO handlers --------------------------------------------
-  const loadMap = (next: CustomMap): void => setMap(ensureEditorBoardSize(next));
+  const loadMap = (next: CustomMap): void => {
+    setMap(mapWithInferredLandAreas(ensureEditorBoardSize(next)));
+  };
 
   const handleNew = (): void => {
     if (
@@ -164,46 +172,50 @@ export function MapEditorScreen(): JSX.Element {
           onShuffleChange={(b) => setMap((m) => setShuffle(m, b))}
         />
 
-        <div className={styles.rightColumn}>
-          <Panel
-            title="Board"
-            flushBody
-            className={styles.canvasPanel}
-            data-testid="editor-board"
-            headerActions={
-              <div className={styles.boardActions}>
-                <span className={styles.statusReadout} data-testid="editor-map-stats">
-                  {map.landHexes.length} hexes · {(map.ports ?? []).length} ports · {errorCount} errors
-                  {warningCount > 0 ? ` · ${warningCount} warnings` : ''}
-                </span>
-                <label className={styles.viewToggle}>
-                  <input
-                    type="checkbox"
-                    checked={showCoordinates}
-                    onChange={(e) => setShowCoordinates(e.target.checked)}
-                  />
-                  Coords
-                </label>
-              </div>
-            }
-          >
-            <BoardSizeControls
-              size={boardSize}
-              minimum={minBoardSize}
-              onSizeChange={(height, width) => setMap((m) => setBoardSize(m, height, width))}
-            />
-            <EditorCanvas
-              map={map}
-              tool={tool}
-              showCoordinates={showCoordinates}
-              onHexClick={handleHexClick}
-              onPortClick={handlePortClick}
-            />
-          </Panel>
+        <div className={styles.workbench}>
+          <div className={styles.boardColumn}>
+            <Panel
+              title="Board"
+              flushBody
+              className={styles.canvasPanel}
+              data-testid="editor-board"
+              headerActions={
+                <div className={styles.boardActions}>
+                  <span className={styles.statusReadout} data-testid="editor-map-stats">
+                    {map.landHexes.length} hexes · {(map.ports ?? []).length} ports · {errorCount} errors
+                    {warningCount > 0 ? ` · ${warningCount} warnings` : ''}
+                  </span>
+                  <label className={styles.viewToggle}>
+                    <input
+                      type="checkbox"
+                      checked={showCoordinates}
+                      onChange={(e) => setShowCoordinates(e.target.checked)}
+                    />
+                    Coords
+                  </label>
+                </div>
+              }
+            >
+              <BoardSizeControls
+                size={boardSize}
+                minimum={minBoardSize}
+                onSizeChange={(height, width) => setMap((m) => setBoardSize(m, height, width))}
+              />
+              <EditorCanvas
+                map={map}
+                tool={tool}
+                showCoordinates={showCoordinates}
+                onHexClick={handleHexClick}
+                onPortClick={handlePortClick}
+              />
+            </Panel>
+          </div>
 
-          <ValidationPanel issues={issues} />
-
-          <ImportExportPanel map={map} issues={issues} onLoad={loadMap} sampleJson={SAMPLE_MAP_JSON} />
+          <div className={styles.sideColumn}>
+            <MapReadinessPanel map={map} issues={issues} />
+            <ValidationPanel issues={issues} />
+            <ImportExportPanel map={map} issues={issues} onLoad={loadMap} sampleJson={SAMPLE_MAP_JSON} />
+          </div>
         </div>
       </div>
     </div>
@@ -324,6 +336,15 @@ function BoardSizeControls({
           +
         </button>
       </div>
+      <Button
+        size="sm"
+        variant="ghost"
+        data-testid="editor-board-fit"
+        disabled={size.height === minimum.height && size.width === minimum.width}
+        onClick={() => onSizeChange(minimum.height, minimum.width)}
+      >
+        Fit content
+      </Button>
       <Button
         size="sm"
         variant="ghost"

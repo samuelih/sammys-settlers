@@ -549,6 +549,27 @@ describe('warnings — heuristics the Java validator does NOT enforce', () => {
     // It must remain valid (no errors) — contiguity is advisory.
     expect(isValid(issues)).toBe(true);
   });
+
+  it('warns when fixed 6/8 dice touch each other', () => {
+    const m = sample();
+    m.landHexes[0].coord = '0x0309';
+    m.landHexes[0].diceNum = 6;
+    m.landHexes[1].coord = '0x030B';
+    m.landHexes[1].diceNum = 8;
+    const issues = validate(m);
+    const warns = issues.filter((i) => i.severity === 'warning');
+    expect(warns.some((w) => /adjacent 6\/8/.test(w.message) || /touches/.test(w.message))).toBe(true);
+    expect(isValid(issues)).toBe(true);
+  });
+
+  it('warns when a resource map has no ports for 3+ players', () => {
+    const m = sample();
+    m.ports = undefined;
+    const issues = validate(m);
+    const warns = issues.filter((i) => i.severity === 'warning');
+    expect(warns.some((w) => /no trade ports/.test(w.message))).toBe(true);
+    expect(isValid(issues)).toBe(true);
+  });
 });
 
 describe('geometry helpers (ports of the Java private methods)', () => {

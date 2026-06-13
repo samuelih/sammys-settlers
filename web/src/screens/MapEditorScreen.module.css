@@ -53,13 +53,27 @@
 /* Two-column working area: palette/tools on the left, canvas + panels right. */
 .layout {
   display: grid;
-  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  grid-template-columns: minmax(16rem, 21rem) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(28rem, 1fr) minmax(18rem, 24rem);
+  gap: var(--space-4);
+  align-items: start;
+  min-width: 0;
+}
+
 @media (max-width: 56rem) {
   .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 74rem) {
+  .workbench {
     grid-template-columns: 1fr;
   }
 }
@@ -80,11 +94,16 @@
   }
 }
 
-.rightColumn {
+.boardColumn,
+.sideColumn {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
+}
+
+.sideColumn {
+  align-self: start;
 }
 
 /* ---- Palette ---------------------------------------------------------- */
@@ -564,6 +583,103 @@
   font-size: 7px;
   font-weight: var(--font-weight-bold);
   pointer-events: none;
+}
+
+.areaBadge {
+  fill: color-mix(in srgb, var(--color-surface) 82%, var(--color-accent));
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
+}
+
+.areaBadgeText {
+  fill: var(--color-text);
+  text-anchor: middle;
+  font-size: 5.5px;
+  font-weight: var(--font-weight-bold);
+  pointer-events: none;
+}
+
+/* ---- Readiness panel --------------------------------------------------- */
+.readinessFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.factPill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.factPill strong {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.factPill span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.readinessList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readinessItem {
+  display: grid;
+  grid-template-columns: auto minmax(5rem, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.15rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.readinessDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.readinessLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.readinessValue {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.readinessGood .readinessDot {
+  background: var(--color-success);
+}
+
+.readinessWarn .readinessDot {
+  background: var(--color-warning);
+}
+
+.readinessError .readinessDot {
+  background: var(--color-danger);
 }
 
 /* ---- Validation panel ------------------------------------------------- */

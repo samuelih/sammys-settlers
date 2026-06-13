@@ -175,14 +175,37 @@ export function edgesAroundHex(hexCoord: number): number[] {
  * @returns one {@link GridEdgeCell} per unique bordering edge, with pixel geometry
  */
 export function candidatePortEdges(placedHexCoords: Iterable<number>): GridEdgeCell[] {
-  const seen = new Set<number>();
-  const out: GridEdgeCell[] = [];
+  return candidatePortEdgesWithin(placedHexCoords);
+}
+
+/**
+ * Coastline-only port slots for the editor. A valid authoring slot borders
+ * exactly one non-water land hex and sits inside the active board frame, which
+ * prevents interior-edge ports and out-of-frame bottom/right edge mistakes.
+ */
+export function candidatePortEdgesWithin(
+  placedHexCoords: Iterable<number>,
+  boardHeight?: number,
+  boardWidth?: number,
+): GridEdgeCell[] {
+  const edgeCounts = new Map<number, number>();
+  const maxRow = boardHeight !== undefined ? boardHeight - 1 : MAX_BOARD_HEIGHT - 1;
+  const maxCol = boardWidth !== undefined ? boardWidth - 1 : MAX_BOARD_WIDTH - 1;
+
   for (const hex of placedHexCoords) {
     for (const e of edgesAroundHex(hex)) {
-      if (e <= 0 || seen.has(e)) {
+      const r = rowOf(e);
+      const c = colOf(e);
+      if (e <= 0 || r < 0 || c < 0 || r > maxRow || c > maxCol) {
         continue;
       }
-      seen.add(e);
+      edgeCounts.set(e, (edgeCounts.get(e) ?? 0) + 1);
+    }
+  }
+
+  const out: GridEdgeCell[] = [];
+  for (const [e, count] of edgeCounts) {
+    if (count === 1) {
       const px = edgeToPixel(e);
       out.push({
         coord: e,

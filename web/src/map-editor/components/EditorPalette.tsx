@@ -67,6 +67,7 @@ export interface EditorPaletteProps {
 const TOOLS: ReadonlyArray<{ id: EditorTool; label: string }> = [
   { id: 'hex', label: 'Hex' },
   { id: 'dice', label: 'Dice #' },
+  { id: 'area', label: 'Area' },
   { id: 'port', label: 'Port' },
   { id: 'robber', label: 'Robber' },
   { id: 'pirate', label: 'Pirate' },
@@ -208,7 +209,7 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
       {/* Land area */}
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="editor-landarea">
-          Land area (for new hexes)
+          Active land area
         </label>
         <input
           id="editor-landarea"
@@ -224,7 +225,7 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
 
       {/* Port tool config */}
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Port (for Port tool)</span>
+        <span className={styles.groupLabel}>Port</span>
         <div className={styles.inlineRow}>
           <select
             data-testid="editor-port-type"
@@ -254,8 +255,7 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
           </select>
         </div>
         <p className={styles.hint}>
-          Facing must match the edge orientation (the editor offers all 6; invalid
-          facings are flagged below).
+          Coast slots auto-face the adjacent land hex; the selected facing is used only when it is legal.
         </p>
       </div>
 
@@ -327,8 +327,10 @@ function toolHint(tool: EditorTool): string {
       return 'Click a cell to place the selected hex type. Alt/right-click clears it.';
     case 'dice':
       return 'Click a resource hex to set the selected dice number. Alt/right-click clears it.';
+    case 'area':
+      return 'Click a placed hex to assign it to the active land area.';
     case 'port':
-      return 'Click a coastline edge slot to drop the selected port. Click a port (or alt-click) to remove it.';
+      return 'Click a coastline edge slot to drop the selected port. Click a port to remove it.';
     case 'robber':
       return 'Click a hex to set/clear the robber start. Alt/right-click also clears.';
     case 'pirate':

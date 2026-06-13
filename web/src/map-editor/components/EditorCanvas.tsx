@@ -10,7 +10,7 @@ import {
 } from '../mapSchema';
 import {
   enumerateHexCells,
-  candidatePortEdges,
+  candidatePortEdgesWithin,
   boardSizeForMap,
   hexToPixel,
   type GridHexCell,
@@ -29,8 +29,8 @@ import { ResourceMotif } from '../../board/pieces/ResourceMotif';
 import { TerrainTexture, terrainTextureFor } from '../../board/pieces/TerrainTexture';
 import styles from '../../screens/MapEditorScreen.module.css';
 
-/** Which interaction the canvas is in: placing hexes/dice, ports, robber, pirate. */
-export type EditorTool = 'hex' | 'dice' | 'port' | 'robber' | 'pirate';
+/** Which interaction the canvas is in: placing hexes/dice/areas/ports/markers. */
+export type EditorTool = 'hex' | 'dice' | 'area' | 'port' | 'robber' | 'pirate';
 
 /** Map a hex-type name to its canvas fill CSS-module class. */
 const CELL_CLASS: Record<string, string> = {
@@ -63,14 +63,14 @@ function HexCell({
   cell,
   type,
   diceNum,
-  tool,
+  landArea,
   showCoordinates,
   onHexClick,
 }: {
   cell: GridHexCell;
   type: string | null;
   diceNum: number;
-  tool: EditorTool;
+  landArea?: number;
   showCoordinates: boolean;
   onHexClick: EditorCanvasProps['onHexClick'];
 }): JSX.Element {
@@ -133,7 +133,7 @@ function HexCell({
       {showDice && (
         <g
           data-testid={`editor-dice-${coordStr}`}
-          onClick={tool === 'dice' ? handle : undefined}
+          onClick={handle}
           onContextMenu={handle}
         >
           <circle className={styles.diceToken} cx={cx} cy={cy + HEX_CENTER_DY} r={tokenR} />
@@ -144,6 +144,23 @@ function HexCell({
             fontSize={tokenR * 1.1}
           >
             {diceNum}
+          </text>
+        </g>
+      )}
+      {placed && landArea !== undefined && landArea > 0 && (
+        <g data-testid={`editor-area-${coordStr}`} pointerEvents="none">
+          <circle
+            className={styles.areaBadge}
+            cx={cx - HALFDELTA_X * 0.5}
+            cy={cy + HALFDELTA_Y * 0.48}
+            r={7}
+          />
+          <text
+            className={styles.areaBadgeText}
+            x={cx - HALFDELTA_X * 0.5}
+            y={cy + HALFDELTA_Y * 0.48 + 2.5}
+          >
+            A{landArea}
           </text>
         </g>
       )}
@@ -176,20 +193,29 @@ export function EditorCanvas({
 
   // Index placed hexes by integer coord for O(1) cell lookup.
   const placedByCoord = useMemo(() => {
-    const m = new Map<number, { type: string; diceNum: number }>();
+    const m = new Map<number, { type: string; diceNum: number; landArea?: number }>();
     for (const h of map.landHexes ?? []) {
       const c = parseCoord(h.coord);
       if (c !== null) {
-        m.set(c, { type: (h.type ?? '').toLowerCase(), diceNum: h.diceNum });
+        m.set(c, { type: (h.type ?? '').toLowerCase(), diceNum: h.diceNum, landArea: h.landArea });
       }
     }
     return m;
   }, [map.landHexes]);
 
-  const placedCoords = useMemo(() => [...placedByCoord.keys()], [placedByCoord]);
+  const placedCoords = useMemo(
+    () =>
+      [...placedByCoord.entries()]
+        .filter(([, hex]) => hex.type !== 'water')
+        .map(([coord]) => coord),
+    [placedByCoord],
+  );
 
   // Port edges: candidate slots around placed hexes, plus the actual placed ports.
-  const portEdges = useMemo(() => candidatePortEdges(placedCoords), [placedCoords]);
+  const portEdges = useMemo(
+    () => candidatePortEdgesWithin(placedCoords, boardSize.height, boardSize.width),
+    [placedCoords, boardSize.height, boardSize.width],
+  );
   const placedPorts = useMemo(() => {
     const m = new Map<number, string>();
     for (const p of map.ports ?? []) {
@@ -232,7 +258,7 @@ export function EditorCanvas({
               cell={cell}
               type={placed ? placed.type : null}
               diceNum={placed ? placed.diceNum : 0}
-              tool={tool}
+              landArea={placed?.landArea}
               showCoordinates={showCoordinates}
               onHexClick={onHexClick}
             />

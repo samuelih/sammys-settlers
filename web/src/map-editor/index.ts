@@ -28,6 +28,8 @@ export {
   coordOf,
   parseMapJson,
   fromRaw,
+  mapWithInferredLandAreas,
+  mapWithCanonicalLandAreas,
   serializeMapJson,
   emptyMap,
 } from './mapSchema';
@@ -44,7 +46,9 @@ export {
   placeHex,
   clearHex,
   setHexDice,
+  setHexLandArea,
   placePort,
+  placePortAutoFacing,
   clearPort,
   toggleRobber,
   togglePirate,
@@ -60,6 +64,7 @@ export {
 export {
   enumerateHexCells,
   candidatePortEdges,
+  candidatePortEdgesWithin,
   edgesAroundHex,
   legalFacingsForEdge,
   boardSizeForMap,

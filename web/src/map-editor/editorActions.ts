@@ -18,8 +18,10 @@ import {
   type FacingName,
   encodeCoord,
   parseCoord,
+  mapWithCanonicalLandAreas,
 } from './mapSchema';
 import { clampBoardSize, minimumBoardSizeForMap } from './editorGrid';
+import { facingForEdge } from './validation';
 
 /** Hex types that carry no dice number (desert/water); placing one clears diceNum. */
 const NO_NUMBER_TYPES: ReadonlySet<string> = new Set(['desert', 'water']);
@@ -58,10 +60,10 @@ export function placeHex(
       coord: prev.coord,
       diceNum: noNumber ? 0 : prev.diceNum,
     };
-    if (prev.landArea !== undefined) {
-      next.landArea = prev.landArea;
-    } else if (landArea !== undefined) {
+    if (landArea !== undefined) {
       next.landArea = landArea;
+    } else if (prev.landArea !== undefined) {
+      next.landArea = prev.landArea;
     }
     hexes[idx] = next;
   } else {
@@ -71,7 +73,7 @@ export function placeHex(
     }
     hexes.push(next);
   }
-  return { ...map, landHexes: hexes };
+  return mapWithCanonicalLandAreas({ ...map, landHexes: hexes });
 }
 
 /** Remove any land hex at `coord` (no-op if none). Also clears robber/pirate there. */
@@ -88,7 +90,7 @@ export function clearHex(map: CustomMap, coord: number): CustomMap {
   if (parseCoord(next.pirateHex) === coord) {
     delete next.pirateHex;
   }
-  return next;
+  return mapWithCanonicalLandAreas(next);
 }
 
 /**
@@ -104,6 +106,18 @@ export function setHexDice(map: CustomMap, coord: number, dice: number): CustomM
   const hexes = [...(map.landHexes ?? [])];
   hexes[idx] = { ...hexes[idx], diceNum: dice };
   return { ...map, landHexes: hexes };
+}
+
+/** Assign the hex at `coord` to a land area, rebuilding authoritative area ranges. */
+export function setHexLandArea(map: CustomMap, coord: number, landArea: number): CustomMap {
+  const idx = indexOfHexAt(map, coord);
+  if (idx < 0) {
+    return map;
+  }
+  const area = Math.max(1, Math.floor(landArea) || 1);
+  const hexes = [...(map.landHexes ?? [])];
+  hexes[idx] = { ...hexes[idx], landArea: area };
+  return mapWithCanonicalLandAreas({ ...map, landHexes: hexes });
 }
 
 /**
@@ -125,6 +139,16 @@ export function placePort(
     ports.push(port);
   }
   return { ...map, ports };
+}
+
+/** Best-facing port placement: keep a legal preferred facing, otherwise face the adjacent land hex. */
+export function placePortAutoFacing(
+  map: CustomMap,
+  edge: number,
+  type: PortTypeName,
+  preferredFacing: FacingName,
+): CustomMap {
+  return placePort(map, edge, type, bestPortFacing(map, edge, preferredFacing));
 }
 
 /** Remove any port at `edge` (no-op if none). Drops the `ports` field if it empties. */
@@ -205,3 +229,50 @@ export function setBoardSize(map: CustomMap, height: number, width: number): Cus
     boardWidth: Math.max(clamped.width, required.width),
   };
 }
+
+function bestPortFacing(map: CustomMap, edge: number, preferredFacing: FacingName): FacingName {
+  const preferredCode = FACING_CODE_BY_NAME[preferredFacing];
+  let first: FacingName | null = null;
+  for (const hex of map.landHexes ?? []) {
+    if (!hex || (hex.type ?? '').toLowerCase() === 'water') {
+      continue;
+    }
+    const coord = parseCoord(hex.coord);
+    if (coord === null) {
+      continue;
+    }
+    const code = facingForEdge(edge, coord);
+    if (code === null) {
+      continue;
+    }
+    const name = FACING_NAME_BY_CODE[code];
+    if (name === undefined) {
+      continue;
+    }
+    if (code === preferredCode) {
+      return preferredFacing;
+    }
+    if (first === null) {
+      first = name;
+    }
+  }
+  return first ?? preferredFacing;
+}
+
+const FACING_CODE_BY_NAME: Readonly<Record<FacingName, number>> = {
+  NE: 1,
+  E: 2,
+  SE: 3,
+  SW: 4,
+  W: 5,
+  NW: 6,
+};
+
+const FACING_NAME_BY_CODE: Readonly<Record<number, FacingName>> = {
+  1: 'NE',
+  2: 'E',
+  3: 'SE',
+  4: 'SW',
+  5: 'W',
+  6: 'NW',
+};

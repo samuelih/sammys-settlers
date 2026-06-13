@@ -130,6 +130,8 @@ export function validate(map: CustomMap): ValidationIssue[] {
   // Warnings: heuristics the Java validator documents as NOT checked.
   warnLandConnectivity(map, issues);
   warnLandAreaContiguity(map, issues);
+  warnPlayabilityBasics(map, issues);
+  warnHotDiceAdjacency(map, issues);
 
   return issues;
 }
@@ -1089,6 +1091,116 @@ function warnLandAreaContiguity(map: CustomMap, issues: ValidationIssue[]): void
     }
   }
 }
+
+function warnPlayabilityBasics(map: CustomMap, issues: ValidationIssue[]): void {
+  const resources = new Set<string>();
+  let resourceHexCount = 0;
+  let missingDiceCount = 0;
+  let nonWaterHexCount = 0;
+
+  for (const h of map.landHexes ?? []) {
+    const type = (h?.type ?? '').toLowerCase();
+    if (type !== 'water') {
+      nonWaterHexCount += 1;
+    }
+    if (RESOURCE_TYPES.has(type)) {
+      resources.add(type);
+      resourceHexCount += 1;
+      if ((h.diceNum ?? 0) === 0 && !map.shuffle) {
+        missingDiceCount += 1;
+      }
+    }
+  }
+
+  if (resourceHexCount > 0) {
+    const missing = [...RESOURCE_TYPES].filter((type) => !resources.has(type));
+    if (missing.length > 0) {
+      issues.push({
+        severity: 'warning',
+        field: 'landHexes',
+        message:
+          `resource mix is missing ${missing.join(', ')}; the server accepts this, but games may be skewed`,
+      });
+    }
+  }
+
+  if (missingDiceCount > 0) {
+    issues.push({
+      severity: 'warning',
+      field: 'landHexes',
+      message:
+        `${missingDiceCount} resource hex${missingDiceCount === 1 ? ' has' : 'es have'} no dice number;` +
+        ' those hexes will not produce unless shuffle assigns numbers',
+    });
+  }
+
+  const maxPlayers = Math.max(0, ...(map.playerCounts ?? []));
+  if (maxPlayers > 0 && nonWaterHexCount > 0 && nonWaterHexCount < maxPlayers * 3) {
+    issues.push({
+      severity: 'warning',
+      field: 'playerCounts',
+      message:
+        `only ${nonWaterHexCount} non-water hexes for up to ${maxPlayers} players;` +
+        ' starting space and resource access may be tight',
+    });
+  }
+
+  const nPorts = map.ports?.length ?? 0;
+  if (maxPlayers >= 3 && nPorts === 0 && nonWaterHexCount > 0) {
+    issues.push({
+      severity: 'warning',
+      field: 'ports',
+      message: 'no trade ports are defined for a 3+ player map',
+    });
+  }
+
+  if (map.robberHex === undefined && nonWaterHexCount > 0) {
+    issues.push({
+      severity: 'warning',
+      field: 'robberHex',
+      message: 'robberHex is not set; the robber may start off-board or on the first desert found',
+    });
+  }
+}
+
+function warnHotDiceAdjacency(map: CustomMap, issues: ValidationIssue[]): void {
+  if (map.shuffle) {
+    return;
+  }
+  const hot = new Map<number, number>();
+  for (const h of map.landHexes ?? []) {
+    const type = (h?.type ?? '').toLowerCase();
+    if (!RESOURCE_TYPES.has(type) || (h.diceNum !== 6 && h.diceNum !== 8)) {
+      continue;
+    }
+    const coord = parseCoord(h.coord);
+    if (coord !== null) {
+      hot.set(coord, h.diceNum);
+    }
+  }
+
+  for (const [coord, dice] of hot) {
+    for (const nb of hexNeighbors(coord)) {
+      if (nb <= coord) {
+        continue;
+      }
+      const nbDice = hot.get(nb);
+      if (nbDice === 6 || nbDice === 8) {
+        issues.push({
+          severity: 'warning',
+          field: 'landHexes',
+          coord,
+          message:
+            `high-probability dice ${dice} at 0x${coord.toString(16)} touches ${nbDice} at` +
+            ` 0x${nb.toString(16)}; built-in shuffled boards avoid adjacent 6/8`,
+        });
+        return;
+      }
+    }
+  }
+}
+
+const RESOURCE_TYPES: ReadonlySet<string> = new Set(['clay', 'ore', 'sheep', 'wheat', 'wood']);
 
 /** Count connected components of a hex-coordinate set using {@link hexNeighbors}. */
 function countComponents(coords: number[]): number {

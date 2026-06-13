@@ -122,9 +122,34 @@ describe('MapEditorScreen', () => {
     const polygon = hexGroup.querySelector('polygon') as SVGPolygonElement;
     fireEvent.click(polygon, { altKey: true });
 
-    // The hex's land-area count now mismatches (8 declared, 7 remain) -> error,
-    // proving the canvas click mutated the model and validation re-ran live.
-    expect(screen.queryByTestId('editor-valid')).not.toBeInTheDocument();
+    // Area ranges are rebuilt instead of leaving a stale count behind.
+    expect(screen.getByTestId('editor-valid')).toBeInTheDocument();
     expect(screen.getByTestId('editor-hex-0x0309')).toHaveAttribute('data-hextype', '');
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+    const exported = parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value);
+    expect(exported.landAreas).toEqual([
+      { area: 1, count: 7 },
+      { area: 2, count: 4 },
+    ]);
+  });
+
+  it('assigns a placed hex to a land area and exports authoritative area ranges', () => {
+    fireEvent.change(screen.getByTestId('editor-name'), { target: { value: 'Two Areas' } });
+    fireEvent.click(screen.getByTestId('editor-hextype-clay'));
+    fireEvent.click(screen.getByTestId('editor-hex-0x0309').querySelector('polygon') as SVGPolygonElement);
+    fireEvent.change(screen.getByTestId('editor-landarea'), { target: { value: '2' } });
+    fireEvent.click(screen.getByTestId('editor-hextype-ore'));
+    fireEvent.click(screen.getByTestId('editor-hex-0x030B').querySelector('polygon') as SVGPolygonElement);
+
+    expect(screen.getByTestId('editor-area-0x0309')).toHaveTextContent('A1');
+    expect(screen.getByTestId('editor-area-0x030B')).toHaveTextContent('A2');
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+    const exported = parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value);
+    expect(exported.landAreas).toEqual([
+      { area: 1, count: 1 },
+      { area: 2, count: 1 },
+    ]);
   });
 });

@@ -152,6 +152,87 @@ export interface CustomMap {
 }
 
 /**
+ * Return a copy whose per-hex `landArea` hints reflect the authoritative
+ * `landAreas` ranges. Useful immediately after import because the server ignores
+ * stale/missing per-hex hints and consumes `landAreas` by file order.
+ *
+ * @param map  imported or edited map
+ * @returns a map with hex `landArea` tags inferred from `landAreas` when present
+ */
+export function mapWithInferredLandAreas(map: CustomMap): CustomMap {
+  if (!map.landAreas || map.landAreas.length === 0) {
+    return map;
+  }
+
+  const hexes = [...(map.landHexes ?? [])];
+  let start = 0;
+  for (const area of map.landAreas) {
+    const count = Number.isFinite(area.count) ? Math.max(0, Math.floor(area.count)) : 0;
+    for (let i = start; i < Math.min(hexes.length, start + count); ++i) {
+      hexes[i] = { ...hexes[i], landArea: area.area };
+    }
+    start += count;
+  }
+  return { ...map, landHexes: hexes };
+}
+
+/**
+ * Canonicalize land-area intent before validation/export:
+ *   - positive integer per-hex `landArea` tags are treated as the user's intent;
+ *   - hexes are grouped by area in ascending order, preserving order within an area;
+ *   - `landAreas` ranges are rebuilt from those groups.
+ *
+ * If a map has no area tags and no `landAreas`, it is left as a single implicit
+ * area 1. This keeps tiny one-island maps concise while making multi-island maps
+ * server-authoritative instead of merely decorative.
+ *
+ * @param map  editor model
+ * @returns canonical map ready for validation or serialization
+ */
+export function mapWithCanonicalLandAreas(map: CustomMap): CustomMap {
+  const hexes = map.landHexes ?? [];
+  if (hexes.length === 0) {
+    const next: CustomMap = { ...map, landHexes: [] };
+    delete next.landAreas;
+    return next;
+  }
+
+  const areaByIndex = inferAreaByHexIndex(map);
+  const hasExplicitArea =
+    areaByIndex.some((area) => area !== 1) ||
+    hexes.some((hex) => isPositiveInteger(hex.landArea)) ||
+    (map.landAreas !== undefined && map.landAreas.length > 0);
+
+  if (!hasExplicitArea) {
+    const next: CustomMap = { ...map, landHexes: [...hexes] };
+    delete next.landAreas;
+    return next;
+  }
+
+  const entries = hexes.map((hex, index) => ({ hex, index, area: areaByIndex[index] }));
+  entries.sort((a, b) => (a.area === b.area ? a.index - b.index : a.area - b.area));
+
+  const nextHexes = entries.map(({ hex, area }) => ({ ...hex, landArea: area }));
+  const nextAreas: MapLandArea[] = [];
+  for (const entry of entries) {
+    const last = nextAreas[nextAreas.length - 1];
+    if (last && last.area === entry.area) {
+      last.count += 1;
+    } else {
+      nextAreas.push({ area: entry.area, count: 1 });
+    }
+  }
+
+  const next: CustomMap = { ...map, landHexes: nextHexes };
+  if (nextAreas.length > 1 || nextAreas[0]?.area !== 1) {
+    next.landAreas = nextAreas;
+  } else {
+    delete next.landAreas;
+  }
+  return next;
+}
+
+/**
  * Decode a `"0xRRCC"` coordinate string into its integer `(row << 8) | col` form,
  * mirroring the Java {@code CustomMapValidator.parseCoord}: an optional `0x`/`0X`
  * prefix is stripped and the rest is read as hexadecimal. Returns null when the
@@ -286,38 +367,39 @@ export function fromRaw(raw: Record<string, unknown>): CustomMap {
  * @returns pretty JSON text (2-space indent, trailing newline)
  */
 export function serializeMapJson(map: CustomMap): string {
+  const canonical = mapWithCanonicalLandAreas(map);
   const out: Record<string, unknown> = {
-    name: map.name,
+    name: canonical.name,
   };
-  if (map.description !== undefined && map.description !== '') {
-    out.description = map.description;
+  if (canonical.description !== undefined && canonical.description !== '') {
+    out.description = canonical.description;
   }
-  out.playerCounts = [...map.playerCounts];
-  out.shuffle = map.shuffle;
-  if (map.boardHeight !== undefined) {
-    out.boardHeight = map.boardHeight;
+  out.playerCounts = [...canonical.playerCounts];
+  out.shuffle = canonical.shuffle;
+  if (canonical.boardHeight !== undefined) {
+    out.boardHeight = canonical.boardHeight;
   }
-  if (map.boardWidth !== undefined) {
-    out.boardWidth = map.boardWidth;
+  if (canonical.boardWidth !== undefined) {
+    out.boardWidth = canonical.boardWidth;
   }
-  out.landHexes = map.landHexes.map((h) => {
+  out.landHexes = canonical.landHexes.map((h) => {
     const o: Record<string, unknown> = { type: h.type, coord: h.coord, diceNum: h.diceNum };
     if (h.landArea !== undefined) {
       o.landArea = h.landArea;
     }
     return o;
   });
-  if (map.landAreas !== undefined && map.landAreas.length > 0) {
-    out.landAreas = map.landAreas.map((a) => ({ area: a.area, count: a.count }));
+  if (canonical.landAreas !== undefined && canonical.landAreas.length > 0) {
+    out.landAreas = canonical.landAreas.map((a) => ({ area: a.area, count: a.count }));
   }
-  if (map.ports !== undefined && map.ports.length > 0) {
-    out.ports = map.ports.map((p) => ({ type: p.type, edge: p.edge, facing: p.facing }));
+  if (canonical.ports !== undefined && canonical.ports.length > 0) {
+    out.ports = canonical.ports.map((p) => ({ type: p.type, edge: p.edge, facing: p.facing }));
   }
-  if (map.robberHex !== undefined && map.robberHex !== '') {
-    out.robberHex = map.robberHex;
+  if (canonical.robberHex !== undefined && canonical.robberHex !== '') {
+    out.robberHex = canonical.robberHex;
   }
-  if (map.pirateHex !== undefined && map.pirateHex !== '') {
-    out.pirateHex = map.pirateHex;
+  if (canonical.pirateHex !== undefined && canonical.pirateHex !== '') {
+    out.pirateHex = canonical.pirateHex;
   }
   return `${JSON.stringify(out, null, 2)}\n`;
 }
@@ -388,4 +470,30 @@ function toLandAreaArray(v: unknown): MapLandArea[] {
       count: typeof o.count === 'number' ? o.count : Number(o.count),
     };
   });
+}
+
+function inferAreaByHexIndex(map: CustomMap): number[] {
+  const hexes = map.landHexes ?? [];
+  const out = hexes.map((hex) =>
+    isPositiveInteger(hex.landArea) ? Math.floor(hex.landArea as number) : 1,
+  );
+
+  if (map.landAreas && map.landAreas.length > 0) {
+    let start = 0;
+    for (const area of map.landAreas) {
+      const count = Number.isFinite(area.count) ? Math.max(0, Math.floor(area.count)) : 0;
+      for (let i = start; i < Math.min(hexes.length, start + count); ++i) {
+        if (!isPositiveInteger(hexes[i].landArea)) {
+          out[i] = area.area;
+        }
+      }
+      start += count;
+    }
+  }
+
+  return out;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && Math.floor(value) === value && value >= 1;
 }

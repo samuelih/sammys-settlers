@@ -10,6 +10,8 @@ import {
   coordOf,
   parseMapJson,
   serializeMapJson,
+  mapWithInferredLandAreas,
+  mapWithCanonicalLandAreas,
   fromRaw,
   emptyMap,
   type CustomMap,
@@ -177,6 +179,53 @@ describe('serializeMapJson', () => {
     const out = JSON.parse(serializeMapJson(map));
     expect(out.boardHeight).toBe(18);
     expect(out.boardWidth).toBe(19);
+  });
+
+  it('generates authoritative landAreas from per-hex editor tags', () => {
+    const map: CustomMap = {
+      name: 'Areas',
+      playerCounts: [4],
+      shuffle: false,
+      landHexes: [
+        { type: 'clay', coord: '0x0309', diceNum: 5, landArea: 2 },
+        { type: 'ore', coord: '0x030B', diceNum: 6, landArea: 1 },
+        { type: 'wood', coord: '0x0508', diceNum: 8, landArea: 2 },
+      ],
+    };
+
+    const out = JSON.parse(serializeMapJson(map));
+    expect(out.landHexes.map((h: { coord: string }) => h.coord)).toEqual([
+      '0x030B',
+      '0x0309',
+      '0x0508',
+    ]);
+    expect(out.landAreas).toEqual([
+      { area: 1, count: 1 },
+      { area: 2, count: 2 },
+    ]);
+  });
+
+  it('infers editable hex landArea tags from imported landAreas ranges', () => {
+    const map: CustomMap = {
+      name: 'Imported',
+      playerCounts: [4],
+      shuffle: false,
+      landHexes: [
+        { type: 'clay', coord: '0x0309', diceNum: 5 },
+        { type: 'ore', coord: '0x030B', diceNum: 6 },
+        { type: 'wood', coord: '0x0508', diceNum: 8 },
+      ],
+      landAreas: [
+        { area: 1, count: 2 },
+        { area: 2, count: 1 },
+      ],
+    };
+
+    expect(mapWithInferredLandAreas(map).landHexes.map((h) => h.landArea)).toEqual([1, 1, 2]);
+    expect(mapWithCanonicalLandAreas(mapWithInferredLandAreas(map)).landAreas).toEqual([
+      { area: 1, count: 2 },
+      { area: 2, count: 1 },
+    ]);
   });
 
   it('writes a trailing newline', () => {
