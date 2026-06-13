@@ -36,10 +36,37 @@ export function BoardDefs(): JSX.Element {
     <defs>
       {GRADIENT_KINDS.map((kind) => (
         <linearGradient key={kind} id={`hexgrad-${kind}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
-          <stop offset="42%" stopColor="#ffffff" stopOpacity="0.04" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0.18" />
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.3" />
+          <stop offset="38%" stopColor="#ffffff" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.22" />
         </linearGradient>
+      ))}
+
+      {GRADIENT_KINDS.map((kind) => (
+        <pattern
+          key={kind}
+          id={`hexgrain-${kind}`}
+          patternUnits="userSpaceOnUse"
+          width="18"
+          height="18"
+        >
+          <path
+            d={grainPath(kind)}
+            fill="none"
+            stroke="#ffffff"
+            strokeOpacity={kind === 'water' ? 0.2 : 0.12}
+            strokeWidth={kind === 'water' ? 1.2 : 0.8}
+            strokeLinecap="round"
+          />
+          <path
+            d="M 3 15 l 1.5 -1.1 M 11 4 l 1.8 -1"
+            fill="none"
+            stroke="#000000"
+            strokeOpacity="0.08"
+            strokeWidth="0.7"
+            strokeLinecap="round"
+          />
+        </pattern>
       ))}
 
       {/* Glossy radial highlight for the dice-number token. */}
@@ -62,4 +89,28 @@ export function BoardDefs(): JSX.Element {
       <metadata data-halfdelta-x={HALFDELTA_X} data-halfdelta-y={HALFDELTA_Y} />
     </defs>
   );
+}
+
+/** Small low-contrast grain paths per tile kind; repeated and clipped by tiles. */
+function grainPath(kind: HexKind): string {
+  switch (kind) {
+    case 'water':
+      return 'M 0 5 q 4 -3 8 0 t 8 0 M 2 13 q 4 -2.5 8 0 t 8 0';
+    case 'wheat':
+      return 'M 4 17 C 6 10 7 6 10 1 M 11 17 C 10 11 13 6 16 2';
+    case 'wood':
+      return 'M 4 16 l 4 -12 l 4 12 M 10 17 l 3 -9 l 3 9';
+    case 'ore':
+      return 'M 1 14 l 5 -10 l 4 8 l 3 -6 l 4 10';
+    case 'clay':
+      return 'M 1 6 h 16 M 4 11 h 13 M 2 15 h 8';
+    case 'sheep':
+      return 'M 1 14 C 5 10 11 12 17 8 M 3 6 C 7 3 12 4 16 2';
+    case 'desert':
+      return 'M 0 11 q 5 -5 10 0 t 10 0 M 2 16 q 4 -3 8 0 t 8 0';
+    case 'gold':
+      return 'M 2 14 l 5 -7 l 3 4 l 4 -8 l 3 10 M 6 16 h 8';
+    default:
+      return 'M 2 8 h 14 M 4 14 h 10';
+  }
 }

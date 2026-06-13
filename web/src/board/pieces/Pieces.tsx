@@ -50,10 +50,32 @@ function RoadOrShip({
   ship,
 }: PieceProps & { ship: boolean }): JSX.Element {
   const e = edgeToPixel(piece.coord);
-  const w = HALFDELTA_X * 0.32;
+  const w = HALFDELTA_X * 0.2;
   const testid = ship ? `ship-${piece.coord}` : `road-${piece.coord}`;
   const mx = (e.x1 + e.x2) / 2;
   const my = (e.y1 + e.y2) / 2;
+  if (ship) {
+    const hullW = HALFDELTA_X * 0.72;
+    const hullH = HALFDELTA_X * 0.22;
+    return (
+      <g data-testid={testid} data-player={piece.playerNumber} className={styles.piecePop} pointerEvents="none">
+        <g transform={`translate(${mx} ${my}) rotate(${e.angle})`}>
+          <ellipse className={styles.shipShadow} cx={0} cy={hullH * 0.55} rx={hullW * 0.55} ry={hullH * 0.55} />
+          <path
+            className={styles.shipHull}
+            d={`M ${-hullW} ${-hullH * 0.05} q ${hullW} ${hullH * 1.4} ${hullW * 2} 0
+                q ${-hullW * 0.22} ${hullH * 0.85} ${-hullW * 1.78} ${hullH * 0.85} Z`}
+            fill={color}
+          />
+          <line className={styles.shipMast} x1={0} y1={hullH * 0.1} x2={0} y2={-hullH * 2.4} />
+          <path
+            className={styles.shipSail}
+            d={`M ${hullW * 0.08} ${-hullH * 2.25} L ${hullW * 0.82} ${-hullH * 0.55} L ${hullW * 0.08} ${-hullH * 0.55} Z`}
+          />
+        </g>
+      </g>
+    );
+  }
   return (
     <g data-testid={testid} data-player={piece.playerNumber} className={styles.piecePop} pointerEvents="none">
       {/* dark keyline for contrast */}
@@ -63,7 +85,7 @@ function RoadOrShip({
         y1={e.y1}
         x2={e.x2}
         y2={e.y2}
-        strokeWidth={w + 3}
+        strokeWidth={w + 2.5}
       />
       {/* player-colored bar */}
       <line
@@ -75,18 +97,7 @@ function RoadOrShip({
         stroke={color}
         strokeWidth={w}
       />
-      {ship && (
-        // A small boat hull centered on the edge to distinguish ships clearly.
-        <g transform={`translate(${mx} ${my}) rotate(${e.angle})`}>
-          <path
-            className={styles.shipHull}
-            d={`M ${-w * 1.2} 0 q ${w * 1.2} ${w * 1.5} ${w * 2.4} 0 Z`}
-            fill={color}
-          />
-          <line className={styles.shipMast} x1={0} y1={0} x2={0} y2={-w * 1.3} />
-          <path className={styles.shipSail} d={`M 0 ${-w * 1.25} L ${w * 1.1} ${-w * 0.35} L 0 ${-w * 0.35} Z`} fill={color} />
-        </g>
-      )}
+      <line className={styles.roadHighlight} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} strokeWidth={w * 0.35} />
     </g>
   );
 }
@@ -94,7 +105,7 @@ function RoadOrShip({
 /** A settlement: a small house glyph (square base + roof) at its node. */
 function Settlement({ piece, color }: PieceProps): JSX.Element {
   const { x, y } = nodeToPixel(piece.coord);
-  const s = HALFDELTA_X * 0.34;
+  const s = HALFDELTA_X * 0.3;
   return (
     <g
       data-testid={`settlement-${piece.coord}`}
@@ -103,8 +114,8 @@ function Settlement({ piece, color }: PieceProps): JSX.Element {
       pointerEvents="none"
     >
       <path className={styles.settlement} d={housePath(x, y, s)} fill={color} stroke={darken(color)} />
-      {/* door for a touch of detail */}
-      <rect className={styles.pieceDetail} x={x - s * 0.22} y={y + s * 0.1} width={s * 0.44} height={s * 0.9} rx={1} />
+      <path className={styles.pieceRoof} d={`M ${x - s * 1.02} ${y - s * 0.28} L ${x} ${y - s * 1.08} L ${x + s * 1.02} ${y - s * 0.28}`} />
+      <rect className={styles.pieceDetail} x={x - s * 0.18} y={y + s * 0.08} width={s * 0.36} height={s * 0.62} rx={0.8} />
     </g>
   );
 }
@@ -112,7 +123,7 @@ function Settlement({ piece, color }: PieceProps): JSX.Element {
 /** A city: a larger house glyph with a second block, at its node. */
 function City({ piece, color }: PieceProps): JSX.Element {
   const { x, y } = nodeToPixel(piece.coord);
-  const s = HALFDELTA_X * 0.46;
+  const s = HALFDELTA_X * 0.38;
   return (
     <g
       data-testid={`city-${piece.coord}`}
@@ -121,25 +132,25 @@ function City({ piece, color }: PieceProps): JSX.Element {
       pointerEvents="none"
     >
       <path className={styles.city} d={cityPath(x, y, s)} fill={color} stroke={darken(color)} />
-      {/* windows on the tower */}
-      <rect className={styles.pieceDetail} x={x + s * 0.06} y={y - s * 0.55} width={s * 0.3} height={s * 0.34} rx={0.8} />
-      <rect className={styles.pieceDetail} x={x + s * 0.06} y={y - s * 0.02} width={s * 0.3} height={s * 0.34} rx={0.8} />
+      <path className={styles.pieceRoof} d={`M ${x - s * 1.18} ${y - s * 0.12} L ${x - s * 0.45} ${y - s * 0.82} L ${x + s * 0.05} ${y - s * 0.16}`} />
+      <rect className={styles.pieceDetail} x={x + s * 0.16} y={y - s * 0.48} width={s * 0.22} height={s * 0.24} rx={0.7} />
+      <rect className={styles.pieceDetail} x={x + s * 0.16} y={y + s * 0.04} width={s * 0.22} height={s * 0.24} rx={0.7} />
     </g>
   );
 }
 
 /** House silhouette (square body + triangular roof) centered at (x, y). */
 function housePath(x: number, y: number, s: number): string {
-  const left = x - s;
-  const right = x + s;
-  const top = y - s;
-  const bottom = y + s;
-  const roof = y - s * 1.9;
+  const left = x - s * 0.92;
+  const right = x + s * 0.92;
+  const shoulder = y - s * 0.34;
+  const bottom = y + s * 0.78;
+  const roof = y - s * 1.14;
   return [
     `M ${left} ${bottom}`,
-    `L ${left} ${top}`,
+    `L ${left} ${shoulder}`,
     `L ${x} ${roof}`,
-    `L ${right} ${top}`,
+    `L ${right} ${shoulder}`,
     `L ${right} ${bottom}`,
     'Z',
   ].join(' ');
@@ -147,13 +158,13 @@ function housePath(x: number, y: number, s: number): string {
 
 /** City silhouette: a tall tower joined to a lower house wing. */
 function cityPath(x: number, y: number, s: number): string {
-  const left = x - s * 1.3;
-  const right = x + s * 1.1;
-  const bottom = y + s;
-  const wingTop = y - s * 0.2;
-  const towerTop = y - s * 1.1;
-  const roof = y - s * 1.9;
-  const mid = x - s * 0.1;
+  const left = x - s * 1.18;
+  const right = x + s * 1.05;
+  const bottom = y + s * 0.82;
+  const wingTop = y - s * 0.12;
+  const towerTop = y - s * 0.9;
+  const roof = y - s * 1.28;
+  const mid = x - s * 0.28;
   return [
     `M ${left} ${bottom}`,
     `L ${left} ${wingTop}`,

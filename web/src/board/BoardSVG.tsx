@@ -1,10 +1,12 @@
 import type { JSX } from 'react';
-import type { BoardModel, BoardPiece } from './types';
+import type { BoardHex, BoardModel, BoardPiece } from './types';
+import { HEX_WATER } from './types';
 import {
   HALFDELTA_X,
   HALFDELTA_Y,
   HEXY_OFF_SLOPE,
   TOP_MARGIN,
+  coordOf,
   nodeToPixel,
   edgeToPixel,
 } from './coords';
@@ -34,6 +36,26 @@ export interface BoardSVGProps {
 /** A robber/pirate sentinel meaning "not placed". */
 function isPlacedHex(coord: number): boolean {
   return coord > 0;
+}
+
+/** Fill the sea board frame with explicit water hexes behind server-sent hexes. */
+function waterUnderlayHexes(board: BoardModel): BoardHex[] {
+  const occupied = new Set<number>(board.hexes.map((hex) => hex.coord));
+  const hexes: BoardHex[] = [];
+  for (let row = 1; row < board.height; row += 2) {
+    const colParity = Math.floor(row / 2) % 2;
+    for (let col = 1; col < board.width; col += 1) {
+      if (col % 2 !== colParity) {
+        continue;
+      }
+      const coord = coordOf(row, col);
+      if (occupied.has(coord)) {
+        continue;
+      }
+      hexes.push({ coord, row, col, hexType: HEX_WATER, diceNum: 0 });
+    }
+  }
+  return hexes;
 }
 
 /**
@@ -69,6 +91,7 @@ export function BoardSVG({
   const viewBox = `${-padX} ${-padY} ${viewW} ${viewH}`;
 
   const colorOf = (pn: number): string => playerColors[pn] ?? 'var(--hex-fill-unknown)';
+  const waterUnderlay = waterUnderlayHexes(board);
 
   return (
     <svg
@@ -81,6 +104,16 @@ export function BoardSVG({
     >
       {/* Gradients, clip path & filters shared by all tiles/pieces. */}
       <BoardDefs />
+
+      {/* Explicit ocean tiles behind the authoritative layout, so sea areas read
+          as hexes instead of raw blue canvas. */}
+      {waterUnderlay.length > 0 && (
+        <g data-testid="board-water-hexes" className={styles.waterUnderlay}>
+          {waterUnderlay.map((hex) => (
+            <HexTile key={hex.coord} hex={hex} />
+          ))}
+        </g>
+      )}
 
       {/* Hexes */}
       <g data-testid="board-hexes">

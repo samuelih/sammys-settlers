@@ -15,6 +15,10 @@ import {
   type GridHexCell,
 } from '../editorGrid';
 import { hexPolygonPoints, HALFDELTA_X, HALFDELTA_Y, HEX_CENTER_DY, HEXY_OFF_SLOPE, TOP_MARGIN } from '../../board/coords';
+import { type HexKind } from '../../board/types';
+import { BoardDefs } from '../../board/pieces/BoardDefs';
+import { ResourceMotif } from '../../board/pieces/ResourceMotif';
+import { TerrainTexture, terrainTextureFor } from '../../board/pieces/TerrainTexture';
 import styles from '../../screens/MapEditorScreen.module.css';
 
 /** Which interaction the canvas is in: placing hexes/dice, ports, robber, pirate. */
@@ -35,6 +39,8 @@ const CELL_CLASS: Record<string, string> = {
 export interface EditorCanvasProps {
   map: CustomMap;
   tool: EditorTool;
+  /** Show every 0xRRCC coordinate label on the grid. */
+  showCoordinates?: boolean;
   /**
    * Click on a hex cell (empty or occupied). `coord` is the integer 0xRRCC.
    * `alt` is true for alt-click / right-click (clear / cycle).
@@ -50,22 +56,28 @@ function HexCell({
   type,
   diceNum,
   tool,
+  showCoordinates,
   onHexClick,
 }: {
   cell: GridHexCell;
   type: string | null;
   diceNum: number;
   tool: EditorTool;
+  showCoordinates: boolean;
   onHexClick: EditorCanvasProps['onHexClick'];
 }): JSX.Element {
   const { x: cx, y: cy } = cell.center;
   const points = hexPolygonPoints(cx, cy);
   const placed = type !== null;
-  const cellClass = placed ? `${styles.cell} ${CELL_CLASS[type] ?? ''}` : styles.cellEmpty;
+  const kind = placed ? kindForType(type) : 'water';
+  const cellClass = placed
+    ? `${styles.cell} ${CELL_CLASS[type] ?? ''}`
+    : `${styles.cell} ${styles.cellWater} ${styles.cellEmpty}`;
   const showDice = diceNum >= 2 && diceNum <= 12 && diceNum !== 7;
   const hot = diceNum === 6 || diceNum === 8;
   const tokenR = HALFDELTA_X * 0.42;
   const coordStr = encodeCoord(cell.coord);
+  const hasTexture = terrainTextureFor(kind) !== null;
 
   const handle = (ev: React.MouseEvent): void => {
     ev.preventDefault();
@@ -86,10 +98,21 @@ function HexCell({
         onContextMenu={handle}
         aria-label={`Hex ${coordStr}${placed ? ` (${type})` : ' (empty)'}`}
       />
-      {/* Coordinate label, always visible (faint on empty cells). */}
-      <text className={styles.coordLabel} x={cx} y={cy - HALFDELTA_Y * 0.55}>
-        {coordStr.replace('0x', '')}
-      </text>
+      {hasTexture ? (
+        <g className={styles.cellTextureClip} clipPath="url(#hex-clip)" transform={`translate(${cx} ${cy})`} pointerEvents="none">
+          <TerrainTexture kind={kind} className={styles.cellTexture} />
+        </g>
+      ) : (
+        <polygon className={styles.cellGrain} points={points} fill={`url(#hexgrain-${kind})`} pointerEvents="none" />
+      )}
+      <polygon className={styles.cellSheen} points={points} fill={`url(#hexgrad-${kind})`} pointerEvents="none" />
+      <polygon className={styles.cellRim} points={hexPolygonPoints(cx, cy, 0.96)} pointerEvents="none" />
+      {!hasTexture && <ResourceMotif kind={kind} cx={cx} cy={cy} hx={HALFDELTA_X} hy={HALFDELTA_Y} />}
+      {showCoordinates && (
+        <text className={`${styles.coordLabel}${placed ? ` ${styles.coordLabelPlaced}` : ''}`} x={cx} y={cy - HALFDELTA_Y * 0.62}>
+          {coordStr.replace('0x', '')}
+        </text>
+      )}
       {showDice && (
         <g
           data-testid={`editor-dice-${coordStr}`}
@@ -124,6 +147,7 @@ function HexCell({
 export function EditorCanvas({
   map,
   tool,
+  showCoordinates = true,
   onHexClick,
   onPortClick,
 }: EditorCanvasProps): JSX.Element {
@@ -173,6 +197,8 @@ export function EditorCanvas({
       aria-label="Map editor canvas"
       preserveAspectRatio="xMidYMid meet"
     >
+      <BoardDefs />
+
       {/* Hex cells (empty + placed). */}
       <g data-testid="editor-hex-cells">
         {cells.map((cell) => {
@@ -184,6 +210,7 @@ export function EditorCanvas({
               type={placed ? placed.type : null}
               diceNum={placed ? placed.diceNum : 0}
               tool={tool}
+              showCoordinates={showCoordinates}
               onHexClick={onHexClick}
             />
           );
@@ -305,6 +332,24 @@ function computeViewBox(cells: GridHexCell[]): { viewBox: string } {
   const w = maxX - minX + pad * 2;
   const h = maxY - minY + pad * 2;
   return { viewBox: `${x} ${y} ${w} ${h}` };
+}
+
+/** Convert loose map type strings into known board-art motif keys. */
+function kindForType(type: string | null): HexKind {
+  const normalized = (type ?? '').toLowerCase();
+  switch (normalized) {
+    case 'clay':
+    case 'ore':
+    case 'sheep':
+    case 'wheat':
+    case 'wood':
+    case 'desert':
+    case 'gold':
+    case 'water':
+      return normalized as HexKind;
+    default:
+      return 'unknown';
+  }
 }
 
 export default EditorCanvas;

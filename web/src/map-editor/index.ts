@@ -43,6 +43,7 @@ export {
   setName,
   setDescription,
   togglePlayerCount,
+  setPlayerCounts,
   setShuffle,
   indexOfHexAt,
   indexOfPortAt,

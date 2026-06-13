@@ -112,6 +112,47 @@
   margin: 0;
 }
 
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-height: 3.75rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile:hover {
+  border-color: var(--color-border-strong);
+}
+
+.profileActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.profileLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profileCounts {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -217,6 +258,9 @@
   height: 2rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--hex-stroke);
+  background-position: center;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .swatchName {
@@ -251,33 +295,84 @@
   overflow: auto;
 }
 
+.boardActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.viewToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.viewToggle input {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
 .canvas {
   display: block;
   width: 100%;
   height: auto;
-  background: var(--color-sea-blue-dark, #1f5d88);
+  background:
+    radial-gradient(circle at 45% 38%, rgba(255, 255, 255, 0.16), transparent 36%),
+    linear-gradient(135deg, var(--color-sea-blue-light, #69abd6), var(--color-sea-blue-dark, #1f5d88));
   border-radius: var(--radius-md);
   user-select: none;
   touch-action: none;
 }
 
 .cellEmpty {
-  fill: var(--color-sea-blue, #2f7fb5);
-  stroke: var(--hex-stroke);
-  stroke-width: 1;
-  cursor: pointer;
-  opacity: 0.55;
+  opacity: 0.78;
 }
 
 .cellEmpty:hover {
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .cell {
   stroke: var(--hex-stroke);
-  stroke-width: 1.25;
+  stroke-width: 1.35;
   stroke-linejoin: round;
   cursor: pointer;
+}
+
+.cellGrain {
+  opacity: 0.7;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.cellTextureClip {
+  opacity: 0.98;
+  pointer-events: none;
+}
+
+.cellTexture {
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.cellSheen {
+  stroke: none;
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+.cellRim {
+  fill: none;
+  stroke: var(--hex-rim, #d4bb7d);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  opacity: 0.82;
 }
 
 .cellClay {
@@ -311,7 +406,14 @@
   fill: var(--color-text-inverse, #fff);
   text-anchor: middle;
   pointer-events: none;
-  opacity: 0.85;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.42);
+  stroke-width: 1.2;
+  opacity: 0.58;
+}
+
+.coordLabelPlaced {
+  opacity: 0.82;
 }
 
 .diceToken {
@@ -455,4 +557,52 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.exportMeta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.exportMeta > div {
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.exportMeta code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.metaLabel {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ioStatus {
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .profileGrid,
+  .exportMeta {
+    grid-template-columns: 1fr;
+  }
 }

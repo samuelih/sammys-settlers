@@ -12,6 +12,8 @@ import {
   SUPPORTED_PLAYER_COUNTS,
 } from '../mapSchema';
 import type { EditorTool } from './EditorCanvas';
+import type { HexKind } from '../../board/types';
+import { terrainTextureFor } from '../../board/pieces/TerrainTexture';
 import styles from '../../screens/MapEditorScreen.module.css';
 
 /** Hex-type -> swatch fill CSS variable, matching the canvas/board theme tokens. */
@@ -57,6 +59,7 @@ export interface EditorPaletteProps {
   onNameChange: (name: string) => void;
   onDescriptionChange: (d: string) => void;
   onTogglePlayerCount: (c: number) => void;
+  onPlayerCountsChange: (counts: readonly number[]) => void;
   onShuffleChange: (b: boolean) => void;
 }
 
@@ -67,6 +70,14 @@ const TOOLS: ReadonlyArray<{ id: EditorTool; label: string }> = [
   { id: 'port', label: 'Port' },
   { id: 'robber', label: 'Robber' },
   { id: 'pirate', label: 'Pirate' },
+];
+
+/** Authoring presets: custom maps stay standard-rules but advertise player support. */
+const PROFILES: ReadonlyArray<{ id: string; label: string; counts: readonly number[] }> = [
+  { id: 'duel', label: '2P Duel', counts: [2] },
+  { id: 'classic', label: '3-4P Classic', counts: [3, 4] },
+  { id: 'six', label: '6P Expansion', counts: [4, 6] },
+  { id: 'all', label: 'All Counts', counts: [2, 3, 4, 6] },
 ];
 
 /**
@@ -93,8 +104,10 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
     onNameChange,
     onDescriptionChange,
     onTogglePlayerCount,
+    onPlayerCountsChange,
     onShuffleChange,
   } = props;
+  const activeProfile = PROFILES.find((profile) => sameCounts(profile.counts, map.playerCounts));
 
   return (
     <Panel title="Tools & Palette" data-testid="editor-palette" className={styles.palette}>
@@ -121,28 +134,54 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
         </p>
       </div>
 
+      <div className={styles.group}>
+        <span className={styles.groupLabel}>Expansion</span>
+        <div className={styles.profileGrid} role="radiogroup" aria-label="Expansion profile">
+          {PROFILES.map((profile) => (
+            <button
+              key={profile.id}
+              type="button"
+              role="radio"
+              aria-checked={activeProfile?.id === profile.id}
+              data-testid={`editor-profile-${profile.id}`}
+              className={`${styles.profile}${activeProfile?.id === profile.id ? ` ${styles.profileActive}` : ''}`}
+              onClick={() => onPlayerCountsChange(profile.counts)}
+            >
+              <span className={styles.profileLabel}>{profile.label}</span>
+              <span className={styles.profileCounts}>{profile.counts.join(', ')} players</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Hex-type palette */}
       <div className={styles.group}>
         <span className={styles.groupLabel}>Hex type</span>
         <div className={styles.swatchRow} role="radiogroup" aria-label="Hex type">
-          {HEX_TYPE_NAMES.map((name) => (
-            <button
-              key={name}
-              type="button"
-              role="radio"
-              aria-checked={hexType === name}
-              data-testid={`editor-hextype-${name}`}
-              className={`${styles.swatch}${hexType === name ? ` ${styles.swatchActive}` : ''}`}
-              onClick={() => onHexTypeChange(name)}
-            >
-              <span
-                className={styles.swatchChip}
-                style={{ background: HEX_SWATCH_VAR[name] }}
-                aria-hidden="true"
-              />
-              <span className={styles.swatchName}>{name}</span>
-            </button>
-          ))}
+          {HEX_TYPE_NAMES.map((name) => {
+            const textureHref = terrainTextureFor(name as HexKind);
+            return (
+              <button
+                key={name}
+                type="button"
+                role="radio"
+                aria-checked={hexType === name}
+                data-testid={`editor-hextype-${name}`}
+                className={`${styles.swatch}${hexType === name ? ` ${styles.swatchActive}` : ''}`}
+                onClick={() => onHexTypeChange(name)}
+              >
+                <span
+                  className={styles.swatchChip}
+                  style={{
+                    backgroundColor: HEX_SWATCH_VAR[name],
+                    backgroundImage: textureHref ? `url(${textureHref})` : undefined,
+                  }}
+                  aria-hidden="true"
+                />
+                <span className={styles.swatchName}>{name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -297,6 +336,14 @@ function toolHint(tool: EditorTool): string {
     default:
       return '';
   }
+}
+
+/** True when both player-count lists contain the same values in order. */
+function sameCounts(a: readonly number[], b: readonly number[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  return a.every((value, i) => value === b[i]);
 }
 
 export default EditorPalette;

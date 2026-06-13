@@ -159,7 +159,7 @@ export function NewGameDialog({
             >
               {scenarios.map((sc) => (
                 <option key={sc.key} value={sc.key}>
-                  {sc.desc}
+                  {sc.key === '' ? sc.desc : `${sc.desc} (${sc.key})`}
                 </option>
               ))}
             </select>

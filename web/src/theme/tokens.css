@@ -44,6 +44,7 @@
   --hex-fill-fog: #b9c2c8;          /* fog hex — neutral grey-blue */
   --hex-fill-unknown: #c9c2b4;
   --hex-stroke: rgba(20, 18, 14, 0.35);     /* hex outline */
+  --hex-rim: #d7bd7f;               /* raised board-game tile edge */
   --hex-coast-stroke: var(--color-coast);   /* land/water boundary tint */
 
   /* Dice-number token (the circle on a resource hex) */

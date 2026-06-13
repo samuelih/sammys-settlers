@@ -22,6 +22,7 @@ import {
   setName,
   setDescription,
   togglePlayerCount,
+  setPlayerCounts,
   setShuffle,
   indexOfHexAt,
 } from '../map-editor/editorActions';
@@ -55,9 +56,12 @@ export function MapEditorScreen(): JSX.Element {
   const [landArea, setLandArea] = useState<number>(1);
   const [portType, setPortType] = useState<PortTypeName>('misc');
   const [portFacing, setPortFacing] = useState<FacingName>('SE');
+  const [showCoordinates, setShowCoordinates] = useState<boolean>(false);
 
   // Live validation, recomputed whenever the map changes.
   const issues = useMemo(() => validate(map), [map]);
+  const errorCount = issues.filter((issue) => issue.severity === 'error').length;
+  const warningCount = issues.filter((issue) => issue.severity === 'warning').length;
 
   // --- Canvas interaction handlers ---------------------------------------
   const handleHexClick = (coord: number, alt: boolean): void => {
@@ -146,14 +150,37 @@ export function MapEditorScreen(): JSX.Element {
           onNameChange={(name) => setMap((m) => setName(m, name))}
           onDescriptionChange={(d) => setMap((m) => setDescription(m, d))}
           onTogglePlayerCount={(c) => setMap((m) => togglePlayerCount(m, c))}
+          onPlayerCountsChange={(counts) => setMap((m) => setPlayerCounts(m, counts))}
           onShuffleChange={(b) => setMap((m) => setShuffle(m, b))}
         />
 
         <div className={styles.rightColumn}>
-          <Panel title="Board" flushBody className={styles.canvasPanel} data-testid="editor-board">
+          <Panel
+            title="Board"
+            flushBody
+            className={styles.canvasPanel}
+            data-testid="editor-board"
+            headerActions={
+              <div className={styles.boardActions}>
+                <span className={styles.statusReadout} data-testid="editor-map-stats">
+                  {map.landHexes.length} hexes · {(map.ports ?? []).length} ports · {errorCount} errors
+                  {warningCount > 0 ? ` · ${warningCount} warnings` : ''}
+                </span>
+                <label className={styles.viewToggle}>
+                  <input
+                    type="checkbox"
+                    checked={showCoordinates}
+                    onChange={(e) => setShowCoordinates(e.target.checked)}
+                  />
+                  Coords
+                </label>
+              </div>
+            }
+          >
             <EditorCanvas
               map={map}
               tool={tool}
+              showCoordinates={showCoordinates}
               onHexClick={handleHexClick}
               onPortClick={handlePortClick}
             />
@@ -161,7 +188,7 @@ export function MapEditorScreen(): JSX.Element {
 
           <ValidationPanel issues={issues} />
 
-          <ImportExportPanel map={map} onLoad={loadMap} sampleJson={SAMPLE_MAP_JSON} />
+          <ImportExportPanel map={map} issues={issues} onLoad={loadMap} sampleJson={SAMPLE_MAP_JSON} />
         </div>
       </div>
     </div>

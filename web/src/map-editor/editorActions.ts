@@ -183,6 +183,12 @@ export function togglePlayerCount(map: CustomMap, count: number): CustomMap {
   return { ...map, playerCounts: next };
 }
 
+/** Replace the supported player-count list, deduped and sorted ascending. */
+export function setPlayerCounts(map: CustomMap, counts: readonly number[]): CustomMap {
+  const next = [...new Set(counts)].sort((a, b) => a - b);
+  return { ...map, playerCounts: next };
+}
+
 /** Set the shuffle flag. */
 export function setShuffle(map: CustomMap, shuffle: boolean): CustomMap {
   return { ...map, shuffle };

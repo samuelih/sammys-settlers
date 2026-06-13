@@ -3,6 +3,7 @@ import { hexKind, type BoardHex, type HexKind } from '../types';
 import { hexToPixel, hexPolygonPoints, dicePipCount, HALFDELTA_X, HALFDELTA_Y, HEX_CENTER_DY } from '../coords';
 import styles from '../BoardSVG.module.css';
 import { ResourceMotif } from './ResourceMotif';
+import { TerrainTexture, terrainTextureFor } from './TerrainTexture';
 
 /** Map a HexKind to its CSS-module fill class. */
 const HEX_CLASS: Record<HexKind, string> = {
@@ -90,22 +91,31 @@ export function HexTile({ hex, onClick }: HexTileProps): JSX.Element {
   const pips = dicePipCount(hex.diceNum);
   const hot = hex.diceNum === 6 || hex.diceNum === 8;
   const tokenR = HALFDELTA_X * 0.45;
+  const hasTexture = terrainTextureFor(kind) !== null;
 
   return (
     <g data-testid={`hex-${hex.coord}`} data-hexkind={kind} data-dicenum={hex.diceNum}>
+      <polygon className={styles.hexRim} points={points} pointerEvents="none" />
       {/* Flat themed fill — also the click target. */}
       <polygon
         className={`${styles.hex} ${HEX_CLASS[kind]}${onClick ? ` ${styles.hexClickable}` : ''}`}
         points={points}
         onClick={onClick ? () => onClick(hex.coord) : undefined}
       />
+      {hasTexture ? (
+        <g className={styles.hexTextureClip} clipPath="url(#hex-clip)" transform={`translate(${cx} ${cy})`} pointerEvents="none">
+          <TerrainTexture kind={kind} className={styles.hexTexture} />
+        </g>
+      ) : (
+        <polygon className={styles.hexGrain} points={points} fill={`url(#hexgrain-${kind})`} pointerEvents="none" />
+      )}
       {/* Gradient sheen on top of the flat fill for a raised-terrain feel. */}
       <polygon className={styles.hexSheen} points={points} fill={`url(#${HEX_GRADIENT[kind]})`} pointerEvents="none" />
       {/* Inner bevel: a slightly inset outline for crisp tile edges. */}
       <polygon className={styles.hexBevel} points={hexPolygonPoints(cx, cy, 0.9)} pointerEvents="none" />
 
-      {/* Per-resource decorative motif, clipped to the hex. */}
-      <ResourceMotif kind={kind} cx={cx} cy={cy} hx={HALFDELTA_X} hy={HALFDELTA_Y} />
+      {/* Per-resource decorative motif, clipped to the hex, for vector fallback. */}
+      {!hasTexture && <ResourceMotif kind={kind} cx={cx} cy={cy} hx={HALFDELTA_X} hy={HALFDELTA_Y} />}
 
       {showNumber && (
         <g data-testid={`dice-${hex.coord}`} className={styles.diceTokenGroup} pointerEvents="none">
