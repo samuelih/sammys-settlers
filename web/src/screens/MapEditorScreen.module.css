@@ -6,8 +6,8 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-6) var(--space-5);
+  gap: var(--space-4);
+  padding: var(--space-4);
   min-height: 0;
 }
 
@@ -53,17 +53,23 @@
 /* Two-column working area: palette/tools on the left, canvas + panels right. */
 .layout {
   display: grid;
-  grid-template-columns: minmax(16rem, 21rem) minmax(0, 1fr);
+  grid-template-columns: minmax(14.5rem, 18rem) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
 .workbench {
   display: grid;
-  grid-template-columns: minmax(28rem, 1fr) minmax(18rem, 24rem);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
   min-width: 0;
+}
+
+@media (min-width: 100rem) {
+  .workbench {
+    grid-template-columns: minmax(48rem, 1fr) minmax(18rem, 22rem);
+  }
 }
 
 @media (max-width: 56rem) {
@@ -103,7 +109,15 @@
 }
 
 .sideColumn {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   align-self: start;
+}
+
+@media (min-width: 100rem) {
+  .sideColumn {
+    display: flex;
+  }
 }
 
 /* ---- Palette ---------------------------------------------------------- */
@@ -111,6 +125,18 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  max-height: calc(100vh - var(--space-5));
+  overflow: auto;
+  position: sticky;
+  top: var(--space-4);
+}
+
+@media (max-width: 56rem) {
+  .palette {
+    max-height: none;
+    overflow: visible;
+    position: static;
+  }
 }
 
 .group {
@@ -311,7 +337,7 @@
 
 /* ---- Canvas ----------------------------------------------------------- */
 .canvasPanel {
-  overflow: auto;
+  overflow: hidden;
 }
 
 .boardActions {
@@ -347,6 +373,14 @@
   border-bottom: 1px solid var(--color-border);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface-alt) 72%, transparent), transparent),
+    var(--color-surface);
+}
+
+.canvasViewport {
+  overflow: auto;
+  padding: clamp(0.5rem, 1vw, var(--space-3));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-alt) 56%, transparent), transparent 35%),
     var(--color-surface);
 }
 
@@ -423,7 +457,8 @@
 
 .canvas {
   display: block;
-  width: 100%;
+  width: max(100%, clamp(48rem, 68vw, 76rem));
+  max-width: none;
   height: auto;
   background:
     radial-gradient(circle at 45% 38%, rgba(255, 255, 255, 0.16), transparent 36%),

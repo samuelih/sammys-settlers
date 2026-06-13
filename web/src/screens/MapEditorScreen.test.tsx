@@ -30,6 +30,7 @@ describe('MapEditorScreen', () => {
 
   it('mounts with the core editor regions', () => {
     expect(screen.getByTestId('map-editor-screen')).toBeInTheDocument();
+    expect(screen.getByTestId('editor-canvas-viewport')).toContainElement(screen.getByTestId('editor-canvas'));
     expect(screen.getByTestId('editor-canvas')).toBeInTheDocument();
     expect(screen.getByTestId('editor-palette')).toBeInTheDocument();
     expect(screen.getByTestId('editor-validation')).toBeInTheDocument();

@@ -209,13 +209,15 @@ export function MapEditorScreen(): JSX.Element {
                 minimum={minBoardSize}
                 onSizeChange={(height, width) => setMap((m) => setBoardSize(m, height, width))}
               />
-              <EditorCanvas
-                map={map}
-                tool={tool}
-                showCoordinates={showCoordinates}
-                onHexClick={handleHexClick}
-                onPortClick={handlePortClick}
-              />
+              <div className={styles.canvasViewport} data-testid="editor-canvas-viewport">
+                <EditorCanvas
+                  map={map}
+                  tool={tool}
+                  showCoordinates={showCoordinates}
+                  onHexClick={handleHexClick}
+                  onPortClick={handlePortClick}
+                />
+              </div>
             </Panel>
           </div>
 
