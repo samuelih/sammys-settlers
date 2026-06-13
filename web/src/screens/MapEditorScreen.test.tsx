@@ -152,4 +152,51 @@ describe('MapEditorScreen', () => {
       { area: 2, count: 1 },
     ]);
   });
+
+  it('smart-fills an evenly distributed valid port set', () => {
+    fireEvent.click(screen.getByTestId('editor-load-sample'));
+    fireEvent.click(screen.getByTestId('editor-clear-ports'));
+
+    expect(screen.getByTestId('editor-map-stats')).toHaveTextContent('0 ports');
+    fireEvent.click(screen.getByTestId('editor-smart-ports'));
+
+    expect(screen.getByTestId('editor-map-stats')).toHaveTextContent('6 ports');
+    expect(screen.getByTestId('editor-valid')).toBeInTheDocument();
+    expect(screen.queryByTestId('editor-issue-error')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+    const exported = parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value);
+    expect(exported.ports).toHaveLength(6);
+  });
+
+  it('places a smart port by clicking a land hex in Port mode and removes it when land is cleared', () => {
+    fireEvent.click(screen.getByTestId('editor-load-sample'));
+    fireEvent.click(screen.getByTestId('editor-clear-ports'));
+    fireEvent.click(screen.getByTestId('editor-tool-port'));
+
+    fireEvent.click(screen.getByTestId('editor-dice-0x0309'));
+    expect(screen.getByTestId('editor-map-stats')).toHaveTextContent('1 ports');
+    expect(screen.getByTestId('editor-valid')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+    const placedEdge = parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value).ports?.[0].edge;
+    if (placedEdge === undefined) {
+      throw new Error('Expected smart placement to export a port edge');
+    }
+    expect(placedEdge).toMatch(/^0x/i);
+
+    fireEvent.change(screen.getByTestId('editor-port-type'), { target: { value: 'ore' } });
+    fireEvent.click(screen.getByTestId(`editor-port-${placedEdge}`).querySelector('circle') as SVGCircleElement);
+    expect(screen.getByTestId('editor-map-stats')).toHaveTextContent('1 ports');
+    fireEvent.click(screen.getByTestId('editor-export'));
+    expect(parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value).ports?.[0].type).toBe(
+      'ore',
+    );
+
+    fireEvent.click(screen.getByTestId('editor-tool-hex'));
+    fireEvent.click(screen.getByTestId('editor-hex-0x0309').querySelector('polygon') as SVGPolygonElement, {
+      altKey: true,
+    });
+    expect(screen.getByTestId('editor-map-stats')).toHaveTextContent('0 ports');
+  });
 });

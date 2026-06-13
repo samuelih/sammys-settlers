@@ -25,6 +25,10 @@ import {
   setHexDice,
   setHexLandArea,
   placePortAutoFacing,
+  placePortNearHex,
+  clearNearestPortToHex,
+  smartFillPorts,
+  clearAllPorts,
   clearPort,
   toggleRobber,
   togglePirate,
@@ -98,7 +102,9 @@ export function MapEditorScreen(): JSX.Element {
         setMap((m) => (alt ? clearPirateAt(m, coord) : togglePirate(m, coord)));
         break;
       case 'port':
-        // In port mode a hex click is ignored; ports go on edges.
+        setMap((m) =>
+          alt ? clearNearestPortToHex(m, coord) : placePortNearHex(m, coord, portType, portFacing),
+        );
         break;
       default:
         break;
@@ -165,6 +171,8 @@ export function MapEditorScreen(): JSX.Element {
           onPortTypeChange={setPortType}
           portFacing={portFacing}
           onPortFacingChange={setPortFacing}
+          onSmartPorts={() => setMap((m) => smartFillPorts(m))}
+          onClearPorts={() => setMap((m) => clearAllPorts(m))}
           onNameChange={(name) => setMap((m) => setName(m, name))}
           onDescriptionChange={(d) => setMap((m) => setDescription(m, d))}
           onTogglePlayerCount={(c) => setMap((m) => togglePlayerCount(m, c))}

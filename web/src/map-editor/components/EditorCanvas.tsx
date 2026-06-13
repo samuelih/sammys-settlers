@@ -299,7 +299,7 @@ export function EditorCanvas({
                 r={HALFDELTA_X * 0.4}
                 onClick={(ev) => {
                   ev.preventDefault();
-                  onPortClick(edge, ev.altKey || ev.metaKey || ev.shiftKey || tool === 'port');
+                  onPortClick(edge, ev.altKey || ev.metaKey || ev.shiftKey);
                 }}
                 onContextMenu={(ev) => {
                   ev.preventDefault();

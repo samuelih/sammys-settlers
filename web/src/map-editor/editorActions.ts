@@ -20,8 +20,16 @@ import {
   parseCoord,
   mapWithCanonicalLandAreas,
 } from './mapSchema';
-import { clampBoardSize, minimumBoardSizeForMap } from './editorGrid';
-import { facingForEdge } from './validation';
+import {
+  boardSizeForMap,
+  candidatePortEdgesWithin,
+  clampBoardSize,
+  edgesAroundHex,
+  hexToPixel,
+  legalFacingsForEdge,
+  minimumBoardSizeForMap,
+} from './editorGrid';
+import { adjacentHexToEdge } from './validation';
 
 /** Hex types that carry no dice number (desert/water); placing one clears diceNum. */
 const NO_NUMBER_TYPES: ReadonlySet<string> = new Set(['desert', 'water']);
@@ -73,7 +81,7 @@ export function placeHex(
     }
     hexes.push(next);
   }
-  return mapWithCanonicalLandAreas({ ...map, landHexes: hexes });
+  return pruneInvalidPorts(mapWithCanonicalLandAreas({ ...map, landHexes: hexes }));
 }
 
 /** Remove any land hex at `coord` (no-op if none). Also clears robber/pirate there. */
@@ -90,7 +98,7 @@ export function clearHex(map: CustomMap, coord: number): CustomMap {
   if (parseCoord(next.pirateHex) === coord) {
     delete next.pirateHex;
   }
-  return mapWithCanonicalLandAreas(next);
+  return pruneInvalidPorts(mapWithCanonicalLandAreas(next));
 }
 
 /**
@@ -148,7 +156,66 @@ export function placePortAutoFacing(
   type: PortTypeName,
   preferredFacing: FacingName,
 ): CustomMap {
-  return placePort(map, edge, type, bestPortFacing(map, edge, preferredFacing));
+  if (!coastPortEdgeCoords(map).has(edge)) {
+    return map;
+  }
+  const facing = bestPortFacing(map, edge, preferredFacing);
+  return facing !== null ? placePort(map, edge, type, facing) : map;
+}
+
+/** Place a port on the best open coastline edge around the clicked hex. */
+export function placePortNearHex(
+  map: CustomMap,
+  hexCoord: number,
+  type: PortTypeName,
+  preferredFacing: FacingName,
+): CustomMap {
+  const edge = bestOpenPortEdgeNearHex(map, hexCoord);
+  if (edge === null) {
+    return map;
+  }
+  return placePortAutoFacing(map, edge, type, preferredFacing);
+}
+
+/** Clear the port touching `hexCoord` which is nearest in map order. */
+export function clearNearestPortToHex(map: CustomMap, hexCoord: number): CustomMap {
+  const edges = new Set(edgesAroundHex(hexCoord));
+  for (const port of map.ports ?? []) {
+    const edge = parseCoord(port.edge);
+    if (edge !== null && edges.has(edge)) {
+      return clearPort(map, edge);
+    }
+  }
+  return map;
+}
+
+/** Replace all ports with a balanced, evenly-spaced coastline recommendation. */
+export function smartFillPorts(map: CustomMap): CustomMap {
+  const candidates = smartPortCandidates(map);
+  if (candidates.length === 0) {
+    return clearAllPorts(map);
+  }
+
+  const target = Math.min(candidates.length, recommendedPortCount(map));
+  if (target <= 0) {
+    return clearAllPorts(map);
+  }
+
+  const selected = selectDistributedPorts(candidates, target);
+  const types = recommendedPortTypes(map, target);
+  const ports = selected.map((candidate, i): MapPort => ({
+    type: types[i % types.length],
+    edge: encodeCoord(candidate.edge),
+    facing: candidate.facing,
+  }));
+  return { ...map, ports };
+}
+
+/** Remove every port from the map. */
+export function clearAllPorts(map: CustomMap): CustomMap {
+  const next: CustomMap = { ...map };
+  delete next.ports;
+  return next;
 }
 
 /** Remove any port at `edge` (no-op if none). Drops the `ports` field if it empties. */
@@ -230,7 +297,7 @@ export function setBoardSize(map: CustomMap, height: number, width: number): Cus
   };
 }
 
-function bestPortFacing(map: CustomMap, edge: number, preferredFacing: FacingName): FacingName {
+function bestPortFacing(map: CustomMap, edge: number, preferredFacing: FacingName): FacingName | null {
   const preferredCode = FACING_CODE_BY_NAME[preferredFacing];
   let first: FacingName | null = null;
   for (const hex of map.landHexes ?? []) {
@@ -241,22 +308,28 @@ function bestPortFacing(map: CustomMap, edge: number, preferredFacing: FacingNam
     if (coord === null) {
       continue;
     }
-    const code = facingForEdge(edge, coord);
-    if (code === null) {
+    const name = legalFacingForEdgeToHex(edge, coord);
+    if (name === null) {
       continue;
     }
-    const name = FACING_NAME_BY_CODE[code];
-    if (name === undefined) {
-      continue;
-    }
-    if (code === preferredCode) {
+    if (FACING_CODE_BY_NAME[name] === preferredCode) {
       return preferredFacing;
     }
     if (first === null) {
       first = name;
     }
   }
-  return first ?? preferredFacing;
+  return first;
+}
+
+function legalFacingForEdgeToHex(edge: number, hex: number): FacingName | null {
+  for (const facing of legalFacingsForEdge(edge)) {
+    const name = facing as FacingName;
+    if (adjacentHexToEdge(edge, FACING_CODE_BY_NAME[name]) === hex) {
+      return name;
+    }
+  }
+  return null;
 }
 
 const FACING_CODE_BY_NAME: Readonly<Record<FacingName, number>> = {
@@ -268,11 +341,257 @@ const FACING_CODE_BY_NAME: Readonly<Record<FacingName, number>> = {
   NW: 6,
 };
 
-const FACING_NAME_BY_CODE: Readonly<Record<number, FacingName>> = {
-  1: 'NE',
-  2: 'E',
-  3: 'SE',
-  4: 'SW',
-  5: 'W',
-  6: 'NW',
+interface SmartPortCandidate {
+  edge: number;
+  facing: FacingName;
+  x: number;
+  y: number;
+  angle: number;
+}
+
+function bestOpenPortEdgeNearHex(map: CustomMap, hexCoord: number): number | null {
+  const occupied = new Set((map.ports ?? []).map((port) => parseCoord(port.edge)).filter(isNumber));
+  const candidates = smartPortCandidates(map).filter(
+    (candidate) => !occupied.has(candidate.edge) && legalFacingForEdgeToHex(candidate.edge, hexCoord) !== null,
+  );
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const existing = smartPortCandidates({ ...map, ports: map.ports ?? [] }).filter((candidate) =>
+    occupied.has(candidate.edge),
+  );
+  candidates.sort((a, b) => {
+    const da = nearestPortDistance(a, existing);
+    const db = nearestPortDistance(b, existing);
+    if (db !== da) {
+      return db - da;
+    }
+    return a.edge - b.edge;
+  });
+  return candidates[0].edge;
+}
+
+function pruneInvalidPorts(map: CustomMap): CustomMap {
+  const ports = map.ports ?? [];
+  if (ports.length === 0) {
+    return map;
+  }
+
+  const nextPorts: MapPort[] = [];
+  const seen = new Set<number>();
+  const coastEdges = coastPortEdgeCoords(map);
+  let changed = false;
+  for (const port of ports) {
+    const edge = parseCoord(port.edge);
+    if (edge === null || seen.has(edge) || !coastEdges.has(edge)) {
+      changed = true;
+      continue;
+    }
+    const facing = bestPortFacing(map, edge, normalizeFacing(port.facing));
+    if (facing === null) {
+      changed = true;
+      continue;
+    }
+    seen.add(edge);
+    const nextEdge = encodeCoord(edge);
+    if (nextEdge !== port.edge || facing !== port.facing) {
+      changed = true;
+    }
+    nextPorts.push({ type: port.type, edge: nextEdge, facing });
+  }
+
+  if (!changed) {
+    return map;
+  }
+  return nextPorts.length > 0 ? { ...map, ports: nextPorts } : clearAllPorts(map);
+}
+
+function coastPortEdgeCoords(map: CustomMap): Set<number> {
+  const size = boardSizeForMap(map);
+  return new Set(
+    candidatePortEdgesWithin(nonWaterLandCoords(map), size.height, size.width).map((edge) => edge.coord),
+  );
+}
+
+function smartPortCandidates(map: CustomMap): SmartPortCandidate[] {
+  const landCoords = nonWaterLandCoords(map);
+  const size = boardSizeForMap(map);
+  const coastEdges = candidatePortEdgesWithin(landCoords, size.height, size.width);
+  const center = centroid(landCoords);
+  const out: SmartPortCandidate[] = [];
+
+  for (const edge of coastEdges) {
+    const facing = bestPortFacing(map, edge.coord, 'SE');
+    if (facing === null) {
+      continue;
+    }
+    out.push({
+      edge: edge.coord,
+      facing,
+      x: edge.mid.x,
+      y: edge.mid.y,
+      angle: Math.atan2(edge.mid.y - center.y, edge.mid.x - center.x),
+    });
+  }
+
+  out.sort((a, b) => a.angle - b.angle || a.edge - b.edge);
+  return out;
+}
+
+function selectDistributedPorts(candidates: SmartPortCandidate[], count: number): SmartPortCandidate[] {
+  if (count >= candidates.length) {
+    return candidates;
+  }
+
+  const selected: SmartPortCandidate[] = [];
+  const used = new Set<number>();
+  const step = candidates.length / count;
+  for (let i = 0; i < count; ++i) {
+    const target = Math.round(i * step) % candidates.length;
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+
+    for (let offset = 0; offset < candidates.length; ++offset) {
+      for (const idx of uniqueCandidateIndexes(target, offset, candidates.length)) {
+        if (used.has(idx)) {
+          continue;
+        }
+        const candidate = candidates[idx];
+        const spacing = nearestPortDistance(candidate, selected);
+        const score = spacing - offset * 20;
+        if (score > bestScore) {
+          bestIdx = idx;
+          bestScore = score;
+        }
+      }
+      if (bestIdx >= 0 && bestScore > 70) {
+        break;
+      }
+    }
+
+    if (bestIdx >= 0) {
+      used.add(bestIdx);
+      selected.push(candidates[bestIdx]);
+    }
+  }
+
+  selected.sort((a, b) => a.angle - b.angle || a.edge - b.edge);
+  return selected;
+}
+
+function uniqueCandidateIndexes(center: number, offset: number, length: number): number[] {
+  const a = (center + offset) % length;
+  const b = (center - offset + length) % length;
+  return a === b ? [a] : [a, b];
+}
+
+function recommendedPortCount(map: CustomMap): number {
+  const landHexes = nonWaterLandCoords(map).length;
+  if (landHexes === 0) {
+    return 0;
+  }
+  const maxPlayers = Math.max(0, ...(map.playerCounts ?? []));
+  const byLand = Math.round((landHexes * 9) / 19);
+  const playerFloor = maxPlayers >= 6 ? 8 : maxPlayers >= 3 ? 5 : 3;
+  return clampNumber(Math.max(playerFloor, byLand), 3, 12);
+}
+
+function recommendedPortTypes(map: CustomMap, count: number): PortTypeName[] {
+  const resources = resourceScores(map)
+    .sort((a, b) => b.score - a.score || a.type.localeCompare(b.type))
+    .map((entry) => entry.type);
+  const miscCount = clampNumber(Math.round(count * 0.45), 1, Math.max(1, count - Math.min(resources.length, count)));
+  const out: PortTypeName[] = [];
+  for (let i = 0; i < miscCount && out.length < count; ++i) {
+    out.push('misc');
+  }
+  for (let i = 0; out.length < count && resources.length > 0; ++i) {
+    out.push(resources[i % resources.length]);
+  }
+  while (out.length < count) {
+    out.push('misc');
+  }
+  return out;
+}
+
+function resourceScores(map: CustomMap): Array<{ type: PortTypeName; score: number }> {
+  const scores = new Map<PortTypeName, number>();
+  for (const hex of map.landHexes ?? []) {
+    const type = (hex.type ?? '').toLowerCase() as PortTypeName;
+    if (!RESOURCE_PORT_TYPES.has(type)) {
+      continue;
+    }
+    scores.set(type, (scores.get(type) ?? 0) + (DICE_PIPS[hex.diceNum] ?? 1));
+  }
+  return [...scores.entries()].map(([type, score]) => ({ type, score }));
+}
+
+function nonWaterLandCoords(map: CustomMap): number[] {
+  const coords: number[] = [];
+  for (const hex of map.landHexes ?? []) {
+    if (!hex || (hex.type ?? '').toLowerCase() === 'water') {
+      continue;
+    }
+    const coord = parseCoord(hex.coord);
+    if (coord !== null) {
+      coords.push(coord);
+    }
+  }
+  return coords;
+}
+
+function centroid(coords: number[]): { x: number; y: number } {
+  if (coords.length === 0) {
+    return { x: 0, y: 0 };
+  }
+  let x = 0;
+  let y = 0;
+  for (const coord of coords) {
+    const point = hexToPixel(coord);
+    x += point.x;
+    y += point.y;
+  }
+  return { x: x / coords.length, y: y / coords.length };
+}
+
+function nearestPortDistance(candidate: SmartPortCandidate, selected: SmartPortCandidate[]): number {
+  if (selected.length === 0) {
+    return 9999;
+  }
+  let min = Infinity;
+  for (const port of selected) {
+    const dx = candidate.x - port.x;
+    const dy = candidate.y - port.y;
+    min = Math.min(min, Math.sqrt(dx * dx + dy * dy));
+  }
+  return min;
+}
+
+function normalizeFacing(facing: string): FacingName {
+  const uc = (facing ?? '').toUpperCase();
+  return FACING_CODE_BY_NAME[uc as FacingName] !== undefined ? (uc as FacingName) : 'SE';
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function isNumber(value: number | null): value is number {
+  return value !== null;
+}
+
+const RESOURCE_PORT_TYPES: ReadonlySet<PortTypeName> = new Set(['clay', 'ore', 'sheep', 'wheat', 'wood']);
+
+const DICE_PIPS: Readonly<Record<number, number>> = {
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5,
+  8: 5,
+  9: 4,
+  10: 3,
+  11: 2,
+  12: 1,
 };

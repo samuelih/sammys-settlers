@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 
-import { Panel } from '../../components';
+import { Button, Panel } from '../../components';
 import {
   type CustomMap,
   type HexTypeName,
@@ -54,6 +54,8 @@ export interface EditorPaletteProps {
   onPortTypeChange: (t: PortTypeName) => void;
   portFacing: FacingName;
   onPortFacingChange: (f: FacingName) => void;
+  onSmartPorts: () => void;
+  onClearPorts: () => void;
 
   /** Metadata edits. */
   onNameChange: (name: string) => void;
@@ -102,6 +104,8 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
     onPortTypeChange,
     portFacing,
     onPortFacingChange,
+    onSmartPorts,
+    onClearPorts,
     onNameChange,
     onDescriptionChange,
     onTogglePlayerCount,
@@ -254,8 +258,28 @@ export function EditorPalette(props: EditorPaletteProps): JSX.Element {
             ))}
           </select>
         </div>
+        <div className={styles.inlineRow}>
+          <Button
+            size="sm"
+            variant="secondary"
+            data-testid="editor-smart-ports"
+            disabled={(map.landHexes ?? []).length === 0}
+            onClick={onSmartPorts}
+          >
+            Smart-fill ports
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            data-testid="editor-clear-ports"
+            disabled={(map.ports ?? []).length === 0}
+            onClick={onClearPorts}
+          >
+            Clear ports
+          </Button>
+        </div>
         <p className={styles.hint}>
-          Coast slots auto-face the adjacent land hex; the selected facing is used only when it is legal.
+          Click a coast slot, or click a land hex and the editor picks the best open coast edge.
         </p>
       </div>
 
@@ -330,7 +354,7 @@ function toolHint(tool: EditorTool): string {
     case 'area':
       return 'Click a placed hex to assign it to the active land area.';
     case 'port':
-      return 'Click a coastline edge slot to drop the selected port. Click a port to remove it.';
+      return 'Click a coast slot, or click a land hex for smart edge selection. Alt/right-click removes nearby ports.';
     case 'robber':
       return 'Click a hex to set/clear the robber start. Alt/right-click also clears.';
     case 'pirate':
