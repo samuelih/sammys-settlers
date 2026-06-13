@@ -115,6 +115,8 @@ describe('parseMapJson — error / defaulting behavior', () => {
     expect(map.description).toBeUndefined();
     expect(map.landAreas).toBeUndefined();
     expect(map.ports).toBeUndefined();
+    expect(map.boardHeight).toBeUndefined();
+    expect(map.boardWidth).toBeUndefined();
     expect(map.robberHex).toBeUndefined();
     expect(map.pirateHex).toBeUndefined();
   });
@@ -126,6 +128,17 @@ describe('parseMapJson — error / defaulting behavior', () => {
       landHexes: [{ type: 'clay', coord: '0x0309', diceNum: 5 }],
     });
     expect(map.landHexes[0].landArea).toBeUndefined();
+  });
+
+  it('parses optional custom board size fields', () => {
+    const map = parseMapJson(
+      [
+        '{ "name": "Sized", "playerCounts": [4], "shuffle": false,',
+        '"boardHeight": 18, "boardWidth": 19, "landHexes": [] }',
+      ].join(' '),
+    );
+    expect(map.boardHeight).toBe(18);
+    expect(map.boardWidth).toBe(19);
   });
 });
 
@@ -147,7 +160,23 @@ describe('serializeMapJson', () => {
     expect('description' in out).toBe(false);
     expect('ports' in out).toBe(false);
     expect('landAreas' in out).toBe(false);
+    expect('boardHeight' in out).toBe(false);
+    expect('boardWidth' in out).toBe(false);
     expect('robberHex' in out).toBe(false);
+  });
+
+  it('serializes custom board size when present', () => {
+    const map: CustomMap = {
+      name: 'Sized',
+      playerCounts: [4],
+      shuffle: false,
+      boardHeight: 18,
+      boardWidth: 19,
+      landHexes: [{ type: 'clay', coord: '0x0309', diceNum: 5 }],
+    };
+    const out = JSON.parse(serializeMapJson(map));
+    expect(out.boardHeight).toBe(18);
+    expect(out.boardWidth).toBe(19);
   });
 
   it('writes a trailing newline', () => {

@@ -6,6 +6,38 @@ Where the boxed game and this implementation differ, the difference is listed in
 [Simplifications](#simplifications). All mechanics are gated on the `_CK_*` game options and
 are inert in every other game.
 
+## Official expansion baseline
+
+Reference target: the 2025 CATAN Cities & Knights rulebook. In the boxed game,
+the base development cards, base sea frame 1-2, and Largest Army tile are not used.
+Cities & Knights adds:
+
+| Component | Count | Implementation status |
+|-----------|-------|-----------------------|
+| Commodity cards | 36: 12 cloth, 12 coin, 12 paper | Server-backed as per-player counters |
+| Progress cards | 54: 18 Trade, 18 Politics, 18 Science | Web lists all; server supports a subset |
+| Event/red dice | 3 dice total: event die, red die, white die | Server uses the two standard dice as a simplification |
+| Knights | 24: 6 per color, two each basic/strong/mighty | Server tracks aggregate counts, not board pieces |
+| City walls | 12: 3 per color | Reference-only in web UI |
+| Metropolises | 3: one per improvement track | Server tracks owner per track, not city placement |
+| Merchant piece | 1 | Reference-only in web UI |
+| Barbarian ship/track | 1 ship on the C&K sea frame | Server tracks a strength counter |
+| Defender VP tokens | 6 | Server-backed as Special VP |
+| City-improvement boards/cubes | 4 boards, 12 cubes | Server-backed as special-item track levels |
+
+Official progress deck names and counts:
+
+| Deck | Cards |
+|------|-------|
+| Trade | 2 Commercial Harbor, 2 Guild Dues (older: Master Merchant), 6 Merchant, 2 Merchant Fleet, 4 Resource Monopoly, 2 Trade Monopoly |
+| Politics | 2 Diplomacy (older: Diplomat), 2 Encouragement (older: Warlord), 3 Espionage (older: Spy), 2 Intrigue, 2 Sabotage, 2 Taxation (older: Bishop), 2 Treason (older: Deserter), 1 Constitution, 2 Wedding |
+| Science | 2 Alchemy (older: Alchemist), 2 Crane, 1 Engineering (older: Engineer), 2 Invention (older: Inventor), 2 Irrigation, 2 Medicine, 2 Mining, 2 Road Building, 2 Smithing (older: Smith), 1 Printing (older: Printer) |
+
+The web client now renders this full official inventory in the Cities & Knights
+sidebar reference. Each item is tagged `Playable`, `Partial`, or `Reference`
+based on the current Java server support; the client does not send unsupported
+progress-card item types.
+
 ## Scenario
 
 `SC_CK` ("Cities & Knights") plays on the sea board with VP target 13:
@@ -97,7 +129,7 @@ Wire: `SOCSimpleAction` `CK_BARBARIAN_ATTACK_RESULT(1004)` value1=barbarian stre
 value2=defense, sent before the per-player consequences;
 `CK_DEFENDER_OF_CATAN(1006)` value1=player number, value2=new SVP total of that player.
 
-## Progress cards (`_CK_PROG`)
+## Server progress cards (`_CK_PROG`)
 
 Three decks (Trade / Politics / Science) of `SOCInventoryItem`s, itypes 11–19. On each
 non-7 roll, die1 selects the deck (1-2 Trade, 3-4 Politics, 5-6 Science) and **every** seated
@@ -109,13 +141,13 @@ card (hand limit 4; victory-point cards are exempt, are revealed immediately, an
 |-------|------|------|--------|
 | 11 | Resource Monopoly | Trade | name a resource; take up to 2 of it from each other player |
 | 12 | Trade Monopoly | Trade | name a commodity; take 1 of it from each other player |
-| 13 | Master Merchant | Trade | take 2 random resources from the opponent holding the most resources |
-| 14 | Warlord | Politics | activate all your inactive knights for free |
+| 13 | Master Merchant / Guild Dues | Trade | take 2 random resources from the opponent holding the most resources |
+| 14 | Warlord / Encouragement | Politics | activate all your inactive knights for free |
 | 15 | Wedding | Politics | each player with more VP than you gives you 1 random resource |
 | 16 | Constitution | Politics | +1 VP (revealed and scored when drawn) |
 | 17 | Irrigation | Science | gain 2 wheat per distinct fields hex adjacent to your settlements/cities |
 | 18 | Mining | Science | gain 2 ore per distinct mountains hex adjacent to your settlements/cities |
-| 19 | Printer | Science | +1 VP (revealed and scored when drawn) |
+| 19 | Printer / Printing | Science | +1 VP (revealed and scored when drawn) |
 
 Deck composition (each deck 10 cards): Trade = 4× Resource Monopoly, 4× Trade Monopoly,
 2× Master Merchant; Politics = 5× Warlord, 4× Wedding, 1× Constitution; Science =
@@ -137,6 +169,21 @@ Wire:
   sends `SOCPickResourceType` with a resource constant 1–5 (Resource Monopoly) or commodity
   constant 1–3 (Trade Monopoly). Results are announced with the same element + text pattern
   as dev-card Monopoly, capped per the card.
+
+## Web client
+
+The React client (`web/src/components/ck`) renders:
+
+- Server-backed commodities, improvement tracks, metropolises, barbarian counter, knight
+  actions, progress-card hand, and monopoly pickers.
+- Piece-like knight tokens for the aggregate server knight counts.
+- A full official Cities & Knights reference catalog sourced from
+  `web/src/components/ck/ckCatalog.ts`: all components, all 54 progress cards, official
+  deck counts, current-edition names, older aliases used by JSettlers/server text, and
+  support status.
+- No base development-card action panel in `SC_CK` games; official Cities & Knights replaces
+  development cards with progress cards. The Java server still has the legacy dev-card deck,
+  but the web UI no longer presents it as part of the expansion.
 
 ## Joining / reconnecting
 
@@ -162,12 +209,11 @@ Differences from the boxed game, chosen to fit JSettlers' architecture (see desi
   intersection blocking); they exist as leveled counts per player.
 - Defender of Catan tie-break draws from a random deck rather than a chosen one.
 - Barbarian city loss picks the victim's oldest non-metropolis city automatically.
-- Progress deck is a subset (9 card types); Alchemist, Deserter, Spy, Saboteur, Bishop,
-  Diplomat, Intrigue, Crane, Engineer, Inventor, Medicine, Smith, Commercial Harbor,
-  Merchant, and Merchant Fleet are not implemented.
+- Progress deck is a server subset (9 card types); the web client lists the full official
+  deck and marks unsupported cards reference-only.
 - City walls, the merchant pawn, and 2:1 commodity ports are not implemented.
 - Improvement purchase doesn't require owning a city, and metropolis is tracked per player
   rather than attached to a specific city.
-- Largest Army remains in effect (standard dev cards are still in the game alongside
-  progress cards).
+- Largest Army and standard dev cards remain in the Java server, but the web client hides
+  those base-game controls and awards in C&K games.
 - `*SAVEGAME*`/`*LOADGAME*` does not yet persist C&K state.

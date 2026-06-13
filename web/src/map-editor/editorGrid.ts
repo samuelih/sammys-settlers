@@ -17,7 +17,16 @@ import {
   edgeToPixel,
   type Point,
 } from '../board/coords';
-import { MAX_ROW, MAX_COL } from './validation';
+import {
+  type CustomMap,
+  parseCoord,
+  EDITOR_DEFAULT_BOARD_HEIGHT,
+  EDITOR_DEFAULT_BOARD_WIDTH,
+  MIN_BOARD_HEIGHT,
+  MIN_BOARD_WIDTH,
+  MAX_BOARD_HEIGHT,
+  MAX_BOARD_WIDTH,
+} from './mapSchema';
 
 export { rowOf, colOf, coordOf, hexToPixel, edgeToPixel };
 export type { Point };
@@ -42,15 +51,61 @@ export interface GridEdgeCell {
   y2: number;
 }
 
+/** Editor-facing board frame size in large-board coordinate units. */
+export interface EditorBoardSize {
+  height: number;
+  width: number;
+}
+
+/** Clamp a board frame size to the custom-map range the Java server accepts. */
+export function clampBoardSize(height: number, width: number): EditorBoardSize {
+  return {
+    height: clamp(Math.round(height), MIN_BOARD_HEIGHT, MAX_BOARD_HEIGHT),
+    width: clamp(Math.round(width), MIN_BOARD_WIDTH, MAX_BOARD_WIDTH),
+  };
+}
+
 /**
- * The smallest interesting grid window: large enough to author a normal sea-board
- * map without scrolling, capped at the validator's max range. Rows are 1..ROW_MAX
- * (odd only); columns 1..COL_MAX. (The validator caps at MAX_ROW=21, MAX_COL=22,
- * but a full 21x22 grid is overwhelming; 15x16 comfortably holds the sample + room
- * to grow, and never exceeds the legal range.)
+ * Smallest board frame that still contains every declared hex, port edge, robber,
+ * and pirate coordinate. Size is one larger than the largest coordinate because
+ * board bounds are strict: valid land rows are 1..height-1.
  */
-const ROW_MAX = Math.min(15, MAX_ROW);
-const COL_MAX = Math.min(16, MAX_COL);
+export function minimumBoardSizeForMap(map: CustomMap): EditorBoardSize {
+  let height = MIN_BOARD_HEIGHT;
+  let width = MIN_BOARD_WIDTH;
+
+  const absorbCoord = (coord: number | null): void => {
+    if (coord === null) {
+      return;
+    }
+    height = Math.max(height, rowOf(coord) + 1);
+    width = Math.max(width, colOf(coord) + 1);
+  };
+
+  for (const hex of map.landHexes ?? []) {
+    absorbCoord(parseCoord(hex.coord));
+  }
+  for (const port of map.ports ?? []) {
+    absorbCoord(parseCoord(port.edge));
+  }
+  absorbCoord(parseCoord(map.robberHex));
+  absorbCoord(parseCoord(map.pirateHex));
+
+  return clampBoardSize(height, width);
+}
+
+/** Effective editor frame: requested map size, or the compact starter, expanded to fit content. */
+export function boardSizeForMap(map: CustomMap): EditorBoardSize {
+  const requested = clampBoardSize(
+    map.boardHeight ?? EDITOR_DEFAULT_BOARD_HEIGHT,
+    map.boardWidth ?? EDITOR_DEFAULT_BOARD_WIDTH,
+  );
+  const required = minimumBoardSizeForMap(map);
+  return {
+    height: Math.max(requested.height, required.height),
+    width: Math.max(requested.width, required.width),
+  };
+}
 
 /**
  * Enumerate every placeable hex cell in the editor window. Hexes live on ODD rows
@@ -59,14 +114,20 @@ const COL_MAX = Math.min(16, MAX_COL);
  * hex centers alternates with the row, matching {@code SOCBoardLarge}'s layout
  * (a hex at row r exists at columns sharing r's "(r/2) parity").
  */
-export function enumerateHexCells(): GridHexCell[] {
+export function enumerateHexCells(
+  boardHeight: number = EDITOR_DEFAULT_BOARD_HEIGHT,
+  boardWidth: number = EDITOR_DEFAULT_BOARD_WIDTH,
+): GridHexCell[] {
+  const size = clampBoardSize(boardHeight, boardWidth);
+  const rowMax = size.height - 1;
+  const colMax = size.width - 1;
   const cells: GridHexCell[] = [];
-  for (let row = 1; row <= ROW_MAX; row += 2) {
+  for (let row = 1; row <= rowMax; row += 2) {
     // On the large board, hex columns in a row share parity with floor(row/2):
     // even half-row -> even columns, odd half-row -> odd columns. This produces
     // the staggered honeycomb the in-game board uses.
     const colParity = Math.floor(row / 2) % 2;
-    for (let col = 1; col <= COL_MAX; col += 1) {
+    for (let col = 1; col <= colMax; col += 1) {
       if (col % 2 !== colParity) {
         continue;
       }
@@ -75,6 +136,13 @@ export function enumerateHexCells(): GridHexCell[] {
     }
   }
   return cells;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.max(min, Math.min(max, value));
 }
 
 /**

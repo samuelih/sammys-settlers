@@ -31,20 +31,21 @@ import {
   ckPromoteKnight,
   pickMonopoly,
 } from '../../store/gameStore';
+import {
+  CK_COMPONENTS,
+  CK_DECKS,
+  CK_PROGRESS_BY_ITEM_TYPE,
+  CK_PROGRESS_CARD_NAMES as CK_PROGRESS_CARD_NAMES_FROM_CATALOG,
+  CK_PROGRESS_CATALOG,
+  type CKProgressCatalogEntry,
+  type CKSupport,
+  progressDeckTotal,
+} from './ckCatalog';
 import styles from './CKPanel.module.css';
 
-/** Human-readable C&K progress-card names, keyed by itype (11..19). */
-export const CK_PROGRESS_CARD_NAMES: Record<number, string> = {
-  [CKProgressCard.RESOURCE_MONOPOLY]: 'Resource Monopoly',
-  [CKProgressCard.TRADE_MONOPOLY]: 'Trade Monopoly',
-  [CKProgressCard.MASTER_MERCHANT]: 'Master Merchant',
-  [CKProgressCard.WARLORD]: 'Warlord',
-  [CKProgressCard.WEDDING]: 'Wedding',
-  [CKProgressCard.CONSTITUTION]: 'Constitution (VP)',
-  [CKProgressCard.IRRIGATION]: 'Irrigation',
-  [CKProgressCard.MINING]: 'Mining',
-  [CKProgressCard.PRINTER]: 'Printer (VP)',
-};
+/** Human-readable C&K progress-card names, keyed by server itype. */
+export const CK_PROGRESS_CARD_NAMES: Readonly<Record<number, string>> =
+  CK_PROGRESS_CARD_NAMES_FROM_CATALOG;
 
 /** The three improvement tracks in display order, with their commodity. */
 const TRACKS: ReadonlyArray<{
@@ -86,6 +87,25 @@ function activeKnights(view: PlayerView): number {
 function seatName(cg: CurrentGame, pn: number): string {
   const v = cg.playerViews[pn];
   return v != null && v.seated && v.name !== '' ? v.name : `Seat ${pn + 1}`;
+}
+
+/** Short support text used by the official C&K reference. */
+function supportLabel(support: CKSupport): string {
+  switch (support) {
+    case 'implemented':
+      return 'Playable';
+    case 'partial':
+      return 'Partial';
+    case 'reference':
+      return 'Reference';
+  }
+}
+
+/** Legacy/older-edition aliases shown only when they help match server text. */
+function legacyLabel(card: CKProgressCatalogEntry): string | null {
+  return card.legacyNames && card.legacyNames.length > 0
+    ? `aka ${card.legacyNames.join(', ')}`
+    : null;
 }
 
 /**
@@ -133,6 +153,124 @@ function BarbarianTrack({ strength }: { strength: number }): JSX.Element {
           {strength} / {CK_BARBARIAN_ATTACK_THRESHOLD}
         </span>
       </div>
+    </div>
+  );
+}
+
+/** Visualize the local player's current C&K knight counts as small piece tokens. */
+function KnightTokens({ view }: { view: PlayerView }): JSX.Element {
+  const rows = [
+    { label: 'basic', strength: 1, total: view.ck.knights.lv1, active: view.ck.knights.activeLv1 },
+    { label: 'strong', strength: 2, total: view.ck.knights.lv2, active: view.ck.knights.activeLv2 },
+    { label: 'mighty', strength: 3, total: view.ck.knights.lv3, active: view.ck.knights.activeLv3 },
+  ];
+  return (
+    <div className={styles.knightTokens} data-testid="ck-knight-pieces">
+      {rows.map((row) => (
+        <div className={styles.knightTokenRow} key={row.label}>
+          <span className={styles.knightTokenLabel}>
+            {row.label} <span className={styles.knightStrength}>S{row.strength}</span>
+          </span>
+          <span className={styles.knightTokenGroup} aria-label={`${row.total} ${row.label} knights, ${row.active} active`}>
+            {row.total === 0 ? (
+              <span className={styles.knightTokenEmpty}>none</span>
+            ) : (
+              Array.from({ length: row.total }, (_, i) => (
+                <span
+                  key={i}
+                  className={`${styles.knightToken} ${i < row.active ? styles.knightTokenActive : ''}`}
+                  data-testid={`ck-knight-piece-${row.label}-${i}`}
+                  title={`${row.label} knight ${i < row.active ? 'active' : 'inactive'}`}
+                  aria-hidden="true"
+                />
+              ))
+            )}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SupportBadge({ support }: { support: CKSupport }): JSX.Element {
+  return (
+    <span className={styles.supportBadge} data-support={support}>
+      {supportLabel(support)}
+    </span>
+  );
+}
+
+function CKOfficialReference(): JSX.Element {
+  return (
+    <div className={styles.section} data-testid="ck-reference">
+      <details className={styles.reference}>
+        <summary className={styles.referenceSummary}>Official expansion reference</summary>
+
+        <div className={styles.referenceBlock} data-testid="ck-reference-components">
+          <p className={styles.referenceTitle}>Pieces and materials</p>
+          <div className={styles.componentGrid}>
+            {CK_COMPONENTS.map((component) => (
+              <article
+                key={component.name}
+                className={styles.componentItem}
+                data-testid={`ck-reference-component-${component.icon}`}
+              >
+                <span className={styles.componentIcon} data-icon={component.icon} aria-hidden="true">
+                  {component.count}
+                </span>
+                <span className={styles.componentBody}>
+                  <span className={styles.componentName}>{component.name}</span>
+                  <span className={styles.componentSummary}>{component.summary}</span>
+                  <SupportBadge support={component.support} />
+                </span>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.referenceBlock} data-testid="ck-reference-progress">
+          <p className={styles.referenceTitle}>Official progress decks</p>
+          {CK_DECKS.map((deck) => (
+            <section
+              key={deck.key}
+              className={styles.deckReference}
+              data-deck={deck.key}
+              data-testid={`ck-reference-deck-${deck.key}`}
+            >
+              <div className={styles.deckHeader}>
+                <span className={styles.deckName}>{deck.name}</span>
+                <span className={styles.deckCount}>{progressDeckTotal(deck.key)} cards</span>
+              </div>
+              <div className={styles.referenceCards}>
+                {CK_PROGRESS_CATALOG
+                  .filter((card) => card.deck === deck.key)
+                  .map((card) => {
+                    const legacy = legacyLabel(card);
+                    return (
+                      <article
+                        key={card.slug}
+                        className={styles.referenceCard}
+                        data-support={card.support}
+                        data-testid={`ck-reference-card-${card.slug}`}
+                      >
+                        <header className={styles.referenceCardHeader}>
+                          <span className={styles.referenceCardCount}>{card.count}x</span>
+                          <span className={styles.referenceCardName}>{card.name}</span>
+                          <SupportBadge support={card.support} />
+                        </header>
+                        {legacy !== null && (
+                          <p className={styles.referenceAlias}>{legacy}</p>
+                        )}
+                        <p className={styles.referenceCardText}>{card.summary}</p>
+                        <p className={styles.referenceSupport}>{card.supportNote}</p>
+                      </article>
+                    );
+                  })}
+              </div>
+            </section>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
@@ -257,14 +395,15 @@ export function CKPanel({
       )}
 
       {/* Knights */}
-      {ck !== null && (
+      {myView !== null && (
         <div className={styles.section}>
           <p className={styles.sectionTitle}>Knights</p>
           <p className={styles.knightSummary} data-testid="ck-knights">
-            basic ×{ck.knights.lv1} (active {ck.knights.activeLv1}) · strong ×
-            {ck.knights.lv2} (active {ck.knights.activeLv2}) · mighty ×
-            {ck.knights.lv3} (active {ck.knights.activeLv3})
+            basic ×{myView.ck.knights.lv1} (active {myView.ck.knights.activeLv1}) · strong ×
+            {myView.ck.knights.lv2} (active {myView.ck.knights.activeLv2}) · mighty ×
+            {myView.ck.knights.lv3} (active {myView.ck.knights.activeLv3})
           </p>
+          <KnightTokens view={myView} />
           <div className={styles.knightButtons}>
             <Button
               size="sm"
@@ -313,31 +452,47 @@ export function CKPanel({
             </p>
           ) : (
             <div className={styles.progressHand}>
-              {handEntries.map(([itype, count]) => (
-                <div
-                  key={itype}
-                  className={styles.progressCard}
-                  data-testid={`ck-progress-${itype}`}
-                >
-                  <span className={styles.progressCardName}>
-                    {CK_PROGRESS_CARD_NAMES[itype] ?? `Progress card ${itype}`}
-                    {count > 1 ? ` ×${count}` : ''}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    data-testid={`ck-progress-play-${itype}`}
-                    disabled={!canPlayProgressCard(cg, itype)}
-                    onClick={() => ckPlayProgressCard(itype)}
+              {handEntries.map(([itype, count]) => {
+                const card = CK_PROGRESS_BY_ITEM_TYPE[itype];
+                const legacy = card !== undefined ? legacyLabel(card) : null;
+                return (
+                  <div
+                    key={itype}
+                    className={styles.progressCard}
+                    data-testid={`ck-progress-${itype}`}
                   >
-                    Play
-                  </Button>
-                </div>
-              ))}
+                    <span className={styles.progressCardBody}>
+                      <span className={styles.progressCardName}>
+                        {card?.name ?? `Progress card ${itype}`}
+                        {count > 1 ? ` ×${count}` : ''}
+                      </span>
+                      {legacy !== null && (
+                        <span className={styles.progressCardMeta}>{legacy}</span>
+                      )}
+                      {card !== undefined && (
+                        <span className={styles.progressCardMeta}>
+                          {card.timing} · {card.summary}
+                        </span>
+                      )}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      data-testid={`ck-progress-play-${itype}`}
+                      disabled={!canPlayProgressCard(cg, itype)}
+                      onClick={() => ckPlayProgressCard(itype)}
+                    >
+                      Play
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       )}
+
+      <CKOfficialReference />
     </div>
   );
 }

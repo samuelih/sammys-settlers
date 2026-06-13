@@ -195,6 +195,42 @@ describe('validate — playerCounts', () => {
   });
 });
 
+describe('validate — board size', () => {
+  it('accepts a custom frame that still contains every coordinate', () => {
+    const m = sample();
+    m.boardHeight = 16;
+    m.boardWidth = 17;
+    expect(messages(errors(validate(m)))).toEqual([]);
+  });
+
+  it('rejects board dimensions outside the supported custom-map range', () => {
+    const m = sample();
+    m.boardHeight = 23;
+    m.boardWidth = 8;
+    const msgs = messages(errors(validate(m)));
+    expect(msgs).toContain('"boardHeight" 23 out of range; must be 8..22');
+    expect(msgs).toContain('"boardWidth" 8 out of range; must be 9..23');
+  });
+
+  it('uses custom board size for land-hex range checks', () => {
+    const m = sample();
+    m.boardHeight = 14;
+    m.boardWidth = 17;
+    expect(messages(errors(validate(m)))).toContain(
+      'landHexes[11].coord 0xf0b is out of board range (row 1..13, col 1..16)',
+    );
+  });
+
+  it('uses custom board size for port-edge range checks', () => {
+    const m = sample();
+    m.boardHeight = 16;
+    m.boardWidth = 12;
+    expect(messages(errors(validate(m)))).toContain(
+      'ports[1].edge 0x60c is out of board range (row 0..15, col 0..11)',
+    );
+  });
+});
+
 describe('validate — land hexes', () => {
   it('flags an empty landHexes', () => {
     const m = sample();

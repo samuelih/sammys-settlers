@@ -645,12 +645,19 @@ denial. Senders: `ckBuyKnight()` / `ckActivateKnight()` / `ckPromoteKnight()`
 commodity pick. UI (`components/ck/CKPanel.tsx`, visible only when
 `isCKGame`): `ck-panel` with `ck-commodity-cloth|coin|paper`,
 `ck-build-trade|politics|science` (+ `ck-metropolis-*` badges), `ck-knights` +
-`ck-knight-buy|activate|promote`, `ck-barbarian` (attr `data-strength`),
-`ck-progress-play-<itype>`; per-opponent `ck-player-<pn>` summaries;
+`ck-knight-pieces` / `ck-knight-piece-<level>-<n>` + `ck-knight-buy|activate|promote`,
+`ck-barbarian` (attr `data-strength`), `ck-progress-play-<itype>`; the full
+official reference catalog from `components/ck/ckCatalog.ts` under `ck-reference`
+with `ck-reference-component-<key>`, `ck-reference-deck-<trade|politics|science>`,
+and `ck-reference-card-<slug>`; per-opponent `ck-player-<pn>` summaries;
 `ck-barbarian-banner`; the Trade Monopoly picker `ck-commodity-pick`
 (`ck-pick-cloth|coin|paper`); and the sea-board `robber-or-pirate-dialog`
-(`choose-robber`/`choose-pirate`) for state 54. Store tests:
-`store/gameCK.test.ts`; UI tests: `screens/GameScreenCK.test.tsx`.
+(`choose-robber`/`choose-pirate`) for state 54. Because official Cities &
+Knights replaces base development cards with progress cards, `GameScreen` hides
+the `devcard-panel` and Largest Army award in `SC_CK` games even though the Java
+server still has legacy dev-card state. Store tests: `store/gameCK.test.ts`; UI
+tests: `screens/GameScreenCK.test.tsx`; catalog tests:
+`components/ck/ckCatalog.test.ts`.
 
 ## Phase-4 store + GameScreen integration
 
@@ -672,7 +679,8 @@ UI. Store reducer tests: `store/gameInteractions.test.ts`; UI render tests:
   v1=remaining)` set the deck count. Senders: `buyDevCard()`, `playKnight()`,
   `playRoadBuilding()`, `playMonopoly()`, `playYearOfPlenty()`,
   `pickMonopoly(resType)`, `pickResources(resList)`. UI: `data-testid="devcard-panel"`
-  with `buy-devcard` and `play-knight`/`play-roadbuilding`/`play-monopoly`/`play-yop`.
+  with `buy-devcard` and `play-knight`/`play-roadbuilding`/`play-monopoly`/`play-yop`
+  in non-C&K games.
 * **Robber/discard.** `MOVEROBBER` (positive→`board.robberHex`, negative→
   `board.pirateHex` as abs), `CHOOSEPLAYERREQUEST`→`robVictims`,
   `DISCARDREQUEST`→`discardRequired`, `ROBBERYRESULT`→game-log line. In

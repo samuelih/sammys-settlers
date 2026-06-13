@@ -33,6 +33,12 @@ import {
   PORT_TYPE_NAMES,
   FACING_NAMES,
   SUPPORTED_PLAYER_COUNTS,
+  DEFAULT_BOARD_HEIGHT,
+  DEFAULT_BOARD_WIDTH,
+  MIN_BOARD_HEIGHT,
+  MIN_BOARD_WIDTH,
+  MAX_BOARD_HEIGHT,
+  MAX_BOARD_WIDTH,
 } from './mapSchema';
 
 /**
@@ -40,13 +46,13 @@ import {
  * board (height 0x16 = 22); valid coords are strictly inside it, so max row = 21.
  * ({@code CustomMapValidator.MAX_ROW}.)
  */
-export const MAX_ROW = 21;
+export const MAX_ROW = MAX_BOARD_HEIGHT - 1;
 
 /**
  * Maximum hex/edge column coordinate. 6-player fallback width is 0x17 = 23; valid
  * coords are strictly inside it, so max col = 22. ({@code CustomMapValidator.MAX_COL}.)
  */
-export const MAX_COL = 22;
+export const MAX_COL = MAX_BOARD_WIDTH - 1;
 
 /** Severity of a {@link ValidationIssue}. */
 export type Severity = 'error' | 'warning';
@@ -100,16 +106,26 @@ export function validate(map: CustomMap): ValidationIssue[] {
   validateName(map, issues);
   validateDescription(map, issues);
   validatePlayerCounts(map, issues);
+  validateBoardSize(map, issues);
+
+  const boardHeight =
+    map.boardHeight !== undefined && isValidBoardHeight(map.boardHeight)
+      ? map.boardHeight
+      : DEFAULT_BOARD_HEIGHT;
+  const boardWidth =
+    map.boardWidth !== undefined && isValidBoardWidth(map.boardWidth)
+      ? map.boardWidth
+      : DEFAULT_BOARD_WIDTH;
 
   // Land hexes — also builds the coord sets the later checks reuse.
   const seenCoords = new Set<number>();
   const seenNonWaterCoords = new Set<number>();
-  const nHex = validateLandHexes(map, issues, seenCoords, seenNonWaterCoords);
+  const nHex = validateLandHexes(map, issues, seenCoords, seenNonWaterCoords, boardHeight, boardWidth);
 
   validateLandAreas(map, issues, nHex);
   validateOptionalHex(map.robberHex, 'robberHex', seenCoords, issues);
   validateOptionalHex(map.pirateHex, 'pirateHex', seenCoords, issues);
-  validatePorts(map, issues, seenNonWaterCoords);
+  validatePorts(map, issues, seenNonWaterCoords, boardHeight, boardWidth);
 
   // Warnings: heuristics the Java validator documents as NOT checked.
   warnLandConnectivity(map, issues);
@@ -298,6 +314,38 @@ function validatePlayerCounts(map: CustomMap, issues: ValidationIssue[]): void {
   }
 }
 
+function validateBoardSize(map: CustomMap, issues: ValidationIssue[]): void {
+  validateBoardDimension(map.boardHeight, 'boardHeight', MIN_BOARD_HEIGHT, MAX_BOARD_HEIGHT, issues);
+  validateBoardDimension(map.boardWidth, 'boardWidth', MIN_BOARD_WIDTH, MAX_BOARD_WIDTH, issues);
+}
+
+function validateBoardDimension(
+  value: number | undefined,
+  field: 'boardHeight' | 'boardWidth',
+  min: number,
+  max: number,
+  issues: ValidationIssue[],
+): void {
+  if (value === undefined) {
+    return;
+  }
+  if (!Number.isInteger(value) || value < min || value > max) {
+    issues.push({
+      severity: 'error',
+      field,
+      message: `"${field}" ${value} out of range; must be ${min}..${max}`,
+    });
+  }
+}
+
+function isValidBoardHeight(value: number | undefined): boolean {
+  return value === undefined || (Number.isInteger(value) && value >= MIN_BOARD_HEIGHT && value <= MAX_BOARD_HEIGHT);
+}
+
+function isValidBoardWidth(value: number | undefined): boolean {
+  return value === undefined || (Number.isInteger(value) && value >= MIN_BOARD_WIDTH && value <= MAX_BOARD_WIDTH);
+}
+
 // ---------------------------------------------------------------------------
 // land hexes
 // ---------------------------------------------------------------------------
@@ -312,6 +360,8 @@ function validateLandHexes(
   issues: ValidationIssue[],
   seenCoords: Set<number>,
   seenNonWaterCoords: Set<number>,
+  boardHeight: number,
+  boardWidth: number,
 ): number {
   const hexes = map.landHexes ?? [];
   if (hexes.length === 0) {
@@ -335,7 +385,7 @@ function validateLandHexes(
     const coord = parseCoordChecked(h.coord, `${base}.coord`, issues);
 
     if (coord !== null) {
-      checkHexCoordInRange(coord, `${base}.coord`, issues);
+      checkHexCoordInRange(coord, `${base}.coord`, issues, boardHeight, boardWidth);
       if (!seenCoords.has(coord)) {
         seenCoords.add(coord);
         if (typeName !== null && typeName !== 'water') {
@@ -514,6 +564,8 @@ function validatePorts(
   map: CustomMap,
   issues: ValidationIssue[],
   seenNonWaterCoords: Set<number>,
+  boardHeight: number,
+  boardWidth: number,
 ): void {
   const ports = map.ports;
   if (!ports || ports.length === 0) {
@@ -536,7 +588,7 @@ function validatePorts(
     if (edge === null) {
       continue;
     }
-    checkEdgeCoordInRange(edge, `${base}.edge`, issues);
+    checkEdgeCoordInRange(edge, `${base}.edge`, issues, boardHeight, boardWidth);
     if (seenEdges.has(edge)) {
       issues.push({
         severity: 'error',
@@ -555,7 +607,7 @@ function validatePorts(
     // Java runs the faces-land check after the geometry check; it computes the
     // adjacent hex regardless, but a perpendicular facing yields no useful hex.
     if (geomOk) {
-      checkPortFacesLand(edge, facing, seenNonWaterCoords, i, issues);
+      checkPortFacesLand(edge, facing, seenNonWaterCoords, i, issues, boardHeight, boardWidth);
     }
   }
 }
@@ -613,8 +665,10 @@ function checkPortFacesLand(
   declaredNonWaterCoords: Set<number>,
   idx: number,
   issues: ValidationIssue[],
+  boardHeight: number,
+  boardWidth: number,
 ): void {
-  const landHex = adjacentHexToEdge(edge, facing);
+  const landHex = adjacentHexToEdge(edge, facing, boardHeight - 1, boardWidth - 1);
   if (landHex === 0 || !declaredNonWaterCoords.has(landHex)) {
     issues.push({
       severity: 'error',
@@ -632,7 +686,12 @@ function checkPortFacesLand(
  * port of {@code CustomMapValidator.adjacentHexToEdge} (itself a standalone copy of
  * {@code SOCBoardLarge.getAdjacentHexToEdge}). Returns 0 if off the validated range.
  */
-export function adjacentHexToEdge(edgeCoord: number, facing: number): number {
+export function adjacentHexToEdge(
+  edgeCoord: number,
+  facing: number,
+  maxRow: number = MAX_ROW,
+  maxCol: number = MAX_COL,
+): number {
   let r = rowOf(edgeCoord);
   let c = colOf(edgeCoord);
 
@@ -704,7 +763,7 @@ export function adjacentHexToEdge(edgeCoord: number, facing: number): number {
     }
   }
 
-  if (r > 0 && c > 0 && r <= MAX_ROW && c <= MAX_COL) {
+  if (r > 0 && c > 0 && r <= maxRow && c <= maxCol) {
     return ((r << 8) | c) & 0xffff;
   }
   return 0;
@@ -718,15 +777,23 @@ export function adjacentHexToEdge(edgeCoord: number, facing: number): number {
  * Mirror {@code checkHexCoordInRange}: rows 1..MAX_ROW, cols 1..MAX_COL, and the
  * hex must be on an odd row.
  */
-function checkHexCoordInRange(coord: number, field: string, issues: ValidationIssue[]): void {
+function checkHexCoordInRange(
+  coord: number,
+  field: string,
+  issues: ValidationIssue[],
+  boardHeight: number,
+  boardWidth: number,
+): void {
   const r = rowOf(coord);
   const c = colOf(coord);
-  if (r < 1 || r > MAX_ROW || c < 1 || c > MAX_COL) {
+  const maxRow = boardHeight - 1;
+  const maxCol = boardWidth - 1;
+  if (r < 1 || r > maxRow || c < 1 || c > maxCol) {
     issues.push({
       severity: 'error',
       field,
       coord,
-      message: `${field} 0x${coord.toString(16)} is out of board range (row 1..${MAX_ROW}, col 1..${MAX_COL})`,
+      message: `${field} 0x${coord.toString(16)} is out of board range (row 1..${maxRow}, col 1..${maxCol})`,
     });
     return;
   }
@@ -744,15 +811,23 @@ function checkHexCoordInRange(coord: number, field: string, issues: ValidationIs
  * Mirror {@code checkEdgeCoordInRange}: rows 0..MAX_ROW, cols 0..MAX_COL (edges
  * can be on even or odd rows, so no parity check here).
  */
-function checkEdgeCoordInRange(coord: number, field: string, issues: ValidationIssue[]): void {
+function checkEdgeCoordInRange(
+  coord: number,
+  field: string,
+  issues: ValidationIssue[],
+  boardHeight: number,
+  boardWidth: number,
+): void {
   const r = rowOf(coord);
   const c = colOf(coord);
-  if (r < 0 || r > MAX_ROW || c < 0 || c > MAX_COL) {
+  const maxRow = boardHeight - 1;
+  const maxCol = boardWidth - 1;
+  if (r < 0 || r > maxRow || c < 0 || c > maxCol) {
     issues.push({
       severity: 'error',
       field,
       coord,
-      message: `${field} 0x${coord.toString(16)} is out of board range (row 0..${MAX_ROW}, col 0..${MAX_COL})`,
+      message: `${field} 0x${coord.toString(16)} is out of board range (row 0..${maxRow}, col 0..${maxCol})`,
     });
   }
 }

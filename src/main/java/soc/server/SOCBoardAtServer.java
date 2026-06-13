@@ -2801,9 +2801,15 @@ public class SOCBoardAtServer extends SOCBoardLarge
             }
             else if (CustomMapLoader.isCustomMap(sc))
             {
-                // Custom maps always use the larger 6-player fallback board size, so the same
-                // map's coordinates are valid regardless of the game's actual player count.
-                heightWidth = FALLBACK_BOARDSIZE[1];
+                final CustomMapLoader.ParsedCustomMap pmap = CustomMapLoader.getLoadedMap(sc);
+                if (pmap != null)
+                {
+                    heightWidth = (pmap.boardHeight << 8) | pmap.boardWidth;
+                } else {
+                    // Shouldn't happen for a registered custom-map scenario, but keep the old
+                    // fallback behavior if the registry was cleared during a test.
+                    heightWidth = FALLBACK_BOARDSIZE[1];
+                }
             }
         }
 

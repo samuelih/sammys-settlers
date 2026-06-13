@@ -236,8 +236,9 @@ describe('progress-card hand', () => {
     draw(CKProgressCard.TRADE_MONOPOLY);
     myTurn(GameState.ROLL_OR_CARD);
     renderGame();
-    expect(screen.getByTestId(`ck-progress-${CKProgressCard.WARLORD}`)).toHaveTextContent('Warlord');
-    // Warlord is playable in ROLL_OR_CARD; Trade Monopoly only in PLAY1.
+    expect(screen.getByTestId(`ck-progress-${CKProgressCard.WARLORD}`)).toHaveTextContent('Encouragement');
+    expect(screen.getByTestId(`ck-progress-${CKProgressCard.WARLORD}`)).toHaveTextContent('aka Warlord');
+    // Encouragement/Warlord is playable in ROLL_OR_CARD; Trade Monopoly only in PLAY1.
     expect(screen.getByTestId(`ck-progress-play-${CKProgressCard.WARLORD}`)).toBeEnabled();
     expect(screen.getByTestId(`ck-progress-play-${CKProgressCard.TRADE_MONOPOLY}`)).toBeDisabled();
   });
@@ -256,6 +257,26 @@ describe('progress-card hand', () => {
     s.setGameState(GAME, GameState.PLAY1);
     renderGame();
     expect(screen.getByTestId(`ck-progress-play-${CKProgressCard.WARLORD}`)).toBeDisabled();
+  });
+});
+
+describe('official C&K reference', () => {
+  it('lists the official pieces and full progress-card deck', () => {
+    renderGame();
+    expect(screen.getByTestId('ck-reference')).toBeInTheDocument();
+    expect(screen.getByTestId('ck-reference-component-wall')).toHaveTextContent('City walls');
+    expect(screen.getByTestId('ck-reference-component-merchant')).toHaveTextContent('Merchant');
+    expect(screen.getByTestId('ck-reference-component-dice')).toHaveTextContent('Event and red dice');
+    expect(screen.getByTestId('ck-reference-deck-trade')).toHaveTextContent('18 cards');
+    expect(screen.getByTestId('ck-reference-card-alchemy')).toHaveTextContent('Alchemy');
+    expect(screen.getByTestId('ck-reference-card-merchant')).toHaveTextContent('Reference');
+    expect(screen.getByTestId('ck-reference-card-encouragement')).toHaveTextContent('Playable');
+  });
+
+  it('does not show the base-game development-card action panel in C&K games', () => {
+    renderGame();
+    expect(screen.queryByTestId('devcard-panel')).toBeNull();
+    expect(screen.queryByText('Largest Army')).toBeNull();
   });
 });
 

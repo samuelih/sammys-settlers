@@ -38,6 +38,35 @@ function darken(color: string): string {
   return `color-mix(in srgb, ${color} 62%, #000)`;
 }
 
+/** Slightly lift a player color for painted highlights. */
+function lighten(color: string): string {
+  return `color-mix(in srgb, ${color} 46%, #fff)`;
+}
+
+/** Trim a road/ship away from its endpoint nodes so structures own the corners. */
+function trimSegment(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  trim: number,
+): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len <= trim * 2) {
+    return { x1, y1, x2, y2 }; // <--- Early return: too short to trim safely ---
+  }
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    x1: x1 + ux * trim,
+    y1: y1 + uy * trim,
+    x2: x2 - ux * trim,
+    y2: y2 - uy * trim,
+  };
+}
+
 /**
  * A road (solid rounded bar) or a ship (segmented hull motif) drawn along its
  * edge. A dark outline underneath gives the player-colored bar contrast on any
@@ -50,7 +79,7 @@ function RoadOrShip({
   ship,
 }: PieceProps & { ship: boolean }): JSX.Element {
   const e = edgeToPixel(piece.coord);
-  const w = HALFDELTA_X * 0.2;
+  const w = HALFDELTA_X * 0.18;
   const testid = ship ? `ship-${piece.coord}` : `road-${piece.coord}`;
   const mx = (e.x1 + e.x2) / 2;
   const my = (e.y1 + e.y2) / 2;
@@ -76,28 +105,52 @@ function RoadOrShip({
       </g>
     );
   }
+  const road = trimSegment(e.x1, e.y1, e.x2, e.y2, HALFDELTA_X * 0.13);
+  const roadLen = Math.hypot(road.x2 - road.x1, road.y2 - road.y1);
+  const roadMx = (road.x1 + road.x2) / 2;
+  const roadMy = (road.y1 + road.y2) / 2;
+  const roadH = w;
   return (
     <g data-testid={testid} data-player={piece.playerNumber} className={styles.piecePop} pointerEvents="none">
-      {/* dark keyline for contrast */}
-      <line
-        className={styles.roadOutline}
-        x1={e.x1}
-        y1={e.y1}
-        x2={e.x2}
-        y2={e.y2}
-        strokeWidth={w + 2.5}
-      />
-      {/* player-colored bar */}
-      <line
-        className={styles.road}
-        x1={e.x1}
-        y1={e.y1}
-        x2={e.x2}
-        y2={e.y2}
-        stroke={color}
-        strokeWidth={w}
-      />
-      <line className={styles.roadHighlight} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} strokeWidth={w * 0.35} />
+      <g transform={`translate(${roadMx} ${roadMy}) rotate(${e.angle})`}>
+        {/* dark player-tinted keyline for contrast */}
+        <rect
+          className={styles.roadOutline}
+          x={-roadLen / 2}
+          y={-(roadH + 2.2) / 2}
+          width={roadLen}
+          height={roadH + 2.2}
+          rx={(roadH + 2.2) / 2}
+          fill={darken(color)}
+        />
+        {/* player-colored plank */}
+        <rect
+          className={styles.road}
+          x={-roadLen / 2}
+          y={-roadH / 2}
+          width={roadLen}
+          height={roadH}
+          rx={roadH / 2}
+          fill={color}
+        />
+        <rect
+          className={styles.roadHighlight}
+          x={-roadLen / 2 + roadH * 0.5}
+          y={-roadH * 0.34}
+          width={Math.max(0, roadLen - roadH)}
+          height={roadH * 0.24}
+          rx={roadH * 0.15}
+          fill={lighten(color)}
+        />
+        <rect
+          className={styles.roadBevel}
+          x={-roadLen / 2 + roadH * 0.42}
+          y={roadH * 0.2}
+          width={Math.max(0, roadLen - roadH * 0.84)}
+          height={roadH * 0.18}
+          rx={roadH * 0.09}
+        />
+      </g>
     </g>
   );
 }
@@ -114,16 +167,19 @@ function Settlement({ piece, color }: PieceProps): JSX.Element {
       pointerEvents="none"
     >
       <path className={styles.settlement} d={housePath(x, y, s)} fill={color} stroke={darken(color)} />
-      <path className={styles.pieceRoof} d={`M ${x - s * 1.02} ${y - s * 0.28} L ${x} ${y - s * 1.08} L ${x + s * 1.02} ${y - s * 0.28}`} />
-      <rect className={styles.pieceDetail} x={x - s * 0.18} y={y + s * 0.08} width={s * 0.36} height={s * 0.62} rx={0.8} />
+      <path
+        className={styles.pieceRoof}
+        d={`M ${x - s * 1.02} ${y - s * 0.28} L ${x} ${y - s * 1.08} L ${x + s * 1.02} ${y - s * 0.28}`}
+      />
+      <rect className={styles.pieceDoor} x={x - s * 0.18} y={y + s * 0.08} width={s * 0.36} height={s * 0.62} rx={0.8} />
     </g>
   );
 }
 
-/** A city: a larger house glyph with a second block, at its node. */
+/** A city: a manor-and-tower glyph, at its node. */
 function City({ piece, color }: PieceProps): JSX.Element {
   const { x, y } = nodeToPixel(piece.coord);
-  const s = HALFDELTA_X * 0.38;
+  const s = HALFDELTA_X * 0.34;
   return (
     <g
       data-testid={`city-${piece.coord}`}
@@ -131,10 +187,26 @@ function City({ piece, color }: PieceProps): JSX.Element {
       className={styles.piecePop}
       pointerEvents="none"
     >
+      <ellipse className={styles.pieceBaseShadow} cx={x} cy={y + s * 0.72} rx={s * 1.08} ry={s * 0.22} />
       <path className={styles.city} d={cityPath(x, y, s)} fill={color} stroke={darken(color)} />
-      <path className={styles.pieceRoof} d={`M ${x - s * 1.18} ${y - s * 0.12} L ${x - s * 0.45} ${y - s * 0.82} L ${x + s * 0.05} ${y - s * 0.16}`} />
-      <rect className={styles.pieceDetail} x={x + s * 0.16} y={y - s * 0.48} width={s * 0.22} height={s * 0.24} rx={0.7} />
-      <rect className={styles.pieceDetail} x={x + s * 0.16} y={y + s * 0.04} width={s * 0.22} height={s * 0.24} rx={0.7} />
+      <path
+        className={styles.pieceRoof}
+        d={[
+          `M ${x - s * 1.02} ${y - s * 0.1}`,
+          `L ${x - s * 0.48} ${y - s * 0.78}`,
+          `L ${x + s * 0.08} ${y - s * 0.1}`,
+          `M ${x + s * 0.26} ${y - s * 0.45}`,
+          `L ${x + s * 0.46} ${y - s * 0.62}`,
+          `L ${x + s * 0.66} ${y - s * 0.45}`,
+        ].join(' ')}
+      />
+      <path
+        className={styles.pieceSeam}
+        d={`M ${x + s * 0.15} ${y - s * 0.08} L ${x + s * 0.15} ${y + s * 0.7}`}
+      />
+      <rect className={styles.pieceDoor} x={x - s * 0.56} y={y + s * 0.18} width={s * 0.28} height={s * 0.52} rx={0.9} />
+      <rect className={styles.pieceWindow} x={x + s * 0.48} y={y - s * 0.24} width={s * 0.22} height={s * 0.22} rx={0.8} />
+      <rect className={styles.pieceWindow} x={x + s * 0.48} y={y + s * 0.18} width={s * 0.22} height={s * 0.22} rx={0.8} />
     </g>
   );
 }
@@ -156,23 +228,35 @@ function housePath(x: number, y: number, s: number): string {
   ].join(' ');
 }
 
-/** City silhouette: a tall tower joined to a lower house wing. */
+/** City silhouette: lower manor wing joined to a compact crenellated tower. */
 function cityPath(x: number, y: number, s: number): string {
-  const left = x - s * 1.18;
-  const right = x + s * 1.05;
-  const bottom = y + s * 0.82;
-  const wingTop = y - s * 0.12;
-  const towerTop = y - s * 0.9;
-  const roof = y - s * 1.28;
-  const mid = x - s * 0.28;
+  const left = x - s * 1.08;
+  const wingRight = x + s * 0.14;
+  const towerLeft = x + s * 0.14;
+  const towerRight = x + s * 0.98;
+  const bottom = y + s * 0.74;
+  const eave = y - s * 0.1;
+  const roof = y - s * 0.82;
+  const towerTop = y - s * 0.58;
+  const crenelTop = y - s * 0.76;
+  const crenelLow = y - s * 0.58;
   return [
     `M ${left} ${bottom}`,
-    `L ${left} ${wingTop}`,
-    `L ${mid} ${wingTop}`,
-    `L ${mid} ${towerTop}`,
-    `L ${x + s * 0.5} ${roof}`,
-    `L ${right} ${towerTop}`,
-    `L ${right} ${bottom}`,
+    `L ${left} ${eave}`,
+    `L ${x - s * 0.48} ${roof}`,
+    `L ${wingRight} ${eave}`,
+    `L ${towerLeft} ${eave}`,
+    `L ${towerLeft} ${towerTop}`,
+    `L ${x + s * 0.3} ${towerTop}`,
+    `L ${x + s * 0.3} ${crenelTop}`,
+    `L ${x + s * 0.47} ${crenelTop}`,
+    `L ${x + s * 0.47} ${crenelLow}`,
+    `L ${x + s * 0.65} ${crenelLow}`,
+    `L ${x + s * 0.65} ${crenelTop}`,
+    `L ${x + s * 0.82} ${crenelTop}`,
+    `L ${x + s * 0.82} ${crenelLow}`,
+    `L ${towerRight} ${crenelLow}`,
+    `L ${towerRight} ${bottom}`,
     'Z',
   ].join(' ');
 }

@@ -7,9 +7,16 @@ import {
   type HexTypeName,
   type PortTypeName,
   type FacingName,
+  type EditorBoardSize,
   emptyMap,
   parseCoord,
   validate,
+  boardSizeForMap,
+  minimumBoardSizeForMap,
+  MIN_BOARD_HEIGHT,
+  MIN_BOARD_WIDTH,
+  MAX_BOARD_HEIGHT,
+  MAX_BOARD_WIDTH,
 } from '../map-editor';
 import {
   placeHex,
@@ -24,6 +31,7 @@ import {
   togglePlayerCount,
   setPlayerCounts,
   setShuffle,
+  setBoardSize,
   indexOfHexAt,
 } from '../map-editor/editorActions';
 import { SAMPLE_MAP_JSON } from '../map-editor/sampleMapData';
@@ -62,6 +70,8 @@ export function MapEditorScreen(): JSX.Element {
   const issues = useMemo(() => validate(map), [map]);
   const errorCount = issues.filter((issue) => issue.severity === 'error').length;
   const warningCount = issues.filter((issue) => issue.severity === 'warning').length;
+  const boardSize = useMemo(() => boardSizeForMap(map), [map]);
+  const minBoardSize = useMemo(() => minimumBoardSizeForMap(map), [map]);
 
   // --- Canvas interaction handlers ---------------------------------------
   const handleHexClick = (coord: number, alt: boolean): void => {
@@ -97,7 +107,7 @@ export function MapEditorScreen(): JSX.Element {
   };
 
   // --- Metadata + IO handlers --------------------------------------------
-  const loadMap = (next: CustomMap): void => setMap(next);
+  const loadMap = (next: CustomMap): void => setMap(ensureEditorBoardSize(next));
 
   const handleNew = (): void => {
     if (
@@ -177,6 +187,11 @@ export function MapEditorScreen(): JSX.Element {
               </div>
             }
           >
+            <BoardSizeControls
+              size={boardSize}
+              minimum={minBoardSize}
+              onSizeChange={(height, width) => setMap((m) => setBoardSize(m, height, width))}
+            />
             <EditorCanvas
               map={map}
               tool={tool}
@@ -216,3 +231,108 @@ function clearPirateAt(map: CustomMap, coord: number): CustomMap {
 }
 
 export default MapEditorScreen;
+
+/** Add explicit fitted board size when importing old maps that predate size fields. */
+function ensureEditorBoardSize(map: CustomMap): CustomMap {
+  if (map.boardHeight !== undefined && map.boardWidth !== undefined) {
+    return map;
+  }
+  const size = boardSizeForMap(map);
+  return {
+    ...map,
+    boardHeight: map.boardHeight ?? size.height,
+    boardWidth: map.boardWidth ?? size.width,
+  };
+}
+
+function BoardSizeControls({
+  size,
+  minimum,
+  onSizeChange,
+}: {
+  size: EditorBoardSize;
+  minimum: EditorBoardSize;
+  onSizeChange: (height: number, width: number) => void;
+}): JSX.Element {
+  const minHeight = Math.max(MIN_BOARD_HEIGHT, minimum.height);
+  const minWidth = Math.max(MIN_BOARD_WIDTH, minimum.width);
+  return (
+    <div className={styles.boardSizeBar} data-testid="editor-board-size">
+      <div className={styles.sizeTitle}>
+        <span className={styles.groupLabel}>Board frame</span>
+        <span className={styles.sizeRange}>
+          rows 1..{size.height - 1} · cols 1..{size.width - 1}
+        </span>
+      </div>
+      <label className={styles.sizeField}>
+        <span>Height</span>
+        <input
+          className={styles.sizeInput}
+          data-testid="editor-board-height"
+          type="number"
+          min={minHeight}
+          max={MAX_BOARD_HEIGHT}
+          value={size.height}
+          onChange={(e) => onSizeChange(Number(e.target.value), size.width)}
+        />
+      </label>
+      <div className={styles.sizeStepper} aria-label="Adjust board height">
+        <button
+          type="button"
+          data-testid="editor-board-height-dec"
+          disabled={size.height <= minHeight}
+          onClick={() => onSizeChange(size.height - 2, size.width)}
+        >
+          -
+        </button>
+        <button
+          type="button"
+          data-testid="editor-board-height-inc"
+          disabled={size.height >= MAX_BOARD_HEIGHT}
+          onClick={() => onSizeChange(size.height + 2, size.width)}
+        >
+          +
+        </button>
+      </div>
+      <label className={styles.sizeField}>
+        <span>Width</span>
+        <input
+          className={styles.sizeInput}
+          data-testid="editor-board-width"
+          type="number"
+          min={minWidth}
+          max={MAX_BOARD_WIDTH}
+          value={size.width}
+          onChange={(e) => onSizeChange(size.height, Number(e.target.value))}
+        />
+      </label>
+      <div className={styles.sizeStepper} aria-label="Adjust board width">
+        <button
+          type="button"
+          data-testid="editor-board-width-dec"
+          disabled={size.width <= minWidth}
+          onClick={() => onSizeChange(size.height, size.width - 2)}
+        >
+          -
+        </button>
+        <button
+          type="button"
+          data-testid="editor-board-width-inc"
+          disabled={size.width >= MAX_BOARD_WIDTH}
+          onClick={() => onSizeChange(size.height, size.width + 2)}
+        >
+          +
+        </button>
+      </div>
+      <Button
+        size="sm"
+        variant="ghost"
+        data-testid="editor-board-max"
+        disabled={size.height >= MAX_BOARD_HEIGHT && size.width >= MAX_BOARD_WIDTH}
+        onClick={() => onSizeChange(MAX_BOARD_HEIGHT, MAX_BOARD_WIDTH)}
+      >
+        Max frame
+      </Button>
+    </div>
+  );
+}

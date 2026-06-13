@@ -315,6 +315,12 @@ public class CustomMapLoader
         /** If true, shuffle hex types and dice numbers; if false/absent, use the fixed layout as given. */
         boolean shuffle;
 
+        /** Optional board height in large-board coordinate units; if absent, uses the 6-player fallback height. */
+        Integer boardHeight;
+
+        /** Optional board width in large-board coordinate units; if absent, uses the 6-player fallback width. */
+        Integer boardWidth;
+
         /** Land hexes (required, non-empty). */
         HexJson[] landHexes;
 
@@ -404,7 +410,16 @@ public class CustomMapLoader
         /** If true, shuffle hex types and dice numbers when generating the board. */
         public final boolean shuffle;
 
-        /** Land hex resource types (parallel to {@link #landHexCoord}), values like {@link soc.game.SOCBoard#CLAY_HEX}. */
+        /** Board height in large-board coordinate units. */
+        public final int boardHeight;
+
+        /** Board width in large-board coordinate units. */
+        public final int boardWidth;
+
+        /**
+         * Land hex resource types (parallel to {@link #landHexCoord}),
+         * values like {@link soc.game.SOCBoard#CLAY_HEX}.
+         */
         public final int[] landHexType;
 
         /** Land hex coordinates (parallel to {@link #landHexType}), each 0xRRCC. */
@@ -443,7 +458,7 @@ public class CustomMapLoader
          */
         ParsedCustomMap
             (final String scenarioKey, final String name, final String description,
-             final int[] playerCounts, final boolean shuffle,
+             final int[] playerCounts, final boolean shuffle, final int boardHeight, final int boardWidth,
              final int[] landHexType, final int[] landHexCoord, final int[] landHexNumber,
              final int[] landAreaPathRanges, final int maxLandAreaNumber,
              final int[] portType, final int[] portEdgeFacing,
@@ -454,6 +469,8 @@ public class CustomMapLoader
             this.description = description;
             this.playerCounts = playerCounts;
             this.shuffle = shuffle;
+            this.boardHeight = boardHeight;
+            this.boardWidth = boardWidth;
             this.landHexType = landHexType;
             this.landHexCoord = landHexCoord;
             this.landHexNumber = landHexNumber;

@@ -234,37 +234,41 @@
 }
 
 /* ---- Ports --------------------------------------------------------- */
-.portPlank {
+.portPier {
+  fill: none;
   stroke: var(--port-plank, #8a7a52);
-  stroke-width: 2.2;
+  stroke-width: 2.1;
   stroke-linecap: round;
-  opacity: 0.7;
+  opacity: 0.68;
+  filter: drop-shadow(0 0.7px 0 rgba(0, 0, 0, 0.3));
 }
-.portMarker {
-  fill: var(--port-fill, #ece3cc);
+.portNodeCap {
+  fill: var(--port-node-cap, rgba(236, 227, 204, 0.7));
+  stroke: var(--port-plank, #8a7a52);
+  stroke-width: 1;
+  opacity: 0.8;
+}
+.portDock {
+  filter: drop-shadow(0 1.2px 1.4px rgba(0, 0, 0, 0.45)) saturate(1.04);
+}
+.portBadgeRing {
+  fill: rgba(246, 239, 221, 0.5);
   stroke: var(--port-stroke, #8a7a52);
-  stroke-width: 2;
+  stroke-width: 1.4;
 }
 .portLabel {
   fill: var(--port-text, #4a3f24);
   font-weight: var(--font-weight-bold, 700);
   text-anchor: middle;
   dominant-baseline: central;
+  paint-order: stroke fill;
+  stroke: rgba(246, 239, 221, 0.65);
+  stroke-width: 1.4;
 }
-.portShip {
-  fill: var(--port-ship, #6b5a36);
-  stroke: var(--port-stroke, #8a7a52);
-  stroke-width: 0.6;
-}
-.portMast {
-  stroke: var(--port-ship, #6b5a36);
-  stroke-width: 1.1;
-  stroke-linecap: round;
-}
-.portSail {
-  fill: var(--port-sail, #f4ecd8);
-  stroke: var(--port-stroke, #8a7a52);
-  stroke-width: 0.5;
+.portResourceRing {
+  fill: none;
+  stroke: rgba(72, 58, 34, 0.72);
+  stroke-width: 0.75;
 }
 
 /* ---- Robber / pirate ---------------------------------------------- */
@@ -307,13 +311,15 @@
   filter: url(#piece-shadow);
 }
 .roadOutline {
-  stroke: var(--piece-stroke, rgba(0, 0, 0, 0.65));
   stroke-linecap: round;
-  opacity: 0.82;
+  opacity: 0.9;
 }
 .roadHighlight {
-  stroke: rgba(255, 255, 255, 0.36);
   stroke-linecap: round;
+  opacity: 0.8;
+}
+.roadBevel {
+  fill: rgba(0, 0, 0, 0.16);
 }
 .shipHull,
 .shipSail {
@@ -341,6 +347,9 @@
   stroke-linejoin: round;
   filter: url(#piece-shadow);
 }
+.pieceBaseShadow {
+  fill: rgba(0, 0, 0, 0.24);
+}
 .pieceRoof {
   fill: none;
   stroke: rgba(255, 255, 255, 0.42);
@@ -348,9 +357,20 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-/* Doors / windows on houses & cities. */
-.pieceDetail {
+/* Doors and windows on houses and cities. */
+.pieceDoor {
   fill: var(--piece-detail, rgba(20, 18, 14, 0.55));
+}
+.pieceSeam {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.22);
+  stroke-width: 0.75;
+  stroke-linecap: round;
+}
+.pieceWindow {
+  fill: rgba(255, 245, 194, 0.82);
+  stroke: rgba(0, 0, 0, 0.22);
+  stroke-width: 0.35;
 }
 
 /* Placement pop/fade-in when a piece first renders. */
@@ -379,9 +399,9 @@
 .edgeTarget {
   cursor: pointer;
   fill: var(--board-highlight, #2f7fb5);
-  fill-opacity: 0.35;
-  stroke: var(--board-highlight-ring, rgba(31, 120, 194, 0.9));
-  stroke-width: 1.5;
+  fill-opacity: 0.18;
+  stroke: var(--board-highlight-ring, rgba(31, 120, 194, 0.74));
+  stroke-width: 1.35;
   transition: fill-opacity var(--transition-fast, 120ms ease);
 }
 .nodeTarget:hover,

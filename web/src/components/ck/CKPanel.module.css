@@ -115,9 +115,63 @@
 /* ---- Knights -------------------------------------------------------------- */
 
 .knightSummary {
+  margin: 0;
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--color-text, #111);
   font-variant-numeric: tabular-nums;
+}
+
+.knightTokens {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.knightTokenRow {
+  display: grid;
+  grid-template-columns: minmax(4.75rem, auto) 1fr;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+}
+
+.knightTokenLabel {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+  text-transform: capitalize;
+}
+
+.knightStrength {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #111);
+}
+
+.knightTokenGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+  min-height: 1rem;
+  align-items: center;
+}
+
+.knightToken {
+  width: 0.92rem;
+  height: 0.92rem;
+  border-radius: 50% 50% 42% 42%;
+  border: 1px solid var(--color-border-strong, #a8a092);
+  background:
+    linear-gradient(145deg, var(--color-surface, #fff) 0 44%, var(--color-surface-alt, #ece8df) 45% 100%);
+  box-shadow: inset 0 -0.12rem 0 rgba(20, 18, 14, 0.12);
+}
+
+.knightTokenActive {
+  border-color: color-mix(in srgb, var(--color-accent, #2a6fd6) 70%, #000);
+  background:
+    radial-gradient(circle at 45% 28%, #fff 0 18%, transparent 20%),
+    linear-gradient(145deg, var(--color-accent, #2a6fd6), var(--color-success, #2f8f4e));
+}
+
+.knightTokenEmpty {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
 }
 
 .knightButtons {
@@ -177,14 +231,245 @@
   background: var(--color-surface-alt, #ece8df);
 }
 
+.progressCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
 .progressCardName {
   font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text, #111);
+}
+
+.progressCardMeta {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+  line-height: var(--line-height-tight, 1.2);
 }
 
 .progressEmpty {
   margin: 0;
   font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, #666);
+}
+
+/* ---- Official C&K reference ----------------------------------------------- */
+
+.reference {
+  border: 1px solid var(--color-border, #cfc9bc);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface, #fff);
+  overflow: hidden;
+}
+
+.referenceSummary {
+  cursor: pointer;
+  padding: var(--space-2, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #111);
+}
+
+.referenceBlock {
+  display: grid;
+  gap: var(--space-2, 0.5rem);
+  padding: 0 var(--space-2, 0.5rem) var(--space-2, 0.5rem);
+}
+
+.referenceBlock + .referenceBlock {
+  border-top: 1px solid var(--color-border, #cfc9bc);
+  padding-top: var(--space-2, 0.5rem);
+}
+
+.referenceTitle {
+  margin: 0;
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-muted, #666);
+}
+
+.componentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2, 0.5rem);
+}
+
+.componentItem {
+  display: grid;
+  grid-template-columns: 3.1rem 1fr;
+  gap: var(--space-2, 0.5rem);
+  align-items: start;
+  padding: var(--space-2, 0.5rem);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-surface-alt, #ece8df);
+}
+
+.componentIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border-strong, #a8a092);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text, #111);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.75), transparent 48%),
+    var(--color-bg, #f4f1ea);
+}
+
+.componentIcon[data-icon='knight'],
+.componentIcon[data-icon='barbarian'] {
+  background-color: color-mix(in srgb, var(--color-danger, #c0392b) 16%, var(--color-bg, #f4f1ea));
+}
+
+.componentIcon[data-icon='commodity'],
+.componentIcon[data-icon='improvement'] {
+  background-color: color-mix(in srgb, var(--color-resource-wheat, #e9c45a) 24%, var(--color-bg, #f4f1ea));
+}
+
+.componentIcon[data-icon='progress'],
+.componentIcon[data-icon='dice'] {
+  background-color: color-mix(in srgb, var(--color-accent, #2a6fd6) 18%, var(--color-bg, #f4f1ea));
+}
+
+.componentIcon[data-icon='wall'],
+.componentIcon[data-icon='metropolis'],
+.componentIcon[data-icon='merchant'],
+.componentIcon[data-icon='vp'] {
+  background-color: color-mix(in srgb, var(--color-warning, #b8860b) 18%, var(--color-bg, #f4f1ea));
+}
+
+.componentBody {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.componentName {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #111);
+}
+
+.componentSummary,
+.referenceCardText,
+.referenceSupport,
+.referenceAlias {
+  margin: 0;
+  font-size: var(--font-size-xs, 0.75rem);
+  line-height: var(--line-height-tight, 1.2);
+  color: var(--color-text-muted, #666);
+}
+
+.deckReference {
+  display: grid;
+  gap: var(--space-2, 0.5rem);
+}
+
+.deckHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+  padding: var(--space-1, 0.25rem) 0;
+  border-bottom: 2px solid var(--color-border, #cfc9bc);
+}
+
+.deckReference[data-deck='trade'] .deckHeader {
+  border-bottom-color: var(--color-resource-sheep, #9cce6a);
+}
+
+.deckReference[data-deck='politics'] .deckHeader {
+  border-bottom-color: var(--color-resource-ore, #7d8794);
+}
+
+.deckReference[data-deck='science'] .deckHeader {
+  border-bottom-color: var(--color-resource-wood, #4f7a3a);
+}
+
+.deckName {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text, #111);
+}
+
+.deckCount {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted, #666);
+}
+
+.referenceCards {
+  display: grid;
+  gap: var(--space-2, 0.5rem);
+}
+
+.referenceCard {
+  display: grid;
+  gap: 0.18rem;
+  padding: var(--space-2, 0.5rem);
+  border: 1px solid var(--color-border, #cfc9bc);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg-elevated, #fff);
+}
+
+.referenceCard[data-support='reference'] {
+  opacity: 0.86;
+}
+
+.referenceCardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  min-width: 0;
+}
+
+.referenceCardCount {
+  flex: 0 0 auto;
+  min-width: 1.8rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-muted, #666);
+}
+
+.referenceCardName {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #111);
+}
+
+.supportBadge {
+  justify-self: start;
+  width: max-content;
+  padding: 0.08rem 0.35rem;
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.67rem;
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-text, #111);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #cfc9bc);
+}
+
+.supportBadge[data-support='implemented'] {
+  color: var(--color-success, #2f8f4e);
+  border-color: color-mix(in srgb, var(--color-success, #2f8f4e) 45%, var(--color-border, #cfc9bc));
+}
+
+.supportBadge[data-support='partial'] {
+  color: color-mix(in srgb, var(--color-warning, #d99b1f) 82%, #000);
+  border-color: color-mix(in srgb, var(--color-warning, #d99b1f) 45%, var(--color-border, #cfc9bc));
+}
+
+.supportBadge[data-support='reference'] {
   color: var(--color-text-muted, #666);
 }
 

@@ -1,0 +1,16 @@
+.git
+.gradle
+build
+target
+output
+
+web/node_modules
+web/dist
+web/.DS_Store
+web/tsconfig.node.tsbuildinfo
+web/node_modules/.tmp
+
+*.log
+*.tmp
+*.pyc
+**/__pycache__

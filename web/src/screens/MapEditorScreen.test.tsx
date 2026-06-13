@@ -3,7 +3,7 @@
 // Three concerns the task calls out:
 //   1. Loading the sample map yields a VALID state (editor-valid present).
 //   2. Mutating to an invalid state surfaces an error in the validation panel.
-//   3. Export round-trips: export-json parses back to a map equal to the sample.
+//   3. Export round-trips: export-json parses back to the sample plus explicit board size.
 //
 // The test drives the UI exactly as a user would (palette tools + canvas clicks +
 // import/export buttons), so it also exercises the wiring between the screen, the
@@ -87,12 +87,32 @@ describe('MapEditorScreen', () => {
     const exported = (screen.getByTestId('export-json') as HTMLTextAreaElement).value;
     expect(exported.length).toBeGreaterThan(0);
 
-    // The exported text parses back to a map structurally equal to the sample,
-    // and re-serializes identically (lossless round-trip).
-    const original = parseMapJson(sampleMapText);
+    // The editor adds explicit fitted board size to legacy maps which omitted it,
+    // so what users export matches the canvas frame they edited.
+    const original = { ...parseMapJson(sampleMapText), boardHeight: 16, boardWidth: 17 };
     const roundTripped = parseMapJson(exported);
     expect(roundTripped).toEqual(original);
     expect(serializeMapJson(roundTripped)).toBe(serializeMapJson(original));
+  });
+
+  it('expands the board frame and exports the custom size', () => {
+    fireEvent.click(screen.getByTestId('editor-load-sample'));
+
+    expect(screen.getByTestId('editor-canvas')).toHaveAttribute('data-board-height', '16');
+    expect(screen.getByTestId('editor-canvas')).toHaveAttribute('data-board-width', '17');
+
+    fireEvent.click(screen.getByTestId('editor-board-height-inc'));
+    fireEvent.click(screen.getByTestId('editor-board-width-inc'));
+
+    expect(screen.getByTestId('editor-canvas')).toHaveAttribute('data-board-height', '18');
+    expect(screen.getByTestId('editor-canvas')).toHaveAttribute('data-board-width', '19');
+    expect(screen.getByTestId('editor-board-height')).toHaveValue(18);
+    expect(screen.getByTestId('editor-board-width')).toHaveValue(19);
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+    const exported = parseMapJson((screen.getByTestId('export-json') as HTMLTextAreaElement).value);
+    expect(exported.boardHeight).toBe(18);
+    expect(exported.boardWidth).toBe(19);
   });
 
   it('clears a hex from the canvas with the hex tool (alt-click)', () => {

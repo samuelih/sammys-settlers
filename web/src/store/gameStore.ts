@@ -102,6 +102,7 @@ import {
   SOCDeclinePlayerRequest,
   DeclineReason,
   SOCSimpleAction,
+  type DiceResultPlayer,
   type TradeOffer,
   type ResourceSet,
   resourceSet,
@@ -228,6 +229,8 @@ export interface CurrentGame {
   deckDevCardCount: number;
   /** Rolling chat/announcement log (server text + chat), newest last. */
   gameLog: GameLogEntry[];
+  /** Structured dice-production summary for the most recent roll. */
+  lastResourceGains: DiceGainEvent | null;
 
   // --- In-game interactions (Phase 4) ---
 
@@ -249,6 +252,8 @@ export interface CurrentGame {
    * 'reject' (REJECTOFFER), or null (no response yet). Cleared with the offer.
    */
   offerResponses: (OfferResponse | null)[];
+  /** Recent structured trade activity, newest last. */
+  tradeActivity: TradeActivity[];
   /**
    * Number of cards the local player must discard, or 0 when not required.
    * Set by DISCARDREQUEST, cleared once the local SOCDiscard is sent / state
@@ -370,8 +375,42 @@ export interface DiceRoll {
   total: number;
 }
 
+/** Structured resource-production result for a dice roll. */
+export interface DiceGainEvent {
+  /** Monotonic sequence number; increments so UI animation can replay. */
+  seq: number;
+  /** Per-player gains from SOCDiceResultResources. */
+  players: readonly DiceResultPlayer[];
+}
+
+/**
+ * Structured trade activity for the sidebar. Keeps bot offers/responses visible
+ * without forcing the UI to parse localized/free-form game-log lines.
+ */
+export interface TradeActivity {
+  /** Monotonic sequence number, newest highest. */
+  seq: number;
+  /** Activity category. */
+  kind: 'offer' | 'reject' | 'accept' | 'bank' | 'clear';
+  /** Offering/trading player for offer/bank/clear, when known. */
+  from?: number;
+  /** Target seats for an offer. */
+  to?: boolean[];
+  /** Accepting or rejecting player. */
+  responder?: number;
+  /** Offering player whose offer was accepted. */
+  offering?: number;
+  /** Resources the acting/offering player gives. */
+  give?: ResourceSet;
+  /** Resources the acting/offering player gets. */
+  get?: ResourceSet;
+}
+
 /** Cap the game log so it doesn't grow without bound. */
 const GAME_LOG_MAX = 200;
+
+/** Cap structured trade activity to the recent decisions shown in the sidebar. */
+const TRADE_ACTIVITY_MAX = 12;
 
 /** Default max players when a game's "PL" option is unknown. */
 const DEFAULT_MAX_PLAYERS = 4;
@@ -544,6 +583,8 @@ export interface GameStoreState {
   applyClearTradeMsg: (gameName: string, playerNumber: number) => void;
   /** Apply an accepted trade (clears the offer); responses cleared (SOCAcceptOffer). */
   applyAcceptOffer: (msg: SOCAcceptOffer) => void;
+  /** Record a completed bank/port trade announcement (SOCBankTrade). */
+  applyBankTrade: (msg: SOCBankTrade) => void;
   /** Update the local dev-card inventory / opponents' counts (SOCDevCardAction). */
   applyDevCardAction: (msg: SOCDevCardAction) => void;
   /** Set the deck dev-card count for older-style DEVCARDCOUNT messages. */
@@ -692,9 +733,11 @@ function makeCurrentGame(
     lastInitSettlement: null,
     deckDevCardCount: 0,
     gameLog: [],
+    lastResourceGains: null,
     myInventory: emptyInventory(),
     offers: new Array<TradeOffer | null>(maxPlayers).fill(null),
     offerResponses: new Array<OfferResponse | null>(maxPlayers).fill(null),
+    tradeActivity: [],
     discardRequired: 0,
     robVictims: null,
     robCanChooseNone: false,
@@ -861,6 +904,131 @@ function applyElementToView(
     default:
       return view; // flags / scenario / not-shown element types: ignore
   }
+}
+
+/** Total known resources in a protocol resource set. */
+function resourceSetTotal(rs: ResourceSet): number {
+  return rs.clay + rs.ore + rs.sheep + rs.wheat + rs.wood;
+}
+
+/** Apply a known resource gain/loss pair to a player's visible hand state. */
+function applyResourceTradeDelta(
+  view: PlayerView,
+  gain: ResourceSet,
+  lose: ResourceSet,
+  revealBreakdown: boolean,
+): PlayerView {
+  const resourceTotal = Math.max(0, view.resourceTotal + resourceSetTotal(gain) - resourceSetTotal(lose));
+  if (!revealBreakdown) {
+    return { ...view, resourceTotal };
+  }
+  const resources: ResourceCounts = {
+    clay: Math.max(0, view.resources.clay + gain.clay - lose.clay),
+    ore: Math.max(0, view.resources.ore + gain.ore - lose.ore),
+    sheep: Math.max(0, view.resources.sheep + gain.sheep - lose.sheep),
+    wheat: Math.max(0, view.resources.wheat + gain.wheat - lose.wheat),
+    wood: Math.max(0, view.resources.wood + gain.wood - lose.wood),
+  };
+  return {
+    ...view,
+    resources,
+    resourceTotal: resources.clay + resources.ore + resources.sheep + resources.wheat + resources.wood,
+  };
+}
+
+/** Apply a single robbery resource update while preserving hidden opponent hands. */
+function applyRobberyResourceDelta(
+  view: PlayerView,
+  resType: number,
+  action: number,
+  amount: number,
+  revealBreakdown: boolean,
+): PlayerView {
+  if (resourceField(resType) !== null && revealBreakdown) {
+    return applyElementToView(view, resType, action, amount);
+  }
+  if (action === PlayerElementAction.SET) {
+    return { ...view, resourceTotal: Math.max(0, amount) };
+  }
+  const delta = action === PlayerElementAction.GAIN ? amount : action === PlayerElementAction.LOSE ? -amount : 0;
+  return { ...view, resourceTotal: Math.max(0, view.resourceTotal + delta) };
+}
+
+/** Apply a multi-resource robbery set to one player's visible state. */
+function applyRobberyResourceSetDelta(
+  view: PlayerView,
+  rs: ResourceSet,
+  action: number,
+  revealBreakdown: boolean,
+): PlayerView {
+  if (!revealBreakdown) {
+    const total = resourceSetTotal(rs);
+    const delta = action === PlayerElementAction.GAIN ? total : action === PlayerElementAction.LOSE ? -total : 0;
+    return { ...view, resourceTotal: Math.max(0, view.resourceTotal + delta) };
+  }
+  let next = view;
+  const updates: Array<[number, number]> = [
+    [PlayerElementType.CLAY, rs.clay],
+    [PlayerElementType.ORE, rs.ore],
+    [PlayerElementType.SHEEP, rs.sheep],
+    [PlayerElementType.WHEAT, rs.wheat],
+    [PlayerElementType.WOOD, rs.wood],
+  ];
+  for (const [rtype, amount] of updates) {
+    if (amount !== 0) {
+      next = applyElementToView(next, rtype, action, amount);
+    }
+  }
+  return next;
+}
+
+/** Apply a full robbery result to per-seat player views, mirroring the Java client. */
+function applyRobberyResultToViews(cg: CurrentGame, msg: SOCRobberyResult): PlayerView[] {
+  let playerViews = cg.playerViews;
+  const gain = msg.isGainLose ? PlayerElementAction.GAIN : PlayerElementAction.SET;
+  const lose = msg.isGainLose ? PlayerElementAction.LOSE : PlayerElementAction.SET;
+
+  if (msg.stolen.kind === 'peType') {
+    const peType = msg.stolen.peType;
+    playerViews = updateView(playerViews, msg.perpPN, (v) =>
+      applyElementToView(v, peType, gain, msg.amount),
+    );
+    playerViews = updateView(playerViews, msg.victimPN, (v) =>
+      applyElementToView(
+        v,
+        peType,
+        lose,
+        msg.isGainLose ? msg.amount : msg.victimAmount,
+      ),
+    );
+    return playerViews;
+  }
+
+  if (msg.stolen.kind === 'resSet') {
+    const stolenSet = msg.stolen.resSet;
+    playerViews = updateView(playerViews, msg.perpPN, (v) =>
+      applyRobberyResourceSetDelta(v, stolenSet, gain, v.playerNumber === cg.mySeat),
+    );
+    playerViews = updateView(playerViews, msg.victimPN, (v) =>
+      applyRobberyResourceSetDelta(v, stolenSet, lose, v.playerNumber === cg.mySeat),
+    );
+    return playerViews;
+  }
+
+  const resType = msg.stolen.resType;
+  playerViews = updateView(playerViews, msg.perpPN, (v) =>
+    applyRobberyResourceDelta(v, resType, gain, msg.amount, v.playerNumber === cg.mySeat),
+  );
+  playerViews = updateView(playerViews, msg.victimPN, (v) =>
+    applyRobberyResourceDelta(
+      v,
+      resType,
+      lose,
+      msg.isGainLose ? msg.amount : msg.victimAmount,
+      v.playerNumber === cg.mySeat,
+    ),
+  );
+  return playerViews;
 }
 
 /** Apply a SET/GAIN/LOSE to one C&K commodity count, returning a new view. */
@@ -1333,7 +1501,11 @@ export const useGameStore = create<GameStoreState>((set) => ({
           resourceTotal: p.total,
         }));
       }
-      return { currentGame: { ...cg, playerViews } };
+      const lastResourceGains: DiceGainEvent = {
+        seq: (cg.lastResourceGains?.seq ?? 0) + 1,
+        players: msg.players,
+      };
+      return { currentGame: { ...cg, playerViews, lastResourceGains } };
     }),
 
   applyTurn: (msg) =>
@@ -1380,6 +1552,7 @@ export const useGameStore = create<GameStoreState>((set) => ({
           // A new turn clears the previous turn's dice display and any stale
           // trade offers / responses / discard prompt.
           lastDice: null,
+          lastResourceGains: null,
           offers: new Array<TradeOffer | null>(cg.maxPlayers).fill(null),
           offerResponses: new Array<OfferResponse | null>(cg.maxPlayers).fill(null),
           discardRequired: 0,
@@ -1464,7 +1637,18 @@ export const useGameStore = create<GameStoreState>((set) => ({
       // A fresh offer clears prior responses to that seat's earlier offer.
       const offerResponses = cg.offerResponses.slice();
       offerResponses[from] = null;
-      return { currentGame: { ...cg, offers, offerResponses } };
+      const tradeActivity = pushTradeActivity(cg.tradeActivity, {
+        kind: 'offer',
+        from,
+        to: msg.offer.to,
+        give: msg.offer.give,
+        get: msg.offer.get,
+      });
+      const notice =
+        cg.mySeat >= 0 && from !== cg.mySeat && (msg.offer.to[cg.mySeat] ?? false)
+          ? `${seatLabel(cg, from)} offered you ${describeResourceSet(msg.offer.give)} for ${describeResourceSet(msg.offer.get)}.`
+          : s.notice;
+      return { notice, currentGame: { ...cg, offers, offerResponses, tradeActivity } };
     }),
 
   applyClearOffer: (gameName, playerNumber) =>
@@ -1486,11 +1670,15 @@ export const useGameStore = create<GameStoreState>((set) => ({
       if (playerNumber >= cg.offers.length) {
         return {};
       }
+      const hadOffer = cg.offers[playerNumber] !== null;
       const offers = cg.offers.slice();
       offers[playerNumber] = null;
       const offerResponses = cg.offerResponses.slice();
       offerResponses[playerNumber] = null;
-      return { currentGame: { ...cg, offers, offerResponses } };
+      const tradeActivity = hadOffer
+        ? pushTradeActivity(cg.tradeActivity, { kind: 'clear', from: playerNumber })
+        : cg.tradeActivity;
+      return { currentGame: { ...cg, offers, offerResponses, tradeActivity } };
     }),
 
   applyRejectOffer: (gameName, playerNumber) =>
@@ -1501,7 +1689,19 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       const offerResponses = cg.offerResponses.slice();
       offerResponses[playerNumber] = 'reject';
-      return { currentGame: { ...cg, offerResponses } };
+      const localOffer = cg.mySeat >= 0 ? cg.offers[cg.mySeat] : null;
+      const tradeActivity = pushTradeActivity(cg.tradeActivity, {
+        kind: 'reject',
+        responder: playerNumber,
+        offering: cg.mySeat,
+        give: localOffer?.give,
+        get: localOffer?.get,
+      });
+      const notice =
+        localOffer !== null && cg.mySeat >= 0
+          ? `${seatLabel(cg, playerNumber)} declined your trade offer.`
+          : s.notice;
+      return { notice, currentGame: { ...cg, offerResponses, tradeActivity } };
     }),
 
   applyClearTradeMsg: (gameName, playerNumber) =>
@@ -1536,14 +1736,63 @@ export const useGameStore = create<GameStoreState>((set) => ({
       // The trade completed; the offering seat's offer is gone and the matching
       // resource PLAYERELEMENT updates arrive separately. Clear the offer +
       // responses; record a log line.
+      const acceptedOffer =
+        msg.offering >= 0 && msg.offering < cg.offers.length ? cg.offers[msg.offering] : null;
+      const give = msg.resToAccepting ?? acceptedOffer?.give;
+      const get = msg.resToOffering ?? acceptedOffer?.get;
       const offers = cg.offers.slice();
       if (msg.offering >= 0 && msg.offering < offers.length) {
         offers[msg.offering] = null;
       }
       const offerResponses = new Array<OfferResponse | null>(cg.maxPlayers).fill(null);
+      let playerViews = cg.playerViews;
+      if (msg.resToAccepting !== null && msg.resToOffering !== null) {
+        playerViews = updateView(playerViews, msg.accepting, (v) =>
+          applyResourceTradeDelta(v, msg.resToAccepting!, msg.resToOffering!, msg.accepting === cg.mySeat),
+        );
+        playerViews = updateView(playerViews, msg.offering, (v) =>
+          applyResourceTradeDelta(v, msg.resToOffering!, msg.resToAccepting!, msg.offering === cg.mySeat),
+        );
+      }
       const line = `${seatLabel(cg, msg.accepting)} accepted ${seatLabel(cg, msg.offering)}'s trade offer.`;
       const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
-      return { currentGame: { ...cg, offers, offerResponses, gameLog } };
+      const tradeActivity = pushTradeActivity(cg.tradeActivity, {
+        kind: 'accept',
+        responder: msg.accepting,
+        offering: msg.offering,
+        give,
+        get,
+      });
+      const notice =
+        cg.mySeat >= 0 && (msg.accepting === cg.mySeat || msg.offering === cg.mySeat)
+          ? line
+          : s.notice;
+      return { notice, currentGame: { ...cg, offers, offerResponses, playerViews, gameLog, tradeActivity } };
+    }),
+
+  applyBankTrade: (msg) =>
+    set((s) => {
+      const cg = guardGame(s.currentGame, msg.game);
+      if (cg === null || msg.playerNumber < 0) {
+        return {};
+      }
+      const playerViews = updateView(cg.playerViews, msg.playerNumber, (v) =>
+        applyResourceTradeDelta(v, msg.get, msg.give, msg.playerNumber === cg.mySeat),
+      );
+      const give = describeResourceSet(msg.give);
+      const get = describeResourceSet(msg.get);
+      const gameLog = pushLog(cg.gameLog, {
+        text: `${seatLabel(cg, msg.playerNumber)} traded ${give} for ${get} with the bank.`,
+        kind: 'server',
+      });
+      const tradeActivity = pushTradeActivity(cg.tradeActivity, {
+        kind: 'bank',
+        from: msg.playerNumber,
+        give: msg.give,
+        get: msg.get,
+      });
+      const notice = msg.playerNumber === cg.mySeat ? 'Bank trade complete.' : s.notice;
+      return { notice, currentGame: { ...cg, playerViews, gameLog, tradeActivity } };
     }),
 
   applyDevCardAction: (msg) =>
@@ -1664,7 +1913,12 @@ export const useGameStore = create<GameStoreState>((set) => ({
       }
       const line = robberyLogLine(cg, msg);
       const gameLog = pushLog(cg.gameLog, { text: line, kind: 'server' });
-      return { currentGame: { ...cg, gameLog } };
+      const playerViews = applyRobberyResultToViews(cg, msg);
+      const notice =
+        cg.mySeat >= 0 && (msg.perpPN === cg.mySeat || msg.victimPN === cg.mySeat)
+          ? line
+          : s.notice;
+      return { notice, currentGame: { ...cg, playerViews, gameLog } };
     }),
 
   applyGameStats: (msg) =>
@@ -2030,6 +2284,19 @@ function pushLog(log: readonly GameLogEntry[], entry: GameLogEntry): GameLogEntr
   const out = [...log, entry];
   if (out.length > GAME_LOG_MAX) {
     out.splice(0, out.length - GAME_LOG_MAX);
+  }
+  return out;
+}
+
+/** Append a capped structured trade event for the sidebar trade table. */
+function pushTradeActivity(
+  activity: readonly TradeActivity[],
+  event: Omit<TradeActivity, 'seq'>,
+): TradeActivity[] {
+  const seq = (activity[activity.length - 1]?.seq ?? 0) + 1;
+  const out = [...activity, { ...event, seq }];
+  if (out.length > TRADE_ACTIVITY_MAX) {
+    out.splice(0, out.length - TRADE_ACTIVITY_MAX);
   }
   return out;
 }
@@ -2570,19 +2837,7 @@ export function connectStore(
   });
 
   conn.on(MessageType.BANKTRADE, (msg: SOCMessage) => {
-    // The traded resources arrive as PLAYERELEMENT updates; just log the trade.
-    const bt = msg as SOCBankTrade;
-    if (bt.playerNumber < 0) {
-      return; // <--- Early return: our own request echo, not an announcement ---
-    }
-    const st = useGameStore.getState();
-    const cg = st.currentGame;
-    if (cg === null) {
-      return;
-    }
-    const give = describeResourceSet(bt.give);
-    const get = describeResourceSet(bt.get);
-    st.appendGameLog(bt.game, `${seatLabel(cg, bt.playerNumber)} traded ${give} for ${get} with the bank.`);
+    useGameStore.getState().applyBankTrade(msg as SOCBankTrade);
   });
 
   // Dev cards

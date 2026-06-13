@@ -9,6 +9,7 @@ import {
   HEX_DESERT,
   HEX_WATER,
   PIECE_SETTLEMENT,
+  PIECE_CITY,
   PIECE_ROAD,
   FACING_NE,
 } from './types';
@@ -18,6 +19,7 @@ const HEX_A = coordOf(3, 3); // clay, dice 8
 const HEX_B = coordOf(3, 5); // desert (no number)
 const HEX_C = coordOf(1, 4); // water
 const SETTLE_NODE = getAdjacentNodesToHex(HEX_A)[0]; // N corner of HEX_A
+const CITY_NODE = getAdjacentNodesToHex(HEX_A)[1];
 const ROAD_EDGE = coordOf(3, 3); // a vertical edge
 
 const board: BoardModel = {
@@ -87,6 +89,23 @@ describe('BoardSVG', () => {
     const road = screen.getByTestId(`road-${ROAD_EDGE}`);
     expect(road).toBeInTheDocument();
     expect(road).toHaveAttribute('data-player', '1');
+  });
+
+  it('renders a city with a filled body and small architectural details', () => {
+    render(
+      <BoardSVG
+        board={board}
+        pieces={[{ ptype: PIECE_CITY, coord: CITY_NODE, playerNumber: 2 }]}
+        playerColors={PLAYER_COLORS}
+      />,
+    );
+
+    const city = screen.getByTestId(`city-${CITY_NODE}`);
+    expect(city).toBeInTheDocument();
+    expect(city).toHaveAttribute('data-player', '2');
+    expect(city.querySelector('path')).toHaveAttribute('fill', PLAYER_COLORS[2]);
+    expect(city.querySelector('ellipse')).toBeInTheDocument();
+    expect(city.querySelectorAll('rect')).toHaveLength(3);
   });
 
   it('renders clickable node targets for highlightNodes and fires onNodeClick', async () => {

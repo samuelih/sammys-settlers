@@ -274,8 +274,8 @@ test('full in-game interactions vs bots: bank trade, buy dev card, knight + robb
   }
 
   // -------------------------------------------------------------------------
-  // (a) 4:1 BANK trade: grant 4 clay, then trade 4 clay -> 1 ore (the panel's
-  //     defaults are give=clay, ratio=4, get=ore). Assert clay -= 4, ore += 1.
+  // (a) 4:1 BANK trade: grant 4 clay, explicitly select the bank rate, then
+  //     trade 4 clay -> 1 ore. Assert clay -= 4, ore += 1.
   // -------------------------------------------------------------------------
   if (inPlay1) {
     await test.step('(a) 4:1 bank trade changes resource counts', async () => {
@@ -293,11 +293,12 @@ test('full in-game interactions vs bots: bank trade, buy dev card, knight + robb
       const oreBefore = await handCount(page, 'ore');
 
       const submit = page.getByTestId('bank-trade-submit');
+      await page.getByTestId('bank-trade-ratio').selectOption('4');
       await expect(submit, 'bank-trade submit is enabled with 4 clay in PLAY1').toBeEnabled({
         timeout: 10_000,
       });
-      // Defaults: give=clay (1), ratio=4, get=ore (2). Submitting sends a 4:1
-      // bank trade of 4 clay for 1 ore.
+      // Give=clay (1), ratio=4, get=ore (2). Submitting sends a 4:1 bank trade
+      // of 4 clay for 1 ore even if the player owns a better harbor.
       await submit.click();
 
       // Assert the resulting PLAYERELEMENT updates land: clay -4, ore +1.

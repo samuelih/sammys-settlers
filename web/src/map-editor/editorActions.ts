@@ -19,6 +19,7 @@ import {
   encodeCoord,
   parseCoord,
 } from './mapSchema';
+import { clampBoardSize, minimumBoardSizeForMap } from './editorGrid';
 
 /** Hex types that carry no dice number (desert/water); placing one clears diceNum. */
 const NO_NUMBER_TYPES: ReadonlySet<string> = new Set(['desert', 'water']);
@@ -192,4 +193,15 @@ export function setPlayerCounts(map: CustomMap, counts: readonly number[]): Cust
 /** Set the shuffle flag. */
 export function setShuffle(map: CustomMap, shuffle: boolean): CustomMap {
   return { ...map, shuffle };
+}
+
+/** Set the board frame size, clamped to server limits and never smaller than existing content. */
+export function setBoardSize(map: CustomMap, height: number, width: number): CustomMap {
+  const clamped = clampBoardSize(height, width);
+  const required = minimumBoardSizeForMap(map);
+  return {
+    ...map,
+    boardHeight: Math.max(clamped.height, required.height),
+    boardWidth: Math.max(clamped.width, required.width),
+  };
 }

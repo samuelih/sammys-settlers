@@ -67,6 +67,22 @@ export const FACING_NAMES: readonly FacingName[] = ['NE', 'E', 'SE', 'SW', 'W', 
 /** Player counts the Java loader supports (`{2, 3, 4, 6}`). */
 export const SUPPORTED_PLAYER_COUNTS: readonly number[] = [2, 3, 4, 6];
 
+/** Legacy/default custom-map board height used by the Java loader (6-player fallback board). */
+export const DEFAULT_BOARD_HEIGHT = 0x16;
+
+/** Legacy/default custom-map board width used by the Java loader (6-player fallback board). */
+export const DEFAULT_BOARD_WIDTH = 0x17;
+
+/** Compact starter size for new maps in the editor. Existing/imported maps keep their own size. */
+export const EDITOR_DEFAULT_BOARD_HEIGHT = 0x10;
+export const EDITOR_DEFAULT_BOARD_WIDTH = 0x11;
+
+/** Supported custom board-size range. Coordinates must stay strictly inside these bounds. */
+export const MIN_BOARD_HEIGHT = 0x08;
+export const MIN_BOARD_WIDTH = 0x09;
+export const MAX_BOARD_HEIGHT = DEFAULT_BOARD_HEIGHT;
+export const MAX_BOARD_WIDTH = DEFAULT_BOARD_WIDTH;
+
 /**
  * One land (or water) hex. Matches {@code CustomMapLoader.HexJson}.
  * `coord` is kept as the on-disk `"0xRRCC"` string; use {@link parseCoord} for the int.
@@ -119,6 +135,10 @@ export interface CustomMap {
   playerCounts: number[];
   /** If true, the server shuffles hex types + dice numbers each game. */
   shuffle: boolean;
+  /** Optional board height in large-board coordinate units; absent = default 0x16. */
+  boardHeight?: number;
+  /** Optional board width in large-board coordinate units; absent = default 0x17. */
+  boardWidth?: number;
   /** Land (and any water) hexes (required, non-empty). */
   landHexes: MapLandHex[];
   /** Land-area definitions; if absent, all hexes are land area 1. */
@@ -238,6 +258,12 @@ export function fromRaw(raw: Record<string, unknown>): CustomMap {
   if (Array.isArray(raw.landAreas)) {
     map.landAreas = toLandAreaArray(raw.landAreas);
   }
+  if (typeof raw.boardHeight === 'number') {
+    map.boardHeight = raw.boardHeight;
+  }
+  if (typeof raw.boardWidth === 'number') {
+    map.boardWidth = raw.boardWidth;
+  }
   if (Array.isArray(raw.ports)) {
     map.ports = toPortArray(raw.ports);
   }
@@ -268,6 +294,12 @@ export function serializeMapJson(map: CustomMap): string {
   }
   out.playerCounts = [...map.playerCounts];
   out.shuffle = map.shuffle;
+  if (map.boardHeight !== undefined) {
+    out.boardHeight = map.boardHeight;
+  }
+  if (map.boardWidth !== undefined) {
+    out.boardWidth = map.boardWidth;
+  }
   out.landHexes = map.landHexes.map((h) => {
     const o: Record<string, unknown> = { type: h.type, coord: h.coord, diceNum: h.diceNum };
     if (h.landArea !== undefined) {
@@ -296,6 +328,8 @@ export function emptyMap(): CustomMap {
     name: '',
     playerCounts: [4],
     shuffle: false,
+    boardHeight: EDITOR_DEFAULT_BOARD_HEIGHT,
+    boardWidth: EDITOR_DEFAULT_BOARD_WIDTH,
     landHexes: [],
   };
 }

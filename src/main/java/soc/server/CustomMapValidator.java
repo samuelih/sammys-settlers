@@ -67,18 +67,28 @@ import soc.server.CustomMapLoader.PortJson;
 public class CustomMapValidator
 {
     /**
-     * Maximum hex/edge row coordinate allowed in a custom map.
-     * Custom maps use the 6-player fallback board size (height {@code 0x16} = 22); valid coordinates
-     * must be strictly inside that, so the maximum usable row is {@code 21}.  See {@link SOCBoardAtServer}.
+     * Default board height for legacy custom maps which don't specify a size.
+     * This is the 6-player fallback board size; see {@link SOCBoardAtServer}.
      */
-    private static final int MAX_ROW = 21;  // 6-player fallback height (0x16 = 22), minus the outer edge
+    private static final int DEFAULT_BOARD_HEIGHT = 0x16;
 
     /**
-     * Maximum hex/edge column coordinate allowed in a custom map.
-     * 6-player fallback board width is {@code 0x17} = 23; valid coordinates must be strictly inside that,
-     * so the maximum usable column is {@code 22}.
+     * Default board width for legacy custom maps which don't specify a size.
+     * This is the 6-player fallback board size; see {@link SOCBoardAtServer}.
      */
-    private static final int MAX_COL = 22;  // 6-player fallback width (0x17 = 23), minus the outer edge
+    private static final int DEFAULT_BOARD_WIDTH = 0x17;
+
+    /** Minimum custom board height accepted by the loader. */
+    private static final int MIN_BOARD_HEIGHT = 0x08;
+
+    /** Minimum custom board width accepted by the loader. */
+    private static final int MIN_BOARD_WIDTH = 0x09;
+
+    /** Maximum custom board height accepted by the loader. */
+    private static final int MAX_BOARD_HEIGHT = DEFAULT_BOARD_HEIGHT;
+
+    /** Maximum custom board width accepted by the loader. */
+    private static final int MAX_BOARD_WIDTH = DEFAULT_BOARD_WIDTH;
 
     /**
      * Validate a raw custom map and build its parsed integer arrays.
@@ -118,6 +128,12 @@ public class CustomMapValidator
                 throw new CustomMapException
                     ("\"playerCounts\" entry " + pc + " unsupported; must be 2, 3, 4, or 6");
 
+        // - board size
+        final int boardHeight = parseBoardDimension
+            (raw.boardHeight, "boardHeight", MIN_BOARD_HEIGHT, MAX_BOARD_HEIGHT, DEFAULT_BOARD_HEIGHT);
+        final int boardWidth = parseBoardDimension
+            (raw.boardWidth, "boardWidth", MIN_BOARD_WIDTH, MAX_BOARD_WIDTH, DEFAULT_BOARD_WIDTH);
+
         // - land hexes
         if ((raw.landHexes == null) || (raw.landHexes.length == 0))
             throw new CustomMapException("missing required field \"landHexes\"");
@@ -138,7 +154,7 @@ public class CustomMapValidator
 
             final int type = parseHexType(h.type, i);
             final int coord = parseCoord(h.coord, "landHexes[" + i + "].coord");
-            checkHexCoordInRange(coord, "landHexes[" + i + "].coord");
+            checkHexCoordInRange(coord, "landHexes[" + i + "].coord", boardHeight, boardWidth);
 
             if (! seenCoords.add(Integer.valueOf(coord)))
                 throw new CustomMapException
@@ -251,13 +267,13 @@ public class CustomMapValidator
 
                 final int ptype = parsePortType(p.type, i);
                 final int edge = parseCoord(p.edge, "ports[" + i + "].edge");
-                checkEdgeCoordInRange(edge, "ports[" + i + "].edge");
+                checkEdgeCoordInRange(edge, "ports[" + i + "].edge", boardHeight, boardWidth);
                 if (! seenEdges.add(Integer.valueOf(edge)))
                     throw new CustomMapException
                         ("duplicate port edge 0x" + Integer.toHexString(edge) + " at ports[" + i + "]");
                 final int facing = parseFacing(p.facing, i);
                 checkPortFacingGeometry(edge, facing, i);
-                checkPortFacesLand(edge, facing, seenNonWaterCoords, i);
+                checkPortFacesLand(edge, facing, seenNonWaterCoords, i, boardHeight, boardWidth);
 
                 portType[i] = ptype;
                 portEdgeFacing[2 * i] = edge;
@@ -266,8 +282,8 @@ public class CustomMapValidator
         }
 
         return new ParsedCustomMap
-            (scenarioKey, name, ((description != null) && ! description.isEmpty()) ? description : null,
-             raw.playerCounts.clone(), raw.shuffle,
+             (scenarioKey, name, ((description != null) && ! description.isEmpty()) ? description : null,
+             raw.playerCounts.clone(), raw.shuffle, boardHeight, boardWidth,
              landHexType, landHexCoord, landHexNumber,
              landAreaPathRanges, maxLandArea,
              portType, portEdgeFacing, robberHex, pirateHex);
@@ -287,6 +303,31 @@ public class CustomMapValidator
                 return true;
 
         return false;
+    }
+
+    /**
+     * Parse an optional board dimension. Missing values use the legacy fallback size.
+     * @param value  Optional dimension value from JSON
+     * @param fieldName  Field name for error messages
+     * @param min  Minimum accepted value
+     * @param max  Maximum accepted value
+     * @param defaultValue  Default when {@code value} is null
+     * @return the parsed dimension
+     * @throws CustomMapException if the value is out of range
+     */
+    private static int parseBoardDimension
+        (final Integer value, final String fieldName, final int min, final int max, final int defaultValue)
+        throws CustomMapException
+    {
+        if (value == null)
+            return defaultValue;   // <--- Early return: legacy map without size fields ---
+
+        final int v = value.intValue();
+        if ((v < min) || (v > max))
+            throw new CustomMapException
+                ("\"" + fieldName + "\" " + v + " out of range; must be " + min + ".." + max);
+
+        return v;
     }
 
     /**
@@ -406,19 +447,23 @@ public class CustomMapValidator
     }
 
     /**
-     * Check that a hex coordinate is within the large board's range and on a valid (odd) hex row.
+     * Check that a hex coordinate is within the map's large-board range and on a valid (odd) hex row.
      * @param coord  Hex coordinate 0xRRCC
      * @param fieldName  Field name for the error message
+     * @param boardHeight  Board height in coordinate units
+     * @param boardWidth  Board width in coordinate units
      * @throws CustomMapException if out of range or on an even row
      */
-    private static void checkHexCoordInRange(final int coord, final String fieldName)
+    private static void checkHexCoordInRange
+        (final int coord, final String fieldName, final int boardHeight, final int boardWidth)
         throws CustomMapException
     {
         final int r = coord >> 8, c = coord & 0xFF;
-        if ((r < 1) || (r > MAX_ROW) || (c < 1) || (c > MAX_COL))
+        final int maxRow = boardHeight - 1, maxCol = boardWidth - 1;
+        if ((r < 1) || (r > maxRow) || (c < 1) || (c > maxCol))
             throw new CustomMapException
                 (fieldName + " 0x" + Integer.toHexString(coord)
-                 + " is out of board range (row 1.." + MAX_ROW + ", col 1.." + MAX_COL + ")");
+                 + " is out of board range (row 1.." + maxRow + ", col 1.." + maxCol + ")");
         if ((r % 2) == 0)
             throw new CustomMapException
                 (fieldName + " 0x" + Integer.toHexString(coord)
@@ -430,16 +475,20 @@ public class CustomMapValidator
      * Edges can be on odd or even rows, so row parity isn't checked here.
      * @param coord  Edge coordinate 0xRRCC
      * @param fieldName  Field name for the error message
+     * @param boardHeight  Board height in coordinate units
+     * @param boardWidth  Board width in coordinate units
      * @throws CustomMapException if out of range
      */
-    private static void checkEdgeCoordInRange(final int coord, final String fieldName)
+    private static void checkEdgeCoordInRange
+        (final int coord, final String fieldName, final int boardHeight, final int boardWidth)
         throws CustomMapException
     {
         final int r = coord >> 8, c = coord & 0xFF;
-        if ((r < 0) || (r > MAX_ROW) || (c < 0) || (c > MAX_COL))
+        final int maxRow = boardHeight - 1, maxCol = boardWidth - 1;
+        if ((r < 0) || (r > maxRow) || (c < 0) || (c > maxCol))
             throw new CustomMapException
                 (fieldName + " 0x" + Integer.toHexString(coord)
-                 + " is out of board range (row 0.." + MAX_ROW + ", col 0.." + MAX_COL + ")");
+                 + " is out of board range (row 0.." + maxRow + ", col 0.." + maxCol + ")");
     }
 
     /**
@@ -492,13 +541,16 @@ public class CustomMapValidator
      * @param facing  FACING_ constant (already validated by {@link #checkPortFacingGeometry(int, int, int)})
      * @param declaredNonWaterCoords  Set of declared land hex coordinates whose type isn't water
      * @param idx  ports index, for the error message
+     * @param boardHeight  Board height in coordinate units
+     * @param boardWidth  Board width in coordinate units
      * @throws CustomMapException if the faced hex isn't a declared non-water land hex
      */
     private static void checkPortFacesLand
-        (final int edge, final int facing, final Set<Integer> declaredNonWaterCoords, final int idx)
+        (final int edge, final int facing, final Set<Integer> declaredNonWaterCoords, final int idx,
+         final int boardHeight, final int boardWidth)
         throws CustomMapException
     {
-        final int landHex = adjacentHexToEdge(edge, facing);
+        final int landHex = adjacentHexToEdge(edge, facing, boardHeight, boardWidth);
         if ((landHex == 0) || ! declaredNonWaterCoords.contains(Integer.valueOf(landHex)))
             throw new CustomMapException
                 ("ports[" + idx + "] edge 0x" + Integer.toHexString(edge)
@@ -513,9 +565,12 @@ public class CustomMapValidator
      * by row parity and column parity, exactly as in {@code SOCBoardLarge}.
      * @param edgeCoord  Edge coordinate 0xRRCC
      * @param facing  FACING_ direction (1..6), already validated
+     * @param boardHeight  Board height in coordinate units
+     * @param boardWidth  Board width in coordinate units
      * @return adjacent hex coordinate 0xRRCC, or 0 if none in that direction (off the validated coordinate range)
      */
-    private static int adjacentHexToEdge(final int edgeCoord, final int facing)
+    private static int adjacentHexToEdge
+        (final int edgeCoord, final int facing, final int boardHeight, final int boardWidth)
     {
         int r = (edgeCoord >> 8), c = (edgeCoord & 0xFF);
 
@@ -583,7 +638,7 @@ public class CustomMapValidator
             }
         }
 
-        if ((r > 0) && (c > 0) && (r <= MAX_ROW) && (c <= MAX_COL))
+        if ((r > 0) && (c > 0) && (r < boardHeight) && (c < boardWidth))
             return (r << 8) | c;
         else
             return 0;

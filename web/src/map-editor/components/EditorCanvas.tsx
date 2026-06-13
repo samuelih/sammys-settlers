@@ -11,10 +11,18 @@ import {
 import {
   enumerateHexCells,
   candidatePortEdges,
+  boardSizeForMap,
   hexToPixel,
   type GridHexCell,
 } from '../editorGrid';
-import { hexPolygonPoints, HALFDELTA_X, HALFDELTA_Y, HEX_CENTER_DY, HEXY_OFF_SLOPE, TOP_MARGIN } from '../../board/coords';
+import {
+  hexPolygonPoints,
+  HALFDELTA_X,
+  HALFDELTA_Y,
+  HEX_CENTER_DY,
+  HEXY_OFF_SLOPE,
+  TOP_MARGIN,
+} from '../../board/coords';
 import { type HexKind } from '../../board/types';
 import { BoardDefs } from '../../board/pieces/BoardDefs';
 import { ResourceMotif } from '../../board/pieces/ResourceMotif';
@@ -99,7 +107,12 @@ function HexCell({
         aria-label={`Hex ${coordStr}${placed ? ` (${type})` : ' (empty)'}`}
       />
       {hasTexture ? (
-        <g className={styles.cellTextureClip} clipPath="url(#hex-clip)" transform={`translate(${cx} ${cy})`} pointerEvents="none">
+        <g
+          className={styles.cellTextureClip}
+          clipPath="url(#hex-clip)"
+          transform={`translate(${cx} ${cy})`}
+          pointerEvents="none"
+        >
           <TerrainTexture kind={kind} className={styles.cellTexture} />
         </g>
       ) : (
@@ -109,7 +122,11 @@ function HexCell({
       <polygon className={styles.cellRim} points={hexPolygonPoints(cx, cy, 0.96)} pointerEvents="none" />
       {!hasTexture && <ResourceMotif kind={kind} cx={cx} cy={cy} hx={HALFDELTA_X} hy={HALFDELTA_Y} />}
       {showCoordinates && (
-        <text className={`${styles.coordLabel}${placed ? ` ${styles.coordLabelPlaced}` : ''}`} x={cx} y={cy - HALFDELTA_Y * 0.62}>
+        <text
+          className={`${styles.coordLabel}${placed ? ` ${styles.coordLabelPlaced}` : ''}`}
+          x={cx}
+          y={cy - HALFDELTA_Y * 0.62}
+        >
           {coordStr.replace('0x', '')}
         </text>
       )}
@@ -151,7 +168,11 @@ export function EditorCanvas({
   onHexClick,
   onPortClick,
 }: EditorCanvasProps): JSX.Element {
-  const cells = useMemo(() => enumerateHexCells(), []);
+  const boardSize = useMemo(() => boardSizeForMap(map), [map]);
+  const cells = useMemo(
+    () => enumerateHexCells(boardSize.height, boardSize.width),
+    [boardSize.height, boardSize.width],
+  );
 
   // Index placed hexes by integer coord for O(1) cell lookup.
   const placedByCoord = useMemo(() => {
@@ -191,6 +212,8 @@ export function EditorCanvas({
   return (
     <svg
       data-testid="editor-canvas"
+      data-board-height={boardSize.height}
+      data-board-width={boardSize.width}
       className={styles.canvas}
       viewBox={viewBox}
       role="application"

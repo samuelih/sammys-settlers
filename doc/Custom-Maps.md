@@ -79,6 +79,8 @@ choose a short, descriptive filename.
 | `description`  | string      | no       | Longer description shown to players. Must not contain `|` or control/newline characters. |
 | `playerCounts` | int array   | yes      | Supported max-player counts; each must be one of `2`, `3`, `4`, `6`. Example: `[3, 4]`. |
 | `shuffle`      | boolean     | no       | If `true`, the server shuffles hex types and dice numbers (and ensures 6s/8s aren't adjacent) each game. If `false` or absent, the hex types and dice numbers are placed exactly as listed. (Port **types** are always shuffled among the fixed port **edges**; see "What is NOT validated".) |
+| `boardHeight`  | int         | no       | Board frame height in large-board coordinate units. If absent, defaults to `22` (the legacy 6-player fallback board). Valid range: `8`-`22`. |
+| `boardWidth`   | int         | no       | Board frame width in large-board coordinate units. If absent, defaults to `23` (the legacy 6-player fallback board). Valid range: `9`-`23`. |
 | `landHexes`    | hex array   | yes      | The land (and any water) hexes; see below. At least one. |
 | `landAreas`    | area array  | no       | Splits `landHexes` into land areas. If absent, all hexes are land area 1. |
 | `ports`        | port array  | no       | Trade ports; see below. |
@@ -144,9 +146,12 @@ section of `SOCBoardLarge`'s class javadoc for the geometry. Coordinate strings
 accept an optional `0x` prefix and are always read as hexadecimal (e.g.
 `"0x0504"` or `"0504"`).
 
-Custom maps use the largest (6-player) fallback board size, so coordinates may
-range over rows `1`-`21` and columns `1`-`22` regardless of the game's actual
-player count.
+By default, custom maps use the largest (6-player) fallback board size, so
+coordinates may range over rows `1`-`21` and columns `1`-`22` regardless of the
+game's actual player count. If `boardHeight` / `boardWidth` are set, coordinates
+must stay strictly inside that frame: land hex rows `1` through
+`boardHeight - 1`, land hex columns `1` through `boardWidth - 1`, and port edge
+rows/columns `0` through the same maxima.
 
 
 ## The sample map, field by field

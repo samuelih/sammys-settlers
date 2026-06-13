@@ -145,6 +145,8 @@ the **Java server must already be running** on WS 8888. The specs are:
 | `lobby.spec.ts` | Create a 4-player game, sit, start, get 3 bots seated. |
 | `game.spec.ts` | Sea-board (`SBL=t`) game: drive full human initial placement (2 settlements + 2 roads) and complete a normal dice roll. |
 | `interactions.spec.ts` | A turn's worth of interactions: 4:1 bank trade, buy a dev card, play Knight + move the robber (uses the `debug` user to set up deterministic state). |
+| `ck-game.spec.ts` | Create an `SC_CK` game and exercise C&K UI/state: barbarian track, knight buy/activate, commodity grant, and city-improvement build. |
+| `ck-botgame.spec.ts` | Run many `SC_CK` rounds against bots and assert barbarian/progress-card mechanics do not stall the server. |
 | `map-editor.spec.ts` | Load the sample map, live-validate, make a valid edit, export `.map.json`; and a duplicate-coordinate edit is flagged invalid. |
 
 
@@ -210,6 +212,10 @@ web/
   (road/ship/settlement/city), bank/port and player-to-player trade offers, buy &
   play dev cards (Knight/Road Building/Monopoly/Year of Plenty), robber & pirate
   movement, choosing a rob victim, discarding on a 7, and game-over with final scores.
+- A playable **Cities & Knights** server-backed slice: `SC_CK` game creation,
+  commodities, city improvements, metropolises, aggregate knights, barbarian attacks,
+  progress-card hand/play flows, and a full official expansion reference catalog in
+  the C&K sidebar.
 - A read-only in-game **game log** (server text + a derived event log).
 - A Settings panel: theme (light/dark/system), color-blind palettes, sound on/off +
   volume, board render quality, and font scale.
@@ -220,12 +226,13 @@ web/
 - **Sea board only.** The renderer targets `SOCBoardLarge` (sea/large board, the
   `SBL` option). The classic 4-player hexagonal board's coordinate system is not
   rendered.
-- **Cities & Knights is fully supported.** The `SC_CK` scenario is selectable in the
-  New Game dialog and the in-game C&K panel covers commodities, city improvements +
-  metropolis, knights (buy/activate/promote), the barbarian track and attack results,
-  and the progress-card hand; see `doc/Cities-and-Knights-Implemented.md` (repo root)
-  for the rules and protocol. Other scenarios (fog hexes, gift ports, cloth villages,
-  wonders) remain selectable but have **no scenario-specific UI** yet.
+- **Cities & Knights is not exact boxed-game parity.** The web client now lists every
+  official component and all 54 progress cards, but only sends actions backed by the
+  Java server. City walls, the merchant pawn, board-placed knights, event-die behavior,
+  and many official progress-card effects are still reference-only; see
+  `doc/Cities-and-Knights-Implemented.md` (repo root). Other scenarios (fog hexes,
+  gift ports, cloth villages, wonders) remain selectable but have **no scenario-specific
+  UI** yet.
 - **In-game chat is supported** (text input under the game log). There is no
   lobby/channel chat.
 - **No accounts / persistence / reconnect-into-running-game**, no spectator UX

@@ -144,6 +144,8 @@ public class TestCustomMapLoader
         assertEquals("Two-island variant for tests.", pmap.description);
         assertArrayEquals(new int[]{3, 4}, pmap.playerCounts);
         assertFalse(pmap.shuffle);
+        assertEquals(0x16, pmap.boardHeight);
+        assertEquals(0x17, pmap.boardWidth);
 
         assertEquals(12, pmap.landHexType.length);
         assertEquals(12, pmap.landHexCoord.length);
@@ -169,6 +171,55 @@ public class TestCustomMapLoader
 
         assertTrue(pmap.supportsPlayerCount(4));
         assertFalse(pmap.supportsPlayerCount(6));
+    }
+
+    /**
+     * Optional board size fields parse and constrain the generated custom-map board frame.
+     */
+    @Test
+    public void testParseCustomBoardSize()
+        throws IOException, CustomMapException
+    {
+        final String json = VALID_MAP_JSON.replace
+            ("  \"shuffle\": false,\n",
+             "  \"shuffle\": false,\n"
+             + "  \"boardHeight\": 16,\n"
+             + "  \"boardWidth\": 17,\n");
+        final File f = writeTempMap("sized", json);
+        final ParsedCustomMap pmap = CustomMapLoader.parseAndValidateForTests(f);
+
+        assertEquals(16, pmap.boardHeight);
+        assertEquals(17, pmap.boardWidth);
+    }
+
+    /**
+     * A smaller custom board rejects otherwise valid coordinates outside that frame.
+     */
+    @Test
+    public void testCustomBoardSizeRejectsOutOfFrameCoords()
+        throws IOException
+    {
+        final String json = VALID_MAP_JSON.replace
+            ("  \"shuffle\": false,\n",
+             "  \"shuffle\": false,\n"
+             + "  \"boardHeight\": 14,\n"
+             + "  \"boardWidth\": 17,\n");
+
+        expectValidationFailure(json, "out of board range (row 1..13, col 1..16)");
+    }
+
+    /**
+     * Board dimensions outside the supported large-board fallback range are rejected.
+     */
+    @Test
+    public void testCustomBoardSizeOutOfRange()
+        throws IOException
+    {
+        final String json =
+            "{ \"name\": \"x\", \"playerCounts\": [4], \"boardHeight\": 23,"
+            + " \"landHexes\": [ { \"type\": \"clay\", \"coord\": \"0x0309\", \"diceNum\": 5 } ] }";
+
+        expectValidationFailure(json, "\"boardHeight\" 23 out of range; must be 8..22");
     }
 
     /**

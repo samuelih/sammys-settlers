@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import type { BoardHex, BoardModel, BoardPiece } from './types';
-import { HEX_WATER } from './types';
+import { HEX_WATER, PIECE_CITY, PIECE_ROAD, PIECE_SETTLEMENT, PIECE_SHIP } from './types';
 import {
   HALFDELTA_X,
   HALFDELTA_Y,
@@ -64,10 +64,10 @@ function waterUnderlayHexes(board: BoardModel): BoardHex[] {
  * from CSS custom properties except player piece colors, which arrive via
  * {@link BoardSVGProps.playerColors}.
  *
- * Layering (bottom → top): hexes, ports, robber/pirate, pieces, highlight
- * targets. The viewBox is derived from the board's visual `width`/`height`
- * (half-hex units), matching the `col*HALFDELTA_X` / `row*HALFDELTA_Y` mapping
- * in {@link ./coords}.
+ * Layering (bottom → top): hexes, interactive targets, ports, edge pieces,
+ * robber/pirate, structures. Roads and ships deliberately render underneath
+ * settlements/cities, matching the physical board and preventing endpoint
+ * pieces from visually swallowing houses.
  */
 export function BoardSVG({
   board,
@@ -92,6 +92,9 @@ export function BoardSVG({
 
   const colorOf = (pn: number): string => playerColors[pn] ?? 'var(--hex-fill-unknown)';
   const waterUnderlay = waterUnderlayHexes(board);
+  const edgePieces = pieces.filter((p) => p.ptype === PIECE_ROAD || p.ptype === PIECE_SHIP);
+  const structurePieces = pieces.filter((p) => p.ptype === PIECE_SETTLEMENT || p.ptype === PIECE_CITY);
+  const robberHex = board.hexes.find((hex) => hex.coord === board.robberHex);
 
   return (
     <svg
@@ -126,25 +129,9 @@ export function BoardSVG({
         ))}
       </g>
 
-      {/* Ports */}
-      <g data-testid="board-ports">
-        {board.ports.map((port) => (
-          <PortMarker key={`${port.edge}-${port.ptype}`} port={port} />
-        ))}
-      </g>
-
-      {/* Robber / pirate */}
-      {isPlacedHex(board.robberHex) && <Robber hexCoord={board.robberHex} />}
-      {isPlacedHex(board.pirateHex) && <Pirate hexCoord={board.pirateHex} />}
-
-      {/* Pieces */}
-      <g data-testid="board-pieces">
-        {pieces.map((piece, i) => (
-          <Piece key={`${piece.ptype}-${piece.coord}-${i}`} piece={piece} color={colorOf(piece.playerNumber)} />
-        ))}
-      </g>
-
-      {/* Interactive highlight targets */}
+      {/* Interactive highlight targets sit over terrain but under ports/pieces,
+          so they remain clickable without visually covering roads, ports, or
+          settlement/city glyphs. */}
       {highlightEdges && highlightEdges.length > 0 && (
         <g data-testid="board-edge-targets">
           {highlightEdges.map((coord) => {
@@ -153,26 +140,20 @@ export function BoardSVG({
             const my = (e.y1 + e.y2) / 2;
             return (
               <g key={coord}>
-                {/* Visible highlight along the edge (not the click target). */}
                 <line
                   className={styles.edgeHighlight}
                   x1={e.x1}
                   y1={e.y1}
                   x2={e.x2}
                   y2={e.y2}
-                  strokeWidth={HALFDELTA_X * 0.5}
+                  strokeWidth={HALFDELTA_X * 0.38}
                 />
-                {/* Clickable hit area at the edge midpoint. A circle has a real
-                    bounding box (an axis-aligned <line> does not), so it's
-                    reliably clickable by users and test drivers. The pulse class
-                    gives a subtle attention animation (CSS-gated by reduced
-                    motion / low quality). */}
                 <circle
                   data-testid={`edge-${coord}`}
                   className={`${styles.edgeTarget} ${styles.targetPulse}`}
                   cx={mx}
                   cy={my}
-                  r={HALFDELTA_X * 0.34}
+                  r={HALFDELTA_X * 0.28}
                   onClick={onEdgeClick ? () => onEdgeClick(coord) : undefined}
                 />
               </g>
@@ -191,13 +172,38 @@ export function BoardSVG({
                 className={`${styles.nodeTarget} ${styles.targetPulse}`}
                 cx={p.x}
                 cy={p.y}
-                r={HALFDELTA_X * 0.32}
+                r={HALFDELTA_X * 0.25}
                 onClick={onNodeClick ? () => onNodeClick(coord) : undefined}
               />
             );
           })}
         </g>
       )}
+
+      {/* Ports */}
+      <g data-testid="board-ports">
+        {board.ports.map((port) => (
+          <PortMarker key={`${port.edge}-${port.ptype}`} port={port} />
+        ))}
+      </g>
+
+      {/* Edge pieces: roads and ships are under structures. */}
+      <g data-testid="board-edge-pieces">
+        {edgePieces.map((piece, i) => (
+          <Piece key={`${piece.ptype}-${piece.coord}-${i}`} piece={piece} color={colorOf(piece.playerNumber)} />
+        ))}
+      </g>
+
+      {/* Robber / pirate */}
+      {isPlacedHex(board.robberHex) && <Robber hexCoord={board.robberHex} avoidToken={robberHex?.diceNum !== 0} />}
+      {isPlacedHex(board.pirateHex) && <Pirate hexCoord={board.pirateHex} />}
+
+      {/* Structures: draw last so roads tuck underneath endpoints. */}
+      <g data-testid="board-structures">
+        {structurePieces.map((piece, i) => (
+          <Piece key={`${piece.ptype}-${piece.coord}-${i}`} piece={piece} color={colorOf(piece.playerNumber)} />
+        ))}
+      </g>
     </svg>
   );
 }

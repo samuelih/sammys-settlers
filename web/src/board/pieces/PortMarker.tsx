@@ -1,6 +1,11 @@
 import type { JSX } from 'react';
 import { type BoardPort, RESOURCE_HEX_TYPES, hexKind, type HexKind } from '../types';
-import { edgeToPixel, getAdjacentNodeToEdge, nodeToPixel } from '../coords';
+import {
+  edgeToPixel,
+  getAdjacentNodesToEdge,
+  nodeToPixel,
+  portFacingOffset,
+} from '../coords';
 import styles from '../BoardSVG.module.css';
 
 /** Port type 0 = misc 3:1; 1..5 = clay/ore/sheep/wheat/wood 2:1. */
@@ -31,40 +36,43 @@ const PORT_TINT: Record<string, string> = {
   unknown: 'var(--port-stroke)',
 };
 
+const PORT_TEXTURE = '/board-pieces/port-dock.png';
+const RESOURCE_TEXTURE: Partial<Record<HexKind, string>> = {
+  clay: '/board-tiles/clay.png',
+  ore: '/board-tiles/ore.png',
+  sheep: '/board-tiles/sheep.png',
+  wheat: '/board-tiles/wheat.png',
+  wood: '/board-tiles/wood.png',
+};
+
 export interface PortMarkerProps {
   port: BoardPort;
 }
 
 /**
- * A small dock/ship marker at a port's edge, nudged toward the land node the
- * port faces (so it reads as belonging to that corner of the board). It shows a
- * little ship glyph pointing along the facing, a dock plank connecting the badge
- * to the coastline, and a round badge labeled `3:1` (misc) or `2:1` (resource).
- * Resource ports tint their badge ring to the served good. The resource is
- * exposed via `data-port-resource` for theming/tests.
+ * A Catan-style harbor marker attached to both corner nodes of the port edge.
+ * The generated dock sprite sits offshore while two pier arms make the two valid
+ * settlement/city corners visually explicit. The overlaid badge shows `3:1`
+ * (misc) or `2:1` plus the served resource texture.
  */
 export function PortMarker({ port }: PortMarkerProps): JSX.Element {
   const edge = edgeToPixel(port.edge);
+  const [nodeA, nodeB] = getAdjacentNodesToEdge(port.edge).map(nodeToPixel);
   const resource = portResource(port.ptype);
   const tint = PORT_TINT[resource] ?? 'var(--port-stroke)';
-
-  // Bias the marker from the edge midpoint a little toward the facing land node,
-  // so a 2:1 sheep port visually hugs the coastline corner it serves. Also
-  // capture the angle from edge → land so the ship glyph points inland.
-  let mx = edge.cx;
-  let my = edge.cy;
-  let angleDeg = 0;
-  try {
-    const landNode = getAdjacentNodeToEdge(port.edge, port.facing);
-    const np = nodeToPixel(landNode);
-    mx = edge.cx + (np.x - edge.cx) * 0.5;
-    my = edge.cy + (np.y - edge.cy) * 0.5;
-    angleDeg = (Math.atan2(np.y - edge.cy, np.x - edge.cx) * 180) / Math.PI;
-  } catch {
-    // facing perpendicular / bad data — fall back to the edge midpoint
-  }
-
-  const r = 9;
+  const land = portFacingOffset(port.facing);
+  const landLen = Math.hypot(land.x, land.y);
+  const outward =
+    landLen > 0
+      ? { x: -land.x / landLen, y: -land.y / landLen }
+      : { x: -Math.sin((edge.angle * Math.PI) / 180), y: Math.cos((edge.angle * Math.PI) / 180) };
+  const mx = edge.cx + outward.x * 20;
+  const my = edge.cy + outward.y * 20;
+  const assetSize = 42;
+  const iconHref = resource !== 'misc' && resource !== 'unknown' ? RESOURCE_TEXTURE[resource] : null;
+  const iconId = `port-icon-${port.edge}-${port.ptype}`;
+  const iconR = 5.3;
+  const ratioY = iconHref ? my - 4.6 : my + 0.4;
   return (
     <g
       data-testid={`port-${port.edge}`}
@@ -72,24 +80,46 @@ export function PortMarker({ port }: PortMarkerProps): JSX.Element {
       data-port-resource={resource}
       pointerEvents="none"
     >
-      {/* Dock plank from the coastline toward the badge. */}
-      <line className={styles.portPlank} x1={edge.cx} y1={edge.cy} x2={mx} y2={my} />
+      <path className={styles.portPier} d={`M ${nodeA.x} ${nodeA.y} Q ${edge.cx} ${edge.cy} ${mx} ${my}`} />
+      <path className={styles.portPier} d={`M ${nodeB.x} ${nodeB.y} Q ${edge.cx} ${edge.cy} ${mx} ${my}`} />
+      <circle className={styles.portNodeCap} cx={nodeA.x} cy={nodeA.y} r={3.6} />
+      <circle className={styles.portNodeCap} cx={nodeB.x} cy={nodeB.y} r={3.6} />
 
-      {/* Little ship pointing inland along the facing. */}
-      <g transform={`translate(${mx} ${my}) rotate(${angleDeg})`}>
-        <path
-          className={styles.portShip}
-          d={`M ${-r * 1.05} ${-r * 0.18} q ${r * 1.05} ${r * 0.95} ${r * 2.1} 0 Z`}
+      <g transform={`translate(${mx} ${my}) rotate(${edge.angle})`}>
+        <image
+          className={styles.portDock}
+          href={PORT_TEXTURE}
+          x={-assetSize / 2}
+          y={-assetSize / 2}
+          width={assetSize}
+          height={assetSize}
+          preserveAspectRatio="xMidYMid meet"
         />
-        <line className={styles.portMast} x1={r * 0.5} y1={-r * 0.18} x2={r * 0.5} y2={-r * 1.1} />
-        <path className={styles.portSail} d={`M ${r * 0.5} ${-r * 1.05} L ${r * 1.2} ${-r * 0.3} L ${r * 0.5} ${-r * 0.3} Z`} />
       </g>
 
-      {/* Trade-ratio badge. */}
-      <circle className={styles.portMarker} cx={mx} cy={my} r={r} style={{ stroke: tint }} />
-      <text className={styles.portLabel} x={mx} y={my} fontSize={r * 0.74}>
+      <circle className={styles.portBadgeRing} cx={mx} cy={my} r={11.6} style={{ stroke: tint }} />
+      <text className={styles.portLabel} x={mx} y={ratioY} fontSize={iconHref ? 8.1 : 10.2}>
         {portLabel(port.ptype)}
       </text>
+      {iconHref && (
+        <>
+          <defs>
+            <clipPath id={iconId} clipPathUnits="userSpaceOnUse">
+              <circle cx={mx} cy={my + 6.1} r={iconR} />
+            </clipPath>
+          </defs>
+          <image
+            href={iconHref}
+            x={mx - iconR}
+            y={my + 6.1 - iconR}
+            width={iconR * 2}
+            height={iconR * 2}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#${iconId})`}
+          />
+          <circle className={styles.portResourceRing} cx={mx} cy={my + 6.1} r={iconR} />
+        </>
+      )}
     </g>
   );
 }

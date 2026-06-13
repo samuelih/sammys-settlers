@@ -13,6 +13,14 @@ export {
   PORT_TYPE_NAMES,
   FACING_NAMES,
   SUPPORTED_PLAYER_COUNTS,
+  DEFAULT_BOARD_HEIGHT,
+  DEFAULT_BOARD_WIDTH,
+  EDITOR_DEFAULT_BOARD_HEIGHT,
+  EDITOR_DEFAULT_BOARD_WIDTH,
+  MIN_BOARD_HEIGHT,
+  MIN_BOARD_WIDTH,
+  MAX_BOARD_HEIGHT,
+  MAX_BOARD_WIDTH,
   parseCoord,
   encodeCoord,
   rowOf,
@@ -45,6 +53,7 @@ export {
   togglePlayerCount,
   setPlayerCounts,
   setShuffle,
+  setBoardSize,
   indexOfHexAt,
   indexOfPortAt,
 } from './editorActions';
@@ -53,6 +62,9 @@ export {
   candidatePortEdges,
   edgesAroundHex,
   legalFacingsForEdge,
+  boardSizeForMap,
+  minimumBoardSizeForMap,
+  clampBoardSize,
 } from './editorGrid';
-export type { GridHexCell, GridEdgeCell } from './editorGrid';
+export type { GridHexCell, GridEdgeCell, EditorBoardSize } from './editorGrid';
 export { SAMPLE_MAP_JSON } from './sampleMapData';

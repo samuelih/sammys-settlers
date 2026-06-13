@@ -63,6 +63,14 @@ test.describe('map editor — UI round-trip (export artifact for the Java valida
     // No error rows in the validation list.
     await expect(page.getByTestId('editor-issue-error')).toHaveCount(0);
 
+    // --- A valid frame edit: expand the authoring canvas. -----------------
+    await expect(page.getByTestId('editor-board-height')).toHaveValue('16');
+    await expect(page.getByTestId('editor-board-width')).toHaveValue('17');
+    await page.getByTestId('editor-board-height-inc').click();
+    await page.getByTestId('editor-board-width-inc').click();
+    await expect(page.getByTestId('editor-board-height')).toHaveValue('18');
+    await expect(page.getByTestId('editor-board-width')).toHaveValue('19');
+
     // --- A small VALID edit: rename the map. ------------------------------
     // The new name has no '|' or ',' and no control chars, so it stays valid.
     const newName = 'Sample Two Islands (e2e edit)';
@@ -82,8 +90,15 @@ test.describe('map editor — UI round-trip (export artifact for the Java valida
 
     // Sanity-check the exported text in-process before handing it to the
     // external Java validator: it must be parseable JSON carrying our edit.
-    const parsed = JSON.parse(exportedJson) as { name?: string; landHexes?: unknown[] };
+    const parsed = JSON.parse(exportedJson) as {
+      name?: string;
+      boardHeight?: number;
+      boardWidth?: number;
+      landHexes?: unknown[];
+    };
     expect(parsed.name).toBe(newName);
+    expect(parsed.boardHeight).toBe(18);
+    expect(parsed.boardWidth).toBe(19);
     expect(Array.isArray(parsed.landHexes)).toBe(true);
     expect((parsed.landHexes ?? []).length).toBeGreaterThan(0);
 

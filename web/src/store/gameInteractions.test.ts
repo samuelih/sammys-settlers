@@ -290,6 +290,37 @@ describe('robber move (MOVEROBBER)', () => {
     );
     expect(cg().gameLog.some((l) => l.text.includes('robbed') && l.text.includes('sheep'))).toBe(true);
   });
+
+  it('applies robbery resource gain/loss to the local hand and opponent total', () => {
+    const s = useGameStore.getState();
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.SHEEP, 2));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 2, PlayerElementAction.SET, PlayerElementType.RESOURCE_COUNT, 5));
+
+    s.applyRobberyResult(
+      new SOCRobberyResult(GAME, 0, 2, { kind: 'res', resType: Resource.SHEEP }, true, 1),
+    );
+
+    expect(cg().playerViews[0].resources.sheep).toBe(3);
+    expect(cg().playerViews[0].resourceTotal).toBe(3);
+    expect(cg().playerViews[2].resourceTotal).toBe(4);
+    expect(useGameStore.getState().notice).toContain('robbed 1 sheep');
+  });
+
+  it('applies robbery resource-set loss to the local hand', () => {
+    const s = useGameStore.getState();
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.CLAY, 2));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 0, PlayerElementAction.SET, PlayerElementType.WOOD, 2));
+    s.applyPlayerElement(new SOCPlayerElement(GAME, 1, PlayerElementAction.SET, PlayerElementType.RESOURCE_COUNT, 1));
+
+    s.applyRobberyResult(
+      new SOCRobberyResult(GAME, 1, 0, { kind: 'resSet', resSet: resourceSet(1, 0, 0, 0, 1) }, true),
+    );
+
+    expect(cg().playerViews[0].resources.clay).toBe(1);
+    expect(cg().playerViews[0].resources.wood).toBe(1);
+    expect(cg().playerViews[0].resourceTotal).toBe(2);
+    expect(cg().playerViews[1].resourceTotal).toBe(3);
+  });
 });
 
 describe('choose-player + discard requirements', () => {

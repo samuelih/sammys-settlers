@@ -5,6 +5,8 @@ import styles from '../BoardSVG.module.css';
 export interface MarkerProps {
   /** 0xRRCC hex coordinate the marker sits on. */
   hexCoord: number;
+  /** Move aside when the hex has a dice token so the number remains readable. */
+  avoidToken?: boolean;
 }
 
 /**
@@ -14,12 +16,14 @@ export interface MarkerProps {
  * transitions smoothly, so moving the robber glides to its new hex (honoring
  * `prefers-reduced-motion` / low-quality mode via CSS).
  */
-export function Robber({ hexCoord }: MarkerProps): JSX.Element {
+export function Robber({ hexCoord, avoidToken = false }: MarkerProps): JSX.Element {
   const { x: cx, y } = hexToPixel(hexCoord);
   const cy = y + HEX_CENTER_DY; // hexagon's visual center
-  const s = HALFDELTA_X * 0.52;
+  const dx = avoidToken ? HALFDELTA_X * 0.44 : 0;
+  const dy = avoidToken ? -HALFDELTA_X * 0.18 : 0;
+  const s = HALFDELTA_X * (avoidToken ? 0.36 : 0.48);
   return (
-    <g data-testid="robber" className={styles.marker} transform={`translate(${cx} ${cy})`} pointerEvents="none">
+    <g data-testid="robber" className={styles.marker} transform={`translate(${cx + dx} ${cy + dy})`} pointerEvents="none">
       <ellipse className={styles.markerShadow} cx={0} cy={s} rx={s * 0.8} ry={s * 0.26} />
       <path className={styles.robber} d={pawnPath(s)} />
     </g>
