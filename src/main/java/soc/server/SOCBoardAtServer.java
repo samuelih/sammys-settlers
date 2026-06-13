@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2012-2021,2024,2026 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
  *
@@ -55,7 +55,7 @@ import soc.util.IntTriple;
  * For the board layout geometry, see that class javadoc's "Coordinate System" section.
  * Non-sea "classic" boards use {@link SOCBoard4p} or {@link SOCBoard6p} at server and client.
  *<P>
- * Sea board layout: A representation of a larger (up to 127 x 127 hexes) JSettlers board,
+ * Sea board layout: A representation of a larger (up to 127 x 127 hexes) Sammys-Settlers board,
  * with an arbitrary mix of land and water tiles.
  * Implements {@link SOCBoard#BOARD_ENCODING_LARGE}.
  * Activated with {@link SOCGameOption} {@code "SBL"}.

@@ -1,10 +1,10 @@
-# Developing JSettlers
+# Developing Sammys-Settlers
 
 ## Contents
 
 - Overall structure of the code and project
 - Tips for debugging
-- Setup instructions for JSettlers as an Eclipse project
+- Setup instructions for Sammys-Settlers as an Eclipse project
 - Build Setup and Results
 - Recommended debug/run configurations for testing
 - To configure a sqlite database for testing
@@ -19,7 +19,7 @@
 - Network Communication and interop with other versions or languages
 - Coding Style
 - Release Testing
-- JSettlers on Github
+- Sammys-Settlers on Github
 - Related Projects
 
 
@@ -79,24 +79,24 @@ and Robert S Thomas' dissertation.
 
 Pieces are placed at edges, nodes, or hexes.
 
-To show piece coordinates in the board's tooltips, in the game window chat box type: `=*= showcoords`  
+To show piece coordinates in the board's tooltips, in the game window chat box type: `=*= showcoords`
 To no longer show those coordinates, type: `=*= hidecoords`
 
 For more information about the board coordinates, see javadocs in [soc.game.SOCBoard](../src/main/java/soc/game/SOCBoard.java)
 and [SOCBoardLarge](../src/main/java/soc/game/SOCBoardLarge.java)
 (or dissertation appendix A), and these diagrams:
 
-**Sea boards:**  
+**Sea boards:**
 Rectilinear grid of rows and columns. A vertical edge's coordinate is its center.
-A diagonal edge's coordinate value is taken from its left-end node.  
+A diagonal edge's coordinate value is taken from its left-end node.
 ![hexcoord-sea.png](/doc/hexcoord-sea.png)
 
-**4-player classic:**  
-Diagonal axes for rows and columns.  
+**4-player classic:**
+Diagonal axes for rows and columns.
 ![hexcoord.gif](/doc/hexcoord.gif)
 
-**6-player classic:**  
-Same coordinates as 4-player classic. Trading ports' hexes are off the edge of the grid.  
+**6-player classic:**
+Same coordinates as 4-player classic. Trading ports' hexes are off the edge of the grid.
 ![hexcoord-6player.gif](/doc/hexcoord-6player.gif)
 
 ### Development
@@ -141,9 +141,9 @@ please use sqlite or another database and make a "debug" account with a password
 
 `D.ebugPrintlnINFO` is turned on or off for each java class by the import at the top of the file.
 For example if you wanted to see D.ebugPrintlnINFO output for soc.game.SOCPlayer,
-in SOCPlayer.java you would change the line  
-`import soc.disableDebug.D;`  
-to  
+in SOCPlayer.java you would change the line
+`import soc.disableDebug.D;`
+to
 `import soc.debug.D;`
 
 To show hidden/private player details, activate and use the "Fully Observable"
@@ -165,7 +165,7 @@ it won't print SOCServerPings.
 One way to send configuration or debug settings from the server to a third-party
 robot, client, or the game objects running there, is to use the `_EXT_BOT`,
 `_EXT_CLI`, or `_EXT_GAM` SOCGameOptions. Those are defined but not used by
-core JSettlers, for use by third-party code. They can be set at the server's
+core Sammys-Settlers, for use by third-party code. They can be set at the server's
 command line or properties file and read by the client when it connects to a game.
 
 To force the board to contain fog hexes, start the server with vm argument
@@ -250,7 +250,7 @@ These debug commands are used at the client to help show the board's status:
   placements which are currently valid for player 0 (sits in the upper-left
   corner); available only for the sea board layout, not the classic 4- or
   6-player boards. Yellow shapes show legal coordinates, green shows potential,
-  red shows "on land". To show only some piece types' legals and potentials, 
+  red shows "on land". To show only some piece types' legals and potentials,
   instead of 'all' use an index number from the
   `SOCBoardPanel.debugShowPotentials` javadoc.
   The board boundary is shown for index 2, which also prints the board panel
@@ -265,7 +265,7 @@ time the client can create a new game and start it as bots-only using the debug
 command `*STARTBOTGAME* [maxBots]`. See the "Robots (AI)" section for more
 details on bot testing.
 
-### JSettlers client properties for debugging and testing
+### Sammys-Settlers client properties for debugging and testing
 
 To use any of these, specify them in the IDE or java command line as JVM
 parameters (before, not after, `-jar` or the SOCPlayerClient class name):
@@ -281,10 +281,10 @@ parameters (before, not after, `-jar` or the SOCPlayerClient class name):
   look for semicolons within the Version message sent to the server.)
 
 
-## Setup instructions for JSettlers as an Eclipse project
+## Setup instructions for Sammys-Settlers as an Eclipse project
 
 Written for Eclipse 4.34 and Buildship 3.1, should be applicable to other versions
-with minor changes. These instructions can be adapted to import JSettlers and
+with minor changes. These instructions can be adapted to import Sammys-Settlers and
 its `build.gradle` into other IDEs.
 
 - If your Eclipse's File -> Import dialog doesn't have a "Gradle" option:
@@ -312,7 +312,7 @@ its `build.gradle` into other IDEs.
 - Eclipse should import the project and do an initial build
     - If you see the error `Unsupported class file major version 61`,
       your default JDK is too new for that gradle version ([details here](https://docs.gradle.org/current/userguide/compatibility.html)).
-        - Install JDK 8 (JSettlers' current preferred version)
+        - Install JDK 8 (Sammys-Settlers' current preferred version)
         - In Eclipse preferences -> Gradle, point it to that JDK's java home
         - Remove the imported project in Eclipse and import again
 - Project -> Properties
@@ -331,7 +331,7 @@ its `build.gradle` into other IDEs.
     	- If eclipse asks "Build the project now?", hit Yes
 - Gradle downloads the project's required and optional library JARs, and the import wizard
   adds them to the project's Dependencies list.
-- Run the `assemble` or `build` gradle task now to copy resources from `src/main/resources/`.  
+- Run the `assemble` or `build` gradle task now to copy resources from `src/main/resources/`.
   To do so: Gradle tasks tab -> jsettlers -> build -> assemble
 
 Continue reading to see how to set up the builds and the run configs in Eclipse.
@@ -370,10 +370,10 @@ build variables you may want to change locally. These can be changed by
 creating a `build.properties` file, or from the gradle command line by passing
 a `-Dname=value` parameter.
 
-The basic build command/task is:  
-`gradle build`  
+The basic build command/task is:
+`gradle build`
 If the build fails with this error:
-`A problem occurred starting process 'command 'python''`  
+`A problem occurred starting process 'command 'python''`
 then make sure you can run the `python` command.
 If your computer has `python3` instead, update the ext.python_command
 declaration in `build.gradle`.
@@ -387,7 +387,7 @@ There are several gradle build tasks. Here are the main ones:
     - Only the python extra tests: `extraTestPython`
     - Only the java extra tests: `extraTest --exclude-task extraTestPython  --exclude-task testPython`
         - Only a specific java extra test: `extraTest --exclude-task extraTestPython  --exclude-task testPython --tests TestActionsMessages.testBuildAndMove`
-- `dist`: `build` and create tarballs of the source + built JARs  
+- `dist`: `build` and create tarballs of the source + built JARs
   (jsettlers-2.x.xx-src.tar.gz, jsettlers-2.x.xx-full.tar.gz, jsettlers-2.x.xx-full.zip)
   in "build/distributions/"
 - `javadoc`: create JavaDoc files in "build/docs/javadoc"
@@ -399,15 +399,15 @@ you should first run the `build` or `assemble` gradle task to copy resources
 to their built location from `src/main/resources`; otherwise startup will
 fail with this error:
 
-    Packaging error: Cannot determine JSettlers version
+    Packaging error: Cannot determine Sammys-Settlers version
 
-### Including JSettlers as a subproject build
+### Including Sammys-Settlers as a subproject build
 
-JSettlers can be used as a subproject within a gradle build project.
-If the JSettlers repo is at (for example) `lib/jsettlers2/` within your
-project directory structure, and in your gradle project as  
-`include ':lib:jsettlers2'`  
-then in your build.gradle you can add the JSettlers jar to your code's compile classpath with:
+Sammys-Settlers can be used as a subproject within a gradle build project.
+If the Sammys-Settlers repo is at (for example) `lib/jsettlers2/` within your
+project directory structure, and in your gradle project as
+`include ':lib:jsettlers2'`
+then in your build.gradle you can add the Sammys-Settlers jar to your code's compile classpath with:
 ```
 dependencies {
     implementation project(':lib:jsettlers2')
@@ -421,7 +421,7 @@ compileJava {
 
 ## Recommended debug/run configurations for testing
 
-In my IDE's JSettlers project, I've created these debug/run configurations:
+In my IDE's Sammys-Settlers project, I've created these debug/run configurations:
 
     Java applications:
         cli-noargs: soc.client.SOCPlayerClient
@@ -454,7 +454,7 @@ you are developing anything related to game options or jsettlers properties.
 This is optional. See also the "Developing with a database (JDBC)" section
 of this readme.
 
-These instructions are written for Eclipse 4.34. JSettlers+sqlite works with
+These instructions are written for Eclipse 4.34. Sammys-Settlers+sqlite works with
 standard Eclipse; the j2ee Eclipse adds a convenient data browser. Note that
 [Readme.md](../Readme.md) mentions a command-line option
 `-Djsettlers.db.jar=driverfile.jar`; that's needed only while running the
@@ -477,7 +477,7 @@ jsettlers JAR from the command line, not running inside the IDE.
     - duplicate `socserver-sqlite` -> `socserver-sqlite-setup`
         - program arguments: add at beginning of args: `-Djsettlers.db.script.setup=src/main/bin/sql/jsettlers-tables-sqlite.sql`
   - Run the `socserver-sqlite-setup` configuration
-  - After running, this line should appear in the console:  
+  - After running, this line should appear in the console:
     `Setup script was successful. Exiting now.`
 - If using eclipse j2ee, add the database so you can add tables and query it:
   - `Window -> show view -> other... -> data mgmt -> data source explorer`
@@ -488,7 +488,7 @@ jsettlers JAR from the command line, not running inside the IDE.
   - Click "Test Connection"
   - Click Finish
 - Run the `socserver-sqlite` configuration
-  - In console, this line should appear near the top of the output:  
+  - In console, this line should appear near the top of the output:
     `User database initialized.`
 - The database is now ready for use, development, and debugging.
 - To create player users, see [Readme.md](../Readme.md) and use `SOCAccountClient`.
@@ -519,12 +519,12 @@ ideas.
   (log into server, create/join game, roll dice, etc)
 - Docs: `PlayerClientListener` interface has some methods without javadocs: Add by checking `SOCPlayerInterface.ClientBridge` implementation
 - Java 7+ cleanup: Use diamond operator where possible
-  - Example: change  
-    `Map<String, SOCGameOption> newOpts = new HashMap<String, SOCGameOption>()`  
-    to  
+  - Example: change
+    `Map<String, SOCGameOption> newOpts = new HashMap<String, SOCGameOption>()`
+    to
     `Map<String, SOCGameOption> newOpts = new HashMap<>()`
   - This regexp search will find some candidates: `= new \w+\s*<[^>]`
-  - For clarity, decide case-by-case whether to use diamond with deeply nested types like  
+  - For clarity, decide case-by-case whether to use diamond with deeply nested types like
     `new Stack<Pair<NodeLenVis<Integer>, List<Integer>>>()`
 - Add more scenarios' unit tests to `soctest.game.TestScenarioRules`
 - Kick and replace robots if inactive but current player in game, assume they're buggy (see forceEndTurn, SOCPlayer.isStubbornRobot())
@@ -675,12 +675,12 @@ special rules or pieces can be saved and loaded.
   - Game play now resumes, at the current player and state it was saved with
 
 This feature requires a GSON jar which must be on the classpath, or named `gson.jar` (no version number)
-in same directory as JSettlersServer.jar. Download GSON 2.8.6 or higher from
+in same directory as Sammys-SettlersServer.jar. Download GSON 2.8.6 or higher from
 https://search.maven.org/artifact/com.google.code.gson/gson/2.8.6/jar or
-https://mvnrepository.com/artifact/com.google.code.gson/gson/2.8.6 .  
+https://mvnrepository.com/artifact/com.google.code.gson/gson/2.8.6 .
 If using Eclipse, also add GSON to the project's build path -> Libraries -> Add External JAR
 
-If you're not using this feature, JSettlers doesn't require or use the GSON jar.
+If you're not using this feature, Sammys-Settlers doesn't require or use the GSON jar.
 
 If you want to write code which loads saved games, see `SOCServer.createAndJoinReloadedGame`
 and/or `TestRecorder.connectLoadJoinResumeGame`.
@@ -696,8 +696,8 @@ A list of basic game actions and their message sequences is in
 [Message-Sequences-for-Game-Actions.md](Message-Sequences-for-Game-Actions.md).
 
 Launch RecordingSOCServer and log in as `debug` with the standard client.
-In any game you're playing or observing, logs can be saved at any time with the debug command  
-`*savelog* filename`  
+In any game you're playing or observing, logs can be saved at any time with the debug command
+`*savelog* filename`
 which will save to `filename.soclog` in the server's current directory.
 
 Optional flags for `*SAVELOG*` command:
@@ -712,9 +712,9 @@ For log file format, see `soc.extra.server.GameEventLog` javadocs.
 
 RecordingSOCServer also enables the `*SAVEGAME*` command; games are saved to the current directory.
 
-RecordingSOCServer isn't built into the JSettlers jars. So if you need to run it from the command line,
-you'll need more than the usual classpath. You can launch it with a bash/zsh command like:  
-`jar=(build/libs/JSettlersServer-*.jar); java -classpath ${CLASSPATH}:${jar}:build/classes/java/main:build/classes/java/test soc.extra.server.RecordingSOCServer`
+RecordingSOCServer isn't built into the Sammys-Settlers jars. So if you need to run it from the command line,
+you'll need more than the usual classpath. You can launch it with a bash/zsh command like:
+`jar=(build/libs/Sammys-SettlersServer-*.jar); java -classpath ${CLASSPATH}:${jar}:build/classes/java/main:build/classes/java/test soc.extra.server.RecordingSOCServer`
 
 
 ## Game rules, Game Options
@@ -740,15 +740,15 @@ Some game options might be useful only for developers or in other special
 situations, and would only be clutter if they always appeared in every client's
 New Game Options window. So those are declared as Inactive Options, which are
 unused and hidden unless activated during server startup by setting a
-config property:  
-`jsettlers.gameopts.activate=PLAY_VPO,OTHEROPT`  
+config property:
+`jsettlers.gameopts.activate=PLAY_VPO,OTHEROPT`
 Activated Options are then handled like any regular game option.
 For more details, see the SOCGameOption.activate javadoc.
 
 ### Third-Party Game Options:
 
-"Third-party" options can be defined by any 3rd-party client, bot, or server JSettlers fork,
-as a way to add features or flags but remain backwards-compatible with standard JSettlers.
+"Third-party" options can be defined by any 3rd-party client, bot, or server Sammys-Settlers fork,
+as a way to add features or flags but remain backwards-compatible with standard Sammys-Settlers.
 For more details, see the SOCGameOption.FLAG_3RD_PARTY javadoc.
 
 ### Custom maps (user-defined scenarios):
@@ -783,7 +783,7 @@ server logs a warning and starts normally with custom maps disabled rather than 
 
 ## Developing with a database (JDBC)
 
-JSettlers can optionally use a database to store users and passwords, game
+Sammys-Settlers can optionally use a database to store users and passwords, game
 score history, and robot parameters.  If databases interest you, the project
 welcomes contributions. Please keep these things in mind:
 
@@ -946,8 +946,8 @@ override it with `-Djsettlers.bots.cookie=foo`.
 
 When they join a game, third-party bots can be sent configuration or debug
 settings using the `_EXT_BOT` game option. This option's string value can
-be set at the server command line with  
-`java -jar JSettlersServer.jar -o _EXT_BOT=abcde`  
+be set at the server command line with
+`java -jar Sammys-SettlersServer.jar -o _EXT_BOT=abcde`
 and then read in the bot's brain class. For an example see
 `Sample3PBrain.setOurPlayerData()`.
 
@@ -1142,7 +1142,7 @@ For contributors extending the in-game UI, two mechanisms are worth pointing at:
 
 ## Network Communication and interop with other versions or languages
 
-Players' clients talk to the JSettlers server using a simple string-based
+Players' clients talk to the Sammys-Settlers server using a simple string-based
 message format. See "Overall Structure" for an overview on network message
 handling. Communication format and more details are described in
 `soc.message.SOCMessage`. To see all message traffic from a client, set
@@ -1155,12 +1155,12 @@ Sample code to recognize and extract game actions from them
 is described in [GameActionExtractor.md](extra/GameActionExtractor.md).
 
 Keeping the network protocol simple helps with interoperability between different
-versions and implementations. At the TCP level, JSettlers messages are unicode
+versions and implementations. At the TCP level, Sammys-Settlers messages are unicode
 Strings sent using `DataOutputStream.writeUTF(String)` and
 `DataInputStream.readUTF()`.
 
 AI bots, server monitors, or other client programs can also be written in
-non-Java languages. Such clients could communicate with JSettlers by
+non-Java languages. Such clients could communicate with Sammys-Settlers by
 implementing `writeUTF` and `readUTF` (searching online finds sample code
 for popular languages), looking for the message types they need to work with
 (listed in `SOCMessage`), and decoding/encoding those message types. See
@@ -1353,9 +1353,9 @@ When preparing to release a new version, run through the list of tests
 in [Release-Testing.md](Release-Testing.md).
 
 
-## JSettlers on Github
+## Sammys-Settlers on Github
 
-The project code lives at https://github.com/jdmonin/JSettlers2 .
+The project code lives at https://github.com/samuelih/Sammys-Settlers .
 Patches can be sent by email or by pull request.
 Please make sure your patch follows the project coding style.
 
@@ -1368,7 +1368,7 @@ Protobuf replaces the homegrown SOCMessage protocol.
 
 Releases are tagged as format "release-2.4.00". Each release's last commit
 updates [Versions.md](Versions.md) with the final build number,
-with a commit message like: "Version 2.4.00 is build JM20200704"  
+with a commit message like: "Version 2.4.00 is build JM20200704"
 Then: `git tag -a release-2.4.00 -m 'Version 2.4.00 is build JM20200704'`
 
 After bumping version to start developing the next release,
@@ -1384,20 +1384,20 @@ right after releasing version 1.1.13. Most work on 1.x.xx was backported
 from 2.0 to the stable-1.x.xx git branch; changeset comments often mention
 a hash from a main commit. The main branch was renamed from master for v2.5.
 
-The github repo includes the JSettlers2 v1.1.xx CVS history formerly hosted at
+The github repo includes the Sammys-Settlers v1.1.xx CVS history formerly hosted at
 https://sourceforge.net/projects/jsettlers2/ , converted to git on 2012-09-28
 with cvs2git (cvs2svn 2.4.0).
 
 The old 1.0.x source history (2004-2005) from Robert S Thomas and Chad McHenry
-can be found at https://github.com/jdmonin/JSettlers1
+can be found at https://github.com/samuelih/Sammys-Settlers
 or https://sourceforge.net/projects/jsettlers/ .
-That JSettlers1 repo also includes jsettlers-1-1-branch which has
-Jeremy Monin's first JSettlers releases 1.1.00 through 1.1.06.
+That Sammys-Settlers repo also includes jsettlers-1-1-branch which has
+Jeremy Monin's first Sammys-Settlers releases 1.1.00 through 1.1.06.
 
 
 ## Related Projects
 
-JSettlers was originally started to explore AI agents, and these projects
+Sammys-Settlers was originally started to explore AI agents, and these projects
 have used its code as a base for similar work.
 
 ### STAC
@@ -1405,24 +1405,24 @@ have used its code as a base for similar work.
 The Strategic Conversation Project (STAC) is an extensive multi-year effort
 to study negotiations, game theory, strategic decision making, and agents,
 including human-AI interactions in games. As part of their work, they ran
-tournaments of humans and bots using modified JSettlers and recorded that
+tournaments of humans and bots using modified Sammys-Settlers and recorded that
 gameplay for study.
 
-STAC forked JSettlers and added several bot types, UI for partial trades
+STAC forked Sammys-Settlers and added several bot types, UI for partial trades
 and "fully observable" open-hand games, a way to record a game's actions to
 logs or a database for playback later, some bot API refactoring, and other
 miscellaneous work. Some of STAC's features and APIs have been
-adapted upstream as part of JSettlers v2.5.00. Jeremy occasionally contributes
+adapted upstream as part of Sammys-Settlers v2.5.00. Jeremy occasionally contributes
 PRs to the STAC fork at https://github.com/ruflab/StacSettlers .
 
-Website: https://www.irit.fr/STAC/about.html  
-Github: https://github.com/ruflab/StacSettlers  
+Website: https://www.irit.fr/STAC/about.html
+Github: https://github.com/ruflab/StacSettlers
 Previous github: https://github.com/sorinMD/StacSettlers
 
 ### Settlers of Botan
 
-Instead of changing any JSettlers code, this undergraduate project's
-third-party bot uses JSettlers as a library and extends/overrides the
+Instead of changing any Sammys-Settlers code, this undergraduate project's
+third-party bot uses Sammys-Settlers as a library and extends/overrides the
 robot classes with some new implementations and algorithms.
 
 https://github.com/sambattalio/settlers_of_botan

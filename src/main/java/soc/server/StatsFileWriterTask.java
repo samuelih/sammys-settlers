@@ -1,5 +1,5 @@
 /**
- * JSettlers stats summary file writer.
+ * Sammys-Settlers stats summary file writer.
  * This file Copyright (C) 2020 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or

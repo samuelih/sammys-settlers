@@ -1,7 +1,7 @@
 services:
-  jsettlers-web:
+  sammys-settlers-web:
     build: .
-    image: jsettlers-web:local
+    image: sammys-settlers-web:local
     ports:
       - "8080:8080"
       - "8888:8888"

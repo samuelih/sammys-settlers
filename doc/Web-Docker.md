@@ -8,7 +8,7 @@ on port `8888`.
 ## Build
 
 ```bash
-docker build -t jsettlers-web .
+docker build -t sammys-settlers-web .
 ```
 
 Or use Compose:
@@ -21,13 +21,13 @@ docker compose up --build -d
 
 ```bash
 docker run -d \
-  --name jsettlers \
+  --name sammys-settlers \
   -p 8080:8080 \
   -p 8888:8888 \
   -p 8880:8880 \
   -e JS_BOTS=7 \
   -e JS_MAX_CONNECTIONS=50 \
-  jsettlers-web
+  sammys-settlers-web
 ```
 
 Open inbound firewall ports:
@@ -56,6 +56,6 @@ same game from the lobby, then sit in open seats. Built-in bots fill empty seats
 when the game starts.
 
 For an HTTPS site, terminate TLS in a reverse proxy and make sure WebSocket
-upgrade traffic reaches the container's port `8888`. Browsers may block a
-plain `ws://` connection from an `https://` page, so either expose a secure
-WebSocket endpoint or serve the web app over HTTP for a private test server.
+upgrade traffic reaches the container's port `8888`. The current web client
+opens `ws://HOST:PORT` from the Connect screen, so serve the web app over HTTP
+for now or add `wss://` support before requiring HTTPS-only hosting.

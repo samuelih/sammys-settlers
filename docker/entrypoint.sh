@@ -13,7 +13,7 @@ envsubst '${JS_WEB_PORT} ${JS_WS_PORT}' \
     < /etc/nginx/templates/jsettlers.conf.template \
     > /etc/nginx/conf.d/jsettlers.conf
 
-java ${JAVA_OPTS} -jar /app/server/JSettlersServer.jar \
+java ${JAVA_OPTS} -jar /app/server/Sammys-SettlersServer.jar \
     "-Djsettlers.port=${JS_TCP_PORT}" \
     "-Djsettlers.websocket.port=${JS_WS_PORT}" \
     "-Djsettlers.startrobots=${JS_BOTS}" \

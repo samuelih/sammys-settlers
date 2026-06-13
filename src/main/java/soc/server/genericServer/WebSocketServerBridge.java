@@ -1,5 +1,5 @@
 /**
- * JSettlers network message system.
+ * Sammys-Settlers network message system.
  * This file Copyright (C) 2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ import soc.disableDebug.D;
 import soc.message.SOCMessage;
 
 /**
- * Bridges incoming WebSocket connections to the JSettlers generic {@link Server},
+ * Bridges incoming WebSocket connections to the Sammys-Settlers generic {@link Server},
  * for the web client transport. Each opened WebSocket gets a {@link WebSocketConnection}
  * which is integrated into the server exactly like a {@link NetConnection} would be.
  *<P>

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ import soc.util.Version;
 
 
 /**
- * Modeless dialog to show information about Java Settlers.
+ * Modeless dialog to show information about Sammys-Settlers.
  *<P>
  * To add a listener to a Label which shows this dialog when clicked, use {@link ClickMouseListener}.
  *
@@ -96,7 +96,7 @@ import soc.util.Version;
         if (cli.sVersionBuildnum == null)
         {
             sb.append(strings.get
-                ("pcli.cpp.jsettlers.versionbuild", Version.version(), Version.buildnum()));  // "JSettlers 2.7.00 build JM20260515"
+                ("pcli.cpp.jsettlers.versionbuild", Version.version(), Version.buildnum()));  // "Sammys-Settlers 2.7.00 build JM20260515"
         } else {
             sb.append(strings.get
                 ("dialog.about.version.client", Version.version(), Version.buildnum()));  // "This client: Version {0} build {1}"

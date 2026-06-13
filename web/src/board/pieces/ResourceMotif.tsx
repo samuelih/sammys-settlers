@@ -15,7 +15,7 @@ export interface ResourceMotifProps {
 /**
  * Painted, clipped terrain details for each hex kind. These stay vector-native
  * so board hit targets remain clean while tiles read closer to the classic
- * JSettlers image set: full ocean hexes, clustered forests, mountains, fields,
+ * Sammys-Settlers image set: full ocean hexes, clustered forests, mountains, fields,
  * dunes, and resource props instead of tiny generic center icons.
  */
 export function ResourceMotif({ kind, cx, cy, hx, hy }: ResourceMotifProps): JSX.Element | null {

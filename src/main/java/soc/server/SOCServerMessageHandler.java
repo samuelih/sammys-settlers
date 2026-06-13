@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2016-2021,2023-2026 Jeremy D Monin <jeremy@nand.net>
  * Some contents were formerly part of SOCServer.java;
  * Portions of this file Copyright (C) 2003 Robert S. Thomas <thomas@infolab.northwestern.edu>

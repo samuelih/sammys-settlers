@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -65,7 +65,7 @@ public class TestVersion
 
         url = Version.websiteURLSrc();
         assertNotNull("version.info missing " + Version.WEBSITE_URL_SRC, url);
-        assertEquals("https://github.com/jdmonin/JSettlers2/", url);  // if project source repo moves, update this test
+        assertEquals("https://github.com/samuelih/Sammys-Settlers/", url);  // if project source repo moves, update this test
     }
 
 }

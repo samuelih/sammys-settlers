@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2009-2010,2012,2014-2017,2019-2022 Jeremy D Monin <jeremy@nand.net>
  *
@@ -68,7 +68,7 @@ import java.util.concurrent.Executors;
 /**
  * This class contains methods for connecting to a database
  * and for manipulating the data stored there.
- * See {@code /Readme.md} for more info on how JSettlers uses this optional database,
+ * See {@code /Readme.md} for more info on how Sammys-Settlers uses this optional database,
  * and {@code /doc/Readme.developer.md} for developing and testing with it.
  *<P>
  * Originally based on jdbc code found at www.javaworld.com
@@ -88,7 +88,7 @@ import java.util.concurrent.Executors;
  * (Private method {@code checkConnection()} will try to reconnect if not connected.)
  *
  *<H3>Schema Upgrades:</H3>
- * Sometimes a new JSettlers version adds to the DB schema. When starting the JSettlers server, call
+ * Sometimes a new Sammys-Settlers version adds to the DB schema. When starting the Sammys-Settlers server, call
  * {@link #isSchemaLatestVersion()} to check, and if needed {@link #upgradeSchema(Set)}.
  * To improve flexibility, currently we let the server's admin defer upgrades and continue running
  * with the old schema until they have time to upgrade it.
@@ -252,14 +252,14 @@ public class SOCDBHelper
      * For convenience/reference, the JVM property name that xerial sqlite-jdbc uses
      * when extracting its native library to a non-default temp directory.
      *<P>
-     * JSettlers server v2.2.00 and newer will set the JVM property if it's not already set
+     * Sammys-Settlers server v2.2.00 and newer will set the JVM property if it's not already set
      * but is in {@code jsserver.properties} file or the server command line.
      * @since 2.2.00
      */
     public static final String PROP_SQLITE_TMPDIR = "org.sqlite.tmpdir";
 
     /**
-     * Original JSettlers schema version (1.0.00), before any new extra tables/fields.
+     * Original Sammys-Settlers schema version (1.0.00), before any new extra tables/fields.
      * {@code games} table has columns for only 4 players' names and scores, not 6.
      *<P>
      * Next version (but not latest) is {@link #SCHEMA_VERSION_1200}.
@@ -270,7 +270,7 @@ public class SOCDBHelper
     public static final int SCHEMA_VERSION_ORIGINAL = 1000;
 
     /**
-     * First updated JSettlers schema version (1.2.00) which adds any new extra tables/fields.
+     * First updated Sammys-Settlers schema version (1.2.00) which adds any new extra tables/fields.
      *<UL>
      * <LI> {@code db_version} table with upgrade history
      * <LI> {@code settings} table
@@ -285,7 +285,7 @@ public class SOCDBHelper
     public static final int SCHEMA_VERSION_1200 = 1200;
 
     /**
-     * JSettlers schema version 2.0.00, with extra tables/fields added since {@link #SCHEMA_VERSION_1200}.
+     * Sammys-Settlers schema version 2.0.00, with extra tables/fields added since {@link #SCHEMA_VERSION_1200}.
      *<UL>
      * <LI> {@code users}: Added games_won, games_lost fields
      * <LI> {@code games}: Obsoleted by {@code games2}. Upgrade won't delete it, but new games won't be added to it
@@ -300,7 +300,7 @@ public class SOCDBHelper
     public static final int SCHEMA_VERSION_2000 = 2000;
 
     /**
-     * Latest version of the JSettlers schema, currently 2.0.00 ({@link #SCHEMA_VERSION_2000}).
+     * Latest version of the Sammys-Settlers schema, currently 2.0.00 ({@link #SCHEMA_VERSION_2000}).
      * @see #isSchemaLatestVersion()
      * @since 1.2.00
      */
@@ -343,14 +343,14 @@ public class SOCDBHelper
     public static final int PW_SCHEME_BCRYPT = 1;
 
     /**
-     * Minimum Work Factor (9) allowed for {@link #PW_SCHEME_BCRYPT} encoding in JSettlers:
+     * Minimum Work Factor (9) allowed for {@link #PW_SCHEME_BCRYPT} encoding in Sammys-Settlers:
      * see {@link #BCRYPT_DEFAULT_WORK_FACTOR} for details. Anything below 9 is too fast.
      * @since 1.2.00
      */
     public static final int BCRYPT_MIN_WORK_FACTOR = 9;
 
     /**
-     * Default Work Factor (12) for {@link #PW_SCHEME_BCRYPT} encoding in JSettlers:
+     * Default Work Factor (12) for {@link #PW_SCHEME_BCRYPT} encoding in Sammys-Settlers:
      * Password hashing round count's power of 2, see {@link BCrypt#gensalt(int)} for details.
      * @see BCrypt#GENSALT_MAX_LOG2_ROUNDS
      * @see #PROP_JSETTLERS_DB_BCRYPT_WORK__FACTOR
@@ -363,14 +363,14 @@ public class SOCDBHelper
     // Password max lengths for various pw_schemes
 
     /**
-     * Original max length for a JSettlers account password when using {@link #PW_SCHEME_NONE}.
+     * Original max length for a Sammys-Settlers account password when using {@link #PW_SCHEME_NONE}.
      * @see #isPasswordLengthOK(String)
      * @since 1.2.00
      */
     public static final int PW_MAX_LEN_SCHEME_NONE = 20;
 
     /**
-     * Max length for a JSettlers account password when using {@link #PW_SCHEME_BCRYPT}. {@link BCrypt} encrypts
+     * Max length for a Sammys-Settlers account password when using {@link #PW_SCHEME_BCRYPT}. {@link BCrypt} encrypts
      * the password's bytes as encoded in UTF-8. Check against that length, not {@link String#length()};
      * {@link #isPasswordLengthOK(String)} does so.
      *<P>

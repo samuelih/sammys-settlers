@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2020-2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -255,7 +255,7 @@ public class SOCGameOptionSet
 
     /**
      * An "extra" option key {@code _EXT_BOT} available for robot development.
-     * Available for third-party bot developers: Not used by JSettlers core itself.
+     * Available for third-party bot developers: Not used by Sammys-Settlers core itself.
      * Can hold a string of data which is sent to all robot clients joining a game,
      * entered on the server command line or properties file. A third-party bot might
      * want to use this option's value to configure its behavior or debug settings.
@@ -268,7 +268,7 @@ public class SOCGameOptionSet
 
     /**
      * An "extra" option key {@code _EXT_CLI} available for client development.
-     * Available for third-party developers: Not used by JSettlers core itself.
+     * Available for third-party developers: Not used by Sammys-Settlers core itself.
      * Can hold a string of data which is sent to all clients,
      * entered on the server command line or properties file.
      * Maximum length of this option's value is {@link #TEXT_OPTION_MAX_LENGTH}.
@@ -280,7 +280,7 @@ public class SOCGameOptionSet
 
     /**
      * An "extra" option key {@code _EXT_GAM} available for game development.
-     * Available for third-party developers: Not used by JSettlers core itself.
+     * Available for third-party developers: Not used by Sammys-Settlers core itself.
      * Can hold a string of data which is sent to the game at all clients,
      * entered on the server command line or properties file.
      * Maximum length of this option's value is {@link #TEXT_OPTION_MAX_LENGTH}.
@@ -413,7 +413,7 @@ public class SOCGameOptionSet
      *   and should normally be hidden from clients, define it as an Inactive Option
      *   by using the {@link SOCGameOption#FLAG_INACTIVE_HIDDEN} flag.
      *   <P>
-     *   If you're forking JSettlers or developing a third-party client, server, or bot,
+     *   If you're forking Sammys-Settlers or developing a third-party client, server, or bot,
      *   any game options you add should use {@code '3'} as the second character of
      *   their name key: {@code "_3"}, {@code "T3"}, etc.
      *   Use {@link SOCGameOption#FLAG_3RD_PARTY} when specifying your options; see its javadoc for details.

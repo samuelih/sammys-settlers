@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2026 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -85,14 +85,14 @@ import java.util.StringTokenizer;
  * <LI> Decide on the message type name.
  *      Make sure the new name has never been used (check {@link #MESSAGE_RENAME_MAP}).
  *      Add to the end of the constant list in this class.
- *      Add a comment to note the JSettlers version in which it was introduced, and the date.
+ *      Add a comment to note the Sammys-Settlers version in which it was introduced, and the date.
  * <LI> If the new message is for something that any kind of game can use,
  *      give it the next available type ID number in the list (1xxx).
- *      If the message is specific to the JSettlers game and its interface,
+ *      If the message is specific to the Sammys-Settlers game and its interface,
  *      use a message number above 10000.  The intention is that other kinds of games
  *      can be played eventually within this server framework.
  *      For message types added during a fork or third-party work, use the 2xxx range;
- *      that range won't be used by the JSettlers core itself.
+ *      that range won't be used by the Sammys-Settlers core itself.
  * <LI> Add it to the switch in {@link #toMsg(String)}.  Again, note the version with a comment.
  *      In the switch you will call <tt>yourMessageType.parseDataStr(data)</tt>.
  *      If your message class extends {@link SOCMessageTemplateMs} or {@link SOCMessageTemplateMi},
@@ -111,7 +111,7 @@ import java.util.StringTokenizer;
  *      <code> private static final long serialVersionUID = 1109L;</code>
  * <LI> Add to the switch in {@link soc.client.MessageHandler#handle(SOCMessage, boolean)}
  *      and/or {@code SOCServerMessageHandler.dispatch} or its game type's {@code GameMessageHandler.dispatch}.
- *      Note the JSettlers version with a comment.
+ *      Note the Sammys-Settlers version with a comment.
  *      <P>
  *      <em>Note:</em> Most things added to client {@code MessageHandler.handle} should also be added to
  *      {@link soc.baseclient.SOCDisplaylessPlayerClient#treat(SOCMessage)}. If robots
@@ -135,7 +135,7 @@ import java.util.StringTokenizer;
  * It's sometimes useful to add new fields to a message, to support new features
  * or optimize the message stream.
  *<P>
- * It's important that previous JSettlers versions are still able to parse the message
+ * It's important that previous Sammys-Settlers versions are still able to parse the message
  * when it includes its new field(s), unless the addition supports a feature which isn't compatible with
  * those previous versions. Try to avoid adding code to the server/client
  * to send different formats of the same message to different versions.
@@ -510,7 +510,7 @@ public abstract class SOCMessage implements Serializable, Cloneable
     public static final int SERVERPING = 9999;  // available in all versions
 
     //////////////////////////////////////////////
-    // GAMETYPE-SPECIFIC MESSAGES for JSettlers //
+    // GAMETYPE-SPECIFIC MESSAGES for Sammys-Settlers //
     //////////////////////////////////////////////
 
     /**
@@ -598,7 +598,7 @@ public abstract class SOCMessage implements Serializable, Cloneable
      * When overriding, write the entire method on a single line for easier
      * visibility of the version when searching the source code.
      *
-     * @return Version number, as in 1006 for JSettlers 1.0.06.
+     * @return Version number, as in 1006 for Sammys-Settlers 1.0.06.
      * @since 1.1.00
      */
     public int getMinimumVersion() { return 1000; }
@@ -606,7 +606,7 @@ public abstract class SOCMessage implements Serializable, Cloneable
     /**
      * To identify obsolete message types, give the maximum version where this
      * type is used.  Default (for active messages) returns {@link Integer#MAX_VALUE}.
-     * @return Version number, as in 1006 for JSettlers 1.0.06, or {@link Integer#MAX_VALUE}.
+     * @return Version number, as in 1006 for Sammys-Settlers 1.0.06, or {@link Integer#MAX_VALUE}.
      * @since 1.1.00
      */
     public int getMaximumVersion()

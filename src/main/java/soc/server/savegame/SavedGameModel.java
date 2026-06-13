@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2020-2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -81,7 +81,7 @@ import soc.util.Version;
  * This standalone model is cleaner than trying to serialize/deserialize {@link SOCGame}, SOCBoard, etc.
  *<P>
  * Like the optional database, this data model has a {@link #modelVersion} which may be older than the
- * current JSettlers version. See {@link #MODEL_VERSION} for lifecycle details.
+ * current Sammys-Settlers version. See {@link #MODEL_VERSION} for lifecycle details.
  *<P>
  * Some fields use custom serializers and/or deserializers: See {@link PlayerInfo}'s
  * {@code @JsonAdapter} field annotations and their {@code TypeAdapter}s,
@@ -96,9 +96,9 @@ public class SavedGameModel
     /**
      * Current model schema version: 2400 for v2.4.00.
      *<P>
-     * Like the JSettlers database schema, this version may be older than the current JSettlers version.
+     * Like the Sammys-Settlers database schema, this version may be older than the current Sammys-Settlers version.
      * The model version should change only when its fields require changes which would prevent
-     * older JSettlers versions from understanding and loading a file using the new model.
+     * older Sammys-Settlers versions from understanding and loading a file using the new model.
      *<BR>
      * For example:
      *<UL>
@@ -112,24 +112,24 @@ public class SavedGameModel
      *<UL>
      * <LI> New fields or {@link GEType} or {@link PEType} constants can be added,
      *      as long as they're optional and the game data is usable without them
-     * <LI> When a newer JSettlers version loads an older file, added fields will be their type's default value
+     * <LI> When a newer Sammys-Settlers version loads an older file, added fields will be their type's default value
      *      (0, null, etc)
-     * <LI> When an older JSettlers version loads a file with added fields
+     * <LI> When an older Sammys-Settlers version loads a file with added fields
      *      which aren't in its copy of the model, the GSON parser ignores them
-     * <LI> When an older JSettlers version loads a file which has {@link GEType} or {@link PEType}
+     * <LI> When an older Sammys-Settlers version loads a file which has {@link GEType} or {@link PEType}
      *      constant values which aren't in that version's copy of those enums,
      *      {@link GameLoaderJSON} ignores them
      *</UL>
      * {@link #createLoadedGame(SOCServer, int)} will reject a loaded game if its {@link #modelVersion}
      * is newer than {@code MODEL_VERSION}, or if the game has features/options that it can't save.
-     * If you need to make a saved-game file for use by multiple JSettlers versions, save it from the oldest version.
+     * If you need to make a saved-game file for use by multiple Sammys-Settlers versions, save it from the oldest version.
      *<P>
      * When {@code MODEL_VERSION} is changed, that will be documented here and in {@code /doc/Versions.md}.
      * The earliest version number is 2300. If field formats change in the new schema, will add code to
      * backwards-compatibility tests like {@code TestLoadgame.testLoadModelVersion2300} to ensure the old format
      * can still be reliably parsed.
      *
-     *<H3>Changes by JSettlers version:</H3>
+     *<H3>Changes by Sammys-Settlers version:</H3>
      *
      *<H4>2.7.00</H4>
      *<UL>
@@ -244,7 +244,7 @@ public class SavedGameModel
     public int modelVersion;
 
     /**
-     * Version of JSettlers which saved this game file, from {@link Version#versionNumber()}.
+     * Version of Sammys-Settlers which saved this game file, from {@link Version#versionNumber()}.
      * This field is only for reference, not important when loading a saved game.
      * @see #modelVersion
      * @see #gameMinVersion
@@ -616,7 +616,7 @@ public class SavedGameModel
      *<P>
      * See {@link #checkCanSave(SOCGame)} for list of unsupported features checked here.
      *<P>
-     * This is needed because within the same {@link #MODEL_VERSION}, a new JSettlers version could
+     * This is needed because within the same {@link #MODEL_VERSION}, a new Sammys-Settlers version could
      * add fields or logic to support saving/loading more features; for example, certain scenarios but not all.
      * The older version isn't able to load that saved game.
      *
@@ -1014,7 +1014,7 @@ public class SavedGameModel
          * Player's fortress, if any, from {@link SOCPlayer#getFortress()}; usually null.
          * Not part of {@link #pieces} list.
          * This field was part of the experimental early SGM; no released version supports scenarios yet.
-         * TODO: SGM in a future JSettlers version should support "special pieces" in a more general way.
+         * TODO: SGM in a future Sammys-Settlers version should support "special pieces" in a more general way.
         SOCFortress fortressPiece;
          */
 

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2012,2014,2017-2022 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -95,7 +95,7 @@ public class SOCPieceValue extends SOCMessageTemplate4i
     /**
      * Minimum version where this message type is used.
      * PIECEVALUE introduced in 2.0.00 for the Cloth Villages and Pirate Islands scenarios.
-     * @return Version number, 2000 for JSettlers 2.0.00.
+     * @return Version number, 2000 for Sammys-Settlers 2.0.00.
      */
     public int getMinimumVersion() { return 2000; }
 

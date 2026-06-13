@@ -64,10 +64,10 @@ describe('SOCStatusMessage', () => {
   });
 
   it('parses text starting with non-numeric prefix as sv=0 with whole text', () => {
-    // "Welcome to JSettlers" has no comma -> no svalue; status is whole string.
-    const back = decode('1069|Welcome to JSettlers') as SOCStatusMessage;
+    // "Welcome to Sammys-Settlers" has no comma -> no svalue; status is whole string.
+    const back = decode('1069|Welcome to Sammys-Settlers') as SOCStatusMessage;
     expect(back.svalue).toBe(0);
-    expect(back.status).toBe('Welcome to JSettlers');
+    expect(back.status).toBe('Welcome to Sammys-Settlers');
   });
 
   it('returns null when data starts with SEP2 (garbled)', () => {

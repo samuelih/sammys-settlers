@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2017-2018 Strategic Conversation (STAC Project) https://www.irit.fr/STAC/
  * Portions of this file copyright (C) 2020-2025 Jeremy D Monin <jeremy@nand.net>
  *
@@ -56,7 +56,7 @@ public interface SOCBuildPlan
      * Note: This may be unsafe - assumes an appropriate size of build plan.  Could easily add a check for size in the
      * function call, but it's probably easier to debug for now with bad calls throwing exceptions, rather than
      * returning nulls that may be harder to figure out if they create funny behavior later.
-     * JSettlers building plans used to be {@code Stack}, which throws an exception rather than returning null.
+     * Sammys-Settlers building plans used to be {@code Stack}, which throws an exception rather than returning null.
      *<P>
      * In future, non-linear build plans should be discussed as to how to implement this. For example if we
      * traverse a tree-like structure, so separate functions would need to be added to switch between branches.

@@ -38,7 +38,7 @@ import soc.message.SOCMessage;
  * This class has a run method, but you must start the thread yourself.
  * Constructors will not create or start a thread.
  *<P>
- * As used within JSettlers, the structure of this class has much in common
+ * As used within Sammys-Settlers, the structure of this class has much in common
  * with {@link NetConnection}, as they both subclass {@link Connection}.
  * If you add something to one class you should probably add it to the other,
  * or to the superclass instead.

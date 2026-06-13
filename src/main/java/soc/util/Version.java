@@ -179,7 +179,7 @@ public class Version {
 
   /**
    * URL for project source repository website; used in About dialog.
-   * @return project website URL "https://github.com/jdmonin/JSettlers2/", or null if missing in properties file
+   * @return project website URL "https://github.com/samuelih/Sammys-Settlers/", or null if missing in properties file
    * @since 2.7.00
    */
   public static String websiteURLSrc() {
@@ -238,7 +238,7 @@ public class Version {
   }
 
   /**
-   * Print the JSettlers version banner and attribution text. Formerly inside {@code SOCPlayerClient}, {@code SOCServer}.
+   * Print the Sammys-Settlers version banner and attribution text. Formerly inside {@code SOCPlayerClient}, {@code SOCServer}.
    * @param out  {@link System#out} or {@link System#err}
    * @param progname  "Sammy's Settlers Server " or "Sammy's Settlers Client ", including trailing space
    * @since 1.1.18

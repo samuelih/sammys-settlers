@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * This file Copyright (C) 2015,2017-2023 Jeremy D Monin <jeremy@nand.net>
  *
@@ -275,7 +275,7 @@ public class SOCLocalizedStrings extends SOCMessageTemplateMs
     /**
      * Minimum version where this message type is used.
      * LOCALIZEDSTRINGS introduced in 2.0.00 for i18n localization.
-     * @return Version number, 2000 for JSettlers 2.0.00.
+     * @return Version number, 2000 for Sammys-Settlers 2.0.00.
      */
     @Override
     public final int getMinimumVersion() { return 2000; }

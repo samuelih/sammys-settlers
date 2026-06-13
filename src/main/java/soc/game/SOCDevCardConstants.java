@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2009,2012-2013,2016-2023 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Skylar Bolton <iiagrer@gmail.com>
@@ -24,7 +24,7 @@ package soc.game;
 /**
  * This is a list of constants for representing
  * types of development cards in Settlers of Catan.
- * JSettlers tracks dev card types using ints and these constants, not an {@code enum},
+ * Sammys-Settlers tracks dev card types using ints and these constants, not an {@code enum},
  * for flexibility and network compatibility with newer and older versions
  * which might send and receive unrecognized card types.
  *<P>

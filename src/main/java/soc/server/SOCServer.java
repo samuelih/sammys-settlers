@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2005 Chadwick A McHenry <mchenryc@acm.org>
  * Portions of this file Copyright (C) 2007-2026 Jeremy D Monin <jeremy@nand.net>
@@ -629,7 +629,7 @@ public class SOCServer extends Server
      * Property {@code jsettlers.stats.file.name} is the filename to append an optional daily stats summary
      * with the same information as the {@code *STATS*} command, using {@link StatsFileWriterTask}.
      *<P>
-     * Can be a full path, or relative to the JSettlers startup directory which contains {@code jsserver.properties}.
+     * Can be a full path, or relative to the Sammys-Settlers startup directory which contains {@code jsserver.properties}.
      * If this file's directory is not writable, server will warn at startup.
      * @since 2.3.00
      */
@@ -659,7 +659,7 @@ public class SOCServer extends Server
     public static final String PROP_JSETTLERS_TEST_VALIDATE__CONFIG = "jsettlers.test.validate_config";
 
     /**
-     * List and descriptions of all available JSettlers {@link Properties properties},
+     * List and descriptions of all available Sammys-Settlers {@link Properties properties},
      * such as {@link #PROP_JSETTLERS_PORT} and {@link SOCDBHelper#PROP_JSETTLERS_DB_URL}.
      *<P>
      * Each property name is followed in the array by a brief description:
@@ -1772,7 +1772,7 @@ public class SOCServer extends Server
         Version.printVersionText(System.err, "Sammy's Settlers Server ");
         if (Version.versionNumber() == 0)
         {
-            throw new IllegalStateException("Packaging error: Cannot determine JSettlers version");
+            throw new IllegalStateException("Packaging error: Cannot determine Sammys-Settlers version");
         }
 
         if (maxConnections == 0)
@@ -11738,7 +11738,7 @@ public class SOCServer extends Server
 
         if (Version.versionNumber() == 0)
         {
-            System.err.println("\n*** Packaging Error in server JAR: Cannot determine JSettlers version. Exiting now.");
+            System.err.println("\n*** Packaging Error in server JAR: Cannot determine Sammys-Settlers version. Exiting now.");
                 // I18N: Can't localize this, the i18n files are provided by the same packaging steps
                 // which would create /resources/version.info
             System.exit(1);

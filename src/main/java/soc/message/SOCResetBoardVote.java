@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2008-2009,2014,2020-2021 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -117,7 +117,7 @@ public class SOCResetBoardVote extends SOCMessageTemplate2i
     /**
      * Minimum version where this message type is used.
      * RESETBOARDVOTE introduced in 1.1.00 for reset-board feature.
-     * @return Version number, 1100 for JSettlers 1.1.00.
+     * @return Version number, 1100 for Sammys-Settlers 1.1.00.
      */
     public int getMinimumVersion() { return 1100; }
 

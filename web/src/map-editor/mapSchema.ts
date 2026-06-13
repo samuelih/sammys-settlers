@@ -1,5 +1,5 @@
 /**
- * Typed model + (de)serialization for the JSettlers custom-map `.map.json`
+ * Typed model + (de)serialization for the Sammys-Settlers custom-map `.map.json`
  * document, mirroring the Java {@code soc.server.CustomMapLoader} schema
  * (its inner `CustomMapJson`/`HexJson`/`PortJson`/`LandAreaJson` classes) and
  * the field documentation in `doc/Custom-Maps.md`.

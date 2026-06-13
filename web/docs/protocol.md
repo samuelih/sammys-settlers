@@ -326,7 +326,7 @@ unrelated board/element frames such as `1057`/`1058`/`1086` omitted):
 C→S  1078|WebPlayer,<TAB>,<TAB>,<game>,PL=4   SOCNewGameWithOptionsRequest
 S→C  1079|<game>,-1,PL=4                       SOCNewGameWithOptions (lobby broadcast; creator gets it)
 S→C  1021|<game>                               SOCJoinGameAuth  (server AUTO-JOINS the requester)
-S→C  1069|Welcome to Java Settlers of Catan!   SOCStatusMessage (SV_OK; not an error)
+S→C  1069|Welcome to Sammys-Settlers of Catan!   SOCStatusMessage (SV_OK; not an error)
 S→C  1068|<game>,false,false,false,false       SOCSetSeatLock (all-seats greeting)
      …board layout / player-element frames…
 S→C  1017|<game>,WebPlayer                      SOCGameMembers   ("all sent" signal; creator is an OBSERVER, seat -1)

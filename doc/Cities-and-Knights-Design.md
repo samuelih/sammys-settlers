@@ -8,7 +8,7 @@
 > remains future work. The rest of this document is the original design rationale.
 
 This is a **decision-complete design document** for adding *Cities & Knights*-style rules
-to JSettlers. It was written before implementation so that the groundwork
+to Sammys-Settlers. It was written before implementation so that the groundwork
 (reserved game options, a disabled scenario stub, two flag-hidden prototypes, and proposed
 message sequences) was built against an agreed plan, and so the multi-release roadmap that
 follows could be picked up one independently-shippable phase at a time.
@@ -19,7 +19,7 @@ actions live in the clearly-marked PROPOSED section at the end of
 [Message-Sequences-for-Game-Actions.md](Message-Sequences-for-Game-Actions.md); protocol
 review should happen against that section before any of those messages are implemented.
 
-Throughout, every design decision cites the existing JSettlers pattern it reuses, so that
+Throughout, every design decision cites the existing Sammys-Settlers pattern it reuses, so that
 the eventual implementation imitates proven code rather than inventing new mechanisms.
 
 
@@ -28,7 +28,7 @@ the eventual implementation imitates proven code rather than inventing new mecha
 A playable Cities & Knights is **not** achievable in a single initiative, and this document
 does not pretend otherwise. The blocking item is structural, not just effort: Cities & Knights
 adds three commodities (cloth, coin, paper) on top of the five base resources, and the entire
-JSettlers codebase assumes exactly five resources. See [section 5](#5-the-commodity-problem-honestly)
+Sammys-Settlers codebase assumes exactly five resources. See [section 5](#5-the-commodity-problem-honestly)
 for the full analysis. On top of commodities, Cities & Knights needs knight semantics that
 conflict with the existing meaning of "knight" (dev-card count feeding Largest Army), a
 progress-card deck, a barbarian state machine, metropolis tracking, client UI, and bot strategy.
@@ -232,7 +232,7 @@ PROPOSED message sequences.
 an improvement track (first to reach the qualifying level), re-evaluated when any player's
 track level changes; no board placement and no player choice.
 
-**Cited pattern — Special VP and `checkForWinner` re-evaluation.** JSettlers already awards
+**Cited pattern — Special VP and `checkForWinner` re-evaluation.** Sammys-Settlers already awards
 non-piece "Special Victory Points" and already re-checks the winner whenever VP can change:
 `SOCGame` raises VP and calls `checkForWinner()` from the points-gaining paths (e.g. around
 `SOCGame.java` line 2692, `getTotalVP() >= vp_winner || hasScenarioWinCondition`). A
@@ -288,7 +288,7 @@ and would opt out of C&K just as `Sample3PClient` opts out of other scenarios.
 ## 5. The commodity problem, honestly
 
 Cities & Knights adds three commodities — **cloth, coin, paper** — gained from upgraded cities
-and tradeable. JSettlers assumes exactly five resources everywhere, and the assumption is
+and tradeable. Sammys-Settlers assumes exactly five resources everywhere, and the assumption is
 baked into numeric constants, not just loops.
 
 ### 5.1 Why the constants break
@@ -412,7 +412,7 @@ the template), and the matching main option key `K_SC_CK = "_SC_CK"` in `SOCGame
 - The scenario's option string ties together the `_CK_*` rules plus `SBL=t` and `VP=t13`,
   e.g. `"_SC_CK=t,_CK_IMP=t,_CK_KNI=t,_CK_PROG=t,_CK_BARB=t,_CK_METR=t,SBL=t,VP=t13"`.
   (The exact base-board choice — classic vs. sea board — is a Phase 1 decision; C&K is
-  traditionally played on the base board, but JSettlers scenarios are sea-board based, so the
+  traditionally played on the base board, but Sammys-Settlers scenarios are sea-board based, so the
   stub may start on `SBL`.)
 - The scenario is **disabled/stubbed**: because its constituent `_CK_*` options are
   `FLAG_INACTIVE_HIDDEN`, the scenario cannot be selected in a normal server. It exists to

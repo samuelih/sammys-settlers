@@ -354,7 +354,7 @@ export const HEX_CENTER_DY = HEXY_OFF_SLOPE / 2;
 /**
  * SVG `points` attribute string for a hexagon centered at (cx, cy) — the
  * LINEAR grid center from {@link hexToPixel} — matching the EXACT node
- * geometry of the JSettlers large board.
+ * geometry of the Sammys-Settlers large board.
  *
  * Deriving the corners from the node deltas ({@link NODE_DELTAS_TO_HEX}) mapped
  * through {@link nodeToPixel} (col±1 → ±HALFDELTA_X, row±1 → ±HALFDELTA_Y, plus

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2025 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -352,7 +352,7 @@ public abstract class SOCBoard implements Serializable, Cloneable
      * Activated with {@link SOCGameOption} {@code "SBL"}.
      * Can specify non-default board size with game option {@code "_BHW"}.
      *<P>
-     * Although this is encoding "v3", it was added to JSettlers in v2.0.00
+     * Although this is encoding "v3", it was added to Sammys-Settlers in v2.0.00
      * ({@link SOCBoardLarge#MIN_VERSION}).
      * @since 2.0.00
      */

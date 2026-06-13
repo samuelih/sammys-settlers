@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file copyright (C) 2009-2011,2013-2023,2025-2026 Jeremy D Monin <jeremy@nand.net>
  *
@@ -265,7 +265,7 @@ public class SOCAccountClient extends JPanel
      * {@link I18n#PROP_JSETTLERS_LOCALE PROP_JSETTLERS_LOCALE} JVM property {@code "jsettlers.locale"}.
      *
      * @param h  host
-     * @param p  port; JSettlers default is 8880 ({@link ClientNetwork#SOC_PORT_DEFAULT})
+     * @param p  port; Sammys-Settlers default is 8880 ({@link ClientNetwork#SOC_PORT_DEFAULT})
      * @param displayScaleFactor  Display scaling factor to use (1 if not high-DPI); caller should call
      *     {@link SwingMainDisplay#checkDisplayScaleFactor(Component)} with the Frame to which this display will be added
      * @throws IllegalArgumentException if {@code displayScaleFactor} &lt; 1
@@ -587,10 +587,10 @@ public class SOCAccountClient extends JPanel
 
         if (Version.versionNumber() == 0)
         {
-            messageLabel.setText("Packaging error: Cannot determine JSettlers version");
+            messageLabel.setText("Packaging error: Cannot determine Sammys-Settlers version");
                 // I18N: Can't localize this, the i18n files are provided by the same packaging steps
                 // which would create /resources/version.info
-            throw new IllegalStateException("Packaging error: Cannot determine JSettlers version");
+            throw new IllegalStateException("Packaging error: Cannot determine Sammys-Settlers version");
         }
 
         System.out.println("Connecting to " + hostString);
@@ -1092,7 +1092,7 @@ public class SOCAccountClient extends JPanel
      */
     public static void usage()
     {
-        System.err.println("usage: java -cp JSettlers.jar soc.client.SOCAccountClient <host> [<port>]");
+        System.err.println("usage: java -cp Sammys-Settlers.jar soc.client.SOCAccountClient <host> [<port>]");
     }
 
     /**

@@ -9,9 +9,9 @@ When preparing to release a new version, testing should include:
 - All unit tests run in IDE without failures
 - `gradle clean build` runs without failures, under gradle 6.9.x and 7.5.x
 - These should print the expected version and build number:
-    - `java -jar build/libs/JSettlers-2.*.jar --version`
-    - `java -jar build/libs/JSettlersServer-2.*.jar --version`
-- Message Traffic debug prints during all tests, to help debugging if needed:  
+    - `java -jar build/libs/Sammys-Settlers-2.*.jar --version`
+    - `java -jar build/libs/Sammys-SettlersServer-2.*.jar --version`
+- Message Traffic debug prints during all tests, to help debugging if needed:
   Run server and clients with JVM property `-Djsettlers.debug.traffic=Y`
 
 ## Basic functional tests
@@ -23,11 +23,11 @@ When preparing to release a new version, testing should include:
             - That settlement's visual highlight for "latest placement" should disappear along with the settlement
             - If second settlement is canceled, game should return gained resources to the bank
     - Create and start playing a practice game on the 6-player board (5 bots), with options like Roll No 7s for First 7 Turns
-    - `JSettlersServer.jar`: Start a dedicated server on another ("remote") machine's text-only console
+    - `Sammys-SettlersServer.jar`: Start a dedicated server on another ("remote") machine's text-only console
     - Join that remote server & play a full game, then reset board and start another game
         - `*STATS*` command should include the finished game
         - Bots should rejoin and play
-    - `JSettlers.jar`: Start a Server (non-default port # like 8080), start a game
+    - `Sammys-Settlers.jar`: Start a Server (non-default port # like 8080), start a game
     - In the new game's chat, say a few lines ("x", "y", "z" etc)
     - Start another client, join first client's local server and that game
     - Joining client should see "recap" of the game chat ("x", "y", "z")
@@ -64,7 +64,7 @@ When preparing to release a new version, testing should include:
     - Bots' face icons match their name (Robots smarter than Droids)
     - Click underlined version to show About dialog from:
         - Initial connect-or-practice panel
-        - Main display after starting a server: Underlined Port number -> About JSettlers
+        - Main display after starting a server: Underlined Port number -> About Sammys-Settlers
         - Main display after connecting to a server: Should show both client and server versions
     - In About dialog, click What's New; should see brief release notes for current and recent versions
 - Chat channels:
@@ -82,7 +82,7 @@ When preparing to release a new version, testing should include:
 
 ### Setup
 
-- Start JSettlersServer at a shell or command prompt
+- Start Sammys-SettlersServer at a shell or command prompt
     - If you have a linux or windows server, use that instead of your laptop/desktop;
       on linux, end the command line with ` &` to keep running in background
     - Should stay up for several days including activity (bot games)
@@ -96,7 +96,7 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
 
 ### Each available Game Option
 
-- For house rule game opt "6-player board: Can Special Build only if 5 or 6 players in game",  
+- For house rule game opt "6-player board: Can Special Build only if 5 or 6 players in game",
   also test latest server version against client v2.2.00 or older:
     - Client can create a game with this option, 4 players, on 6-player board
     - When client clicks Special Building button, server sends text explaining the house rule is active
@@ -115,7 +115,7 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
 - Sea board: Can move a ship, but not a ship placed this turn
     - After move, ship gets highlighted since it's most recently placed piece
 - Year of Plenty dev card
-    - Give that card to Debug player:  
+    - Give that card to Debug player:
       `dev: 2 debug`
     - Play card, hit Cancel in dialog
     - Card should return to inventory, be able to play same turn
@@ -123,7 +123,7 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
     - Choose 2 resources, should appear in hand
     - Other players should see your + 2 resources
 - Monopoly dev card
-    - Give that card to Debug player:  
+    - Give that card to Debug player:
       `dev: 3 debug`
     - Play card, hit Cancel in dialog
     - Card should return to inventory, be able to play same turn
@@ -168,8 +168,8 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
       - Roll 7 or use Soldier to move robber next to another player's settlement/city
       - Shouldn't be asked "Are you sure"
 - Road Building dev card
-    - In a 2-player game, give debug player 4 Road Building cards and a Year of Plenty card:  
-      `dev: 1 debug` (4 times)  
+    - In a 2-player game, give debug player 4 Road Building cards and a Year of Plenty card:
+      `dev: 1 debug` (4 times)
       `dev: 2 debug`
     - Test these situations, 1 per turn:
     - Build 2 free roads
@@ -190,7 +190,7 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
         - Should see "cancelled the Road Building card" in game text area, dev card returned to player's inventory in hand panel
         - Should be able to play Year of Plenty card on same turn
     - Play card, end turn; should see "cancelled the Road Building card" and card returned to inventory
-    - In a new 2-player game on 6-player sea board, give debug player 2 Road Building cards:  
+    - In a new 2-player game on 6-player sea board, give debug player 2 Road Building cards:
       `dev: 1 debug` (2 times)
     - In another client, join same game as other player
     - Other player: Request Special Build
@@ -361,7 +361,7 @@ Re-test new features of the most recent two releases listed in [Versions.md](Ver
     - New server; new client creates game, previous client joins it
     - New server; previous client creates game, new client joins it
 
-### Unprivileged info commands  
+### Unprivileged info commands
 
 As a non-admin non-debug user, start playing a game. These should all work:
 
@@ -417,7 +417,7 @@ As a non-admin non-debug user, start playing a game. These should all work:
   - Join as observer: Check general supply count, hover over villages; cloth counts should be accurate
   - Note your player's cloth total, then leave and rejoin game: Hover over villages; cloth counts should be accurate
   - Move the pirate to rob cloth from another player;
-    cloth count and VP total should update accurately  
+    cloth count and VP total should update accurately
     (Before you can move the pirate, you must establish a shipping route with any village)
   - Give your player an odd number of cloth, a Soldier card, and enough VP dev cards
     to be 1 point from winning. Move the pirate to rob cloth from another player; should win game
@@ -602,9 +602,9 @@ Test:
       create a game, sit down, and start the game so a board will be generated.
     - For clean first run: Launch client with jvm property `-Djsettlers.debug.clear_prefs=hexGraphicsSet`
     - Start a practice game, default options; board graphics should appear as pastel
-    - Options button: [X] Hex graphics: Use Classic theme  
+    - Options button: [X] Hex graphics: Use Classic theme
       Close window instead of hit OK; board should not change
-    - Options button: [X] Hex graphics: Use Classic theme  
+    - Options button: [X] Hex graphics: Use Classic theme
       Hit OK; board should change to Classic
     - Leave that game running, start another game
         - In New Game options: Fog scenario, 6 players, and un-check Use Classic theme
@@ -636,12 +636,12 @@ in `soc.server.SOCBoardAtServer` class javadoc.)
     - Start a server
     - Start 2 clients and have them join the same game, so each can leave/rejoin the game
       during the other's turn
-    - Sit down 1 client at player position 0 (upper-left), and the other client at any other position.  
+    - Sit down 1 client at player position 0 (upper-left), and the other client at any other position.
       (This tests more thoroughly because some board data is sent along with player 0's potentials.)
     - Lock some or all empty seats, to avoid waiting for bots
     - Before starting the game, at each client, show that player's legal and potential nodes and edges
-      by entering this command in the chat text field:  
-      `=*= show: all`  
+      by entering this command in the chat text field:
+      `=*= show: all`
       At first, only a yellow bounding box will be visible
     - Start the game (server sends board layout, begins Initial Placement)
     - Place total of 1 settlement and 1 road/ship (not per player)
@@ -684,15 +684,15 @@ Test these specific things for each version:
     - When testing a 2.3 or newer server, start it with prop `jsettlers.admin.welcome=hi,customized`
         - All client versions should see that custom text when they connect
 - With an older client connected to a newer server, list of available new-game options
-  should adapt to the older client version.  
+  should adapt to the older client version.
   With a newer client connected to an older server, list of available new-game options
-  should adapt to the older server version.  
+  should adapt to the older server version.
     - This is especially visible when testing 1.x against 2.x.
     - Also test this with new client against server 1.1.07 (first version with options)
 - Create and start playing a 4-player game with No Trading option
     - Click Options button: Game options should be those chosen in this game's New Game dialog
-    - Give a robot player some new dev cards: VP, playable  
-      `dev: 4 botname`  
+    - Give a robot player some new dev cards: VP, playable
+      `dev: 4 botname`
       `dev: 9 botname`
     - Have another client join (same version as first client) and take over that bot; should see dev card details correctly
 - Create and start playing a 6-player game
@@ -710,16 +710,16 @@ Test these specific things for each version:
         - A few turns later, have an observing client join game; shouldn't see trade offer from a previous turn
 - When testing 2.3 or newer against older than 2.3:
     - Start a game with robot player at seat number 2
-    - Give dev cards to bot player:  
-      `dev: 3 #2`  
-      `dev: 6 #2`  
+    - Give dev cards to bot player:
+      `dev: 3 #2`
+      `dev: 6 #2`
       `dev: 9 #2`
     - Have second client join as observer (same version as first client)
     - Should see correct number of dev cards for bot
     - Sit down observer to take over bot's seat
     - Should see correct card types in inventory (Monopoly, University, Knight); shouldn't see any unknown cards
     - Play 1 round, so new dev cards become old
-    - Give that player another dev card:  
+    - Give that player another dev card:
       `dev: 1 #2`
     - Have former observer exit, re-launch, rejoin and sit at bot player
     - Should see 3 old, 1 new dev cards
@@ -747,12 +747,12 @@ Test these specific things for each version:
         - Discard
             - Total resource counts should be accurate before and after
         - Soldier dev card
-            - Give Soldier cards to client players:  
+            - Give Soldier cards to client players:
               `dev: 9 #2` etc
             - Test robbery, with each client as victim, robber, observer
             - Clients v2.5.00 or newer are sent `SOCRobberyResult` messages; older clients are sent `SOCPlayerElement` and `SOCGameServerText` instead
         - Discovery/Year of Plenty dev card
-            - Give Discovery cards to client players:  
+            - Give Discovery cards to client players:
               `dev: 2 #2` etc
             - Play Discovery, with each client as player, observer
             - Clients v2.5.00 or newer are sent `SOCPickResources` messages; older clients are sent `SOCPlayerElement` and `SOCGameServerText` instead
@@ -788,36 +788,36 @@ Test these specific things for each version:
 - Start server with vm properties: `-Djsettlers.bots.test.quit_at_joinreq=30` `-Djsettlers.debug.traffic=Y`
 - Connect and start a 6-player game
 - Bots should arrive, game should start
-- Server console should have lines like:  
-  `robot 3 leaving at JoinGameRequest('g', 3): jsettlers.bots.test.quit_at_joinreq`  
-  `srv.leaveConnection('robot 3') found waiting ga: 'g' (3)`  
+- Server console should have lines like:
+  `robot 3 leaving at JoinGameRequest('g', 3): jsettlers.bots.test.quit_at_joinreq`
+  `srv.leaveConnection('robot 3') found waiting ga: 'g' (3)`
   If not, start another game and try again
 
 ### StatusMessage "status value" fallback at older versions
 
 - Start a 2.0.00 or newer server with command-line arg `-Djsettlers.allow.debug=Y`
 - Start a 2.0.00 client with vm property `-Djsettlers.debug.traffic=Y`
-- That client's initial connection to the server should see at console: `SOCStatusMessage:sv=21`  
+- That client's initial connection to the server should see at console: `SOCStatusMessage:sv=21`
   (which is `SV_OK_DEBUG_MODE_ON` added in 2.0.00)
 - Start a 1.2.00 client with same vm property `-Djsettlers.debug.traffic=Y`
-  - If needed, can download from https://github.com/jdmonin/JSettlers2/releases/tag/release-1.2.00
+  - If needed, can download from https://github.com/samuelih/Sammys-Settlers/releases/tag/release-1.2.00
 - That client's initial connection should get sv == 0, should see at console: `SOCStatusMessage:status=Debugging is On`
 
 ### Game Option and Scenario info sync/negotiation when server and client are different versions/locales
 
-For these tests, use these JVM parameters when launching clients:  
-`-Djsettlers.debug.traffic=Y -Djsettlers.locale=en_US`  
+For these tests, use these JVM parameters when launching clients:
+`-Djsettlers.debug.traffic=Y -Djsettlers.locale=en_US`
 Message traffic will be shown in the terminal/client output.
 
 - Test client newer than server:
     - Build server JAR as usual, make temp copy of it, and start the temp copy (which has the actual current version number)
-    - In `SOCScenario.initAllScenarios()`, uncomment `SC_TSTNC` "New: v+1 back-compat", `SC_TSTNA` "New: v+1 another back-compat", and `SC_TSTNO` "New: v+1 only"  
-      Update their version parameters to current versionnum and current + 1. Example:  
-      `("SC_TSTNC", 2400, 2401, ...)`  
-      `("SC_TSTNA", 2400, 2401, ...)`  
+    - In `SOCScenario.initAllScenarios()`, uncomment `SC_TSTNC` "New: v+1 back-compat", `SC_TSTNA` "New: v+1 another back-compat", and `SC_TSTNO` "New: v+1 only"
+      Update their version parameters to current versionnum and current + 1. Example:
+      `("SC_TSTNC", 2400, 2401, ...)`
+      `("SC_TSTNA", 2400, 2401, ...)`
       `("SC_TSTNO", 2401, 2401, ...)`
     - In `SOCGameOptionSet.getAllKnownOptions()`, scroll to the end and uncomment `DEBUGBOOL` "Test option bool".
-      Update its min-version parameter to current versionnum. Example:  
+      Update its min-version parameter to current versionnum. Example:
       `("DEBUGBOOL", 2400, Version.versionNumber(), false, ...)`
     - In `src/main/resources/resources/version.info`, add 1 to versionnum and version. Example: 2400 -> 2401, 2.4.00 -> 2.4.01
     - Build client (at that "new" version) using `gradle assemble` to skip the usual unit tests.
@@ -836,9 +836,9 @@ Message traffic will be shown in the terminal/client output.
     - Quit client and server
 - Then, test server newer than client:
     - Temporarily "localize" the test option and scenarios by adding to
-      `src/main/resources/resources/strings/server/toClient_es.properties`:  
-      `gameopt.DEBUGBOOL = test debugbool localized-es`  
-      `gamescen.SC_TSTNC.n = test-localizedname-es`  
+      `src/main/resources/resources/strings/server/toClient_es.properties`:
+      `gameopt.DEBUGBOOL = test debugbool localized-es`
+      `gamescen.SC_TSTNC.n = test-localizedname-es`
     - Build server jar, using `gradle assemble` to skip the usual unit tests
     - Start a server from that jar (prints the "new" version number at startup)
     - Reset `version.info`, `toClient_es.properties`, `SOCGameOptionSet.getAllKnownOptions()`,
@@ -920,7 +920,7 @@ Message traffic will be shown in the terminal/client output.
 
 ### i18n/Localization
 
-For these tests, temporarily "un-localize" SC_FOG scenario, SC_TTD description by commenting out 3 lines in `src/main/resources/resources/strings/server/toClient_es.properties`:  
+For these tests, temporarily "un-localize" SC_FOG scenario, SC_TTD description by commenting out 3 lines in `src/main/resources/resources/strings/server/toClient_es.properties`:
 ```
 # gamescen.SC_FOG.n = ...
 # gamescen.SC_FOG.d = ...
@@ -929,7 +929,7 @@ gamescen.SC_TTD.n = ...
 # gamescen.SC_TTD.d = ...
 ```
 
-- 3 rounds, to test with clients in english (`en_US`), spanish (`es`), and your computer's default locale:  
+- 3 rounds, to test with clients in english (`en_US`), spanish (`es`), and your computer's default locale:
   Launch each client with specified locale by using a JVM parameter value like: `-Djsettlers.locale=es`
 - If client's default locale is `en_US` or `es`, can combine that testing round with "default locale" round
 - If other languages/locales are later added, don't need to do more rounds of testing for them;
@@ -944,7 +944,7 @@ For each round of testing, all these items should appear in the expected languag
   - Main window
   - Game window (labels, buttons, resource-name labels, tooltips on item-count squares)
   - Dialogs (discard, year of plenty, VP card, etc)
-    - Debug commands to get Year of Plenty, Monopoly, Soldier, and a VP card:  
+    - Debug commands to get Year of Plenty, Monopoly, Soldier, and a VP card:
       `dev: 2 debug`  `dev: 3 debug`  `dev: 9 debug`  `dev: 4 debug`
 - Text from server (in top center pane of game window)
   - Start a game with at least 1 bot. Near top of server text, should see localization of: "Fetching a robot player..."
@@ -987,7 +987,7 @@ For each round of testing, all these items should appear in the expected languag
 - For human players:
     - Start a server (dedicated or client-hosted)
     - Launch a pair of SOCPlayerClients which report limited features, using vm property `-Djsettlers.debug.client.features=;6pl;sb;`
-      and connect to server. Don't give a Nickname or create any game from these clients.  
+      and connect to server. Don't give a Nickname or create any game from these clients.
       (Using 2 such clients lets us test more than the code which handles the server's first limited client.)
     - Launch a standard client, connect to server, create a game having any Scenario (New Shores, etc)
     - Limited client pair's game list should show that game as "(cannot join)"
@@ -998,7 +998,7 @@ For each round of testing, all these items should appear in the expected languag
     - In standard client, create a game having 6 players but no scenario
     - First pair of limited clients should connect to that game
     - Second pair of limited clients' game list should show that game as "(cannot join)"
-    - In one of the second pair, double-click that game in game list; should show a popup "Client is incompatible with features of this game".  
+    - In one of the second pair, double-click that game in game list; should show a popup "Client is incompatible with features of this game".
       Double-click game again; should try to join, then show a popup with server's reply naming the missing required feature: `6pl`
 - When reconnecting disconnected clients:
     - Start a server without any options
@@ -1015,18 +1015,18 @@ For each round of testing, all these items should appear in the expected languag
       not the game with scenario
     - Game with scenario should disappear from game list, because there were no other human players
 - For standalone/third-party robot clients, which server invites to games:
-    - Start a server which expects third-party bots, with these command-line parameters:  
+    - Start a server which expects third-party bots, with these command-line parameters:
       `-Djsettlers.bots.cookie=foo  -Djsettlers.bots.percent3p=50`
-    - Start the `soc.robot.sample3p.Sample3PClient` "third-party" bot, which is limited to not use the Game Scenarios client feature, with these command-line parameters:  
+    - Start the `soc.robot.sample3p.Sample3PClient` "third-party" bot, which is limited to not use the Game Scenarios client feature, with these command-line parameters:
       `localhost 8880 samplebot1 x foo`
-    - Start another Sample3PClient:  
+    - Start another Sample3PClient:
       `localhost 8880 samplebot2 x foo`
     - Launch a standard client, connect to server
     - Create and start a 4-player game: Some samplebots should join (no features required) along with the built-in bots
     - Create and start a 6-player game: Some samplebots should join (requires a feature which they have) along with the built-in bots
     - Create and start a game having any Scenario (New Shores, etc): No samplebots should join, only built-in bots
     - Quit the standard client and stop the server
-    - Start a server with third-party bots and no built-in bots, with these command-line parameters:  
+    - Start a server with third-party bots and no built-in bots, with these command-line parameters:
       `-Djsettlers.bots.percent3p=50  -Djsettlers.startrobots=0  -Djsettlers.bots.start3p=2,soc.robot.sample3p.Sample3PClient`
     - Server should automatically start sample bots, joining as "extrabot 1" and "extrabot 2"
     - Launch a standard client, connect to server
@@ -1087,7 +1087,7 @@ For details, search [Readme.developer.md](Readme.developer.md) for `gson.jar`
       - Should fail with a message like: "SAVEGAME is disabled: Must set jsettlers.savegame.dir property"
       - Shut down the server
     - Saving basics
-      - Start server with debug user and savegame: Use command-line property to set path to save-dir, like  
+      - Start server with debug user and savegame: Use command-line property to set path to save-dir, like
         `-Djsettlers.savegame.dir=/tmp/jsgame`
       - Log in as debug user, start a game, play past initial placement
       - Try command `*SAVEGAME* tmp`
@@ -1118,10 +1118,10 @@ For details, search [Readme.developer.md](Readme.developer.md) for `gson.jar`
     - Second human client should be able to sit, taking over a robot position, and have debug user resume game as usual
       - That second client should be able to chat by default, not be a muted observer
         - Test chat before sitting; after sitting; after resuming
-    - Save and then load a game containing a human player who's connected to server but not part of the resumed game.  
+    - Save and then load a game containing a human player who's connected to server but not part of the resumed game.
       When resuming that game, server shouldn't send that client any messages, but instead should get a bot to sit at their seat
     - Load a game and have a second human player also sit down. Resume game. Have debug player leave; play should continue for human player still in game
-    - Save a 6-player game where debug isn't current player, has Asked to Special Build.  
+    - Save a 6-player game where debug isn't current player, has Asked to Special Build.
       Load; when joining, debug player's game window should indicate wants to special build
     - Can load and start game which doesn't include debug player
       - Edit a saved game file to change player name from "debug"
@@ -1152,10 +1152,10 @@ For details, search [Readme.developer.md](Readme.developer.md) for `gson.jar`
          - Try to take over a bot
          - Should see error: `Cannot sit down because this game has started: Requires newer client version 2.7.00`
 - Server config options/properties
-    - Start server with savegame, but not debug user or Admin Users list:  
+    - Start server with savegame, but not debug user or Admin Users list:
         `-Djsettlers.savegame.dir=/tmp/jsgame`
       - Startup should fail with a message like: "Config: jsettlers.savegame.dir requires debug user or jsettlers.accounts.admins"
-    - Start server with savegame, database, and Admin Users list, but not debug user:  
+    - Start server with savegame, database, and Admin Users list, but not debug user:
         `-Djsettlers.savegame.dir=/tmp/jsgame -Djsettlers.accounts.admins=adm,name2`
       - Startup should succeed
       - Log in as admin user `adm` or `name2`
@@ -1196,15 +1196,15 @@ For the file format and details see [Custom-Maps.md](Custom-Maps.md).
           jsettlers.gameopt.N7=t5
           jsettlers.gameopt.RD=y
 
-- Server prop for no chat channels (`jsettlers.client.maxcreatechannels=0`):  
+- Server prop for no chat channels (`jsettlers.client.maxcreatechannels=0`):
   Client main panel should not see channel create/join/list controls
-- Start server with prop `jsettlers.startrobots=0`:  
-  Connect client, create and try to start a game;  
+- Start server with prop `jsettlers.startrobots=0`:
+  Connect client, create and try to start a game;
   should see "No robots on this server" in game text area
-- Start server with prop `jsettlers.startrobots=1`:  
-  Connect client, create and try to start a game;  
+- Start server with prop `jsettlers.startrobots=1`:
+  Connect client, create and try to start a game;
   should see "Not enough robots to fill all the seats. Lock some seats. Only 1 robot is available"
-- Start server with prop `jsettlers.stats.file.name=/tmp/stats.txt`:  
+- Start server with prop `jsettlers.stats.file.name=/tmp/stats.txt`:
   After 60 minutes, server should write `*STATS*` output to that file
 
 ## Database setup and Account Admins list
@@ -1212,13 +1212,13 @@ For the file format and details see [Custom-Maps.md](Custom-Maps.md).
 ### Tests with no DB
 
 - SOCAccountClient with a server not using a DB:
-    - To launch SOCAccountClient, use: `java -cp JSettlers.jar soc.client.SOCAccountClient yourserver.example.com 8880`
+    - To launch SOCAccountClient, use: `java -cp Sammys-Settlers.jar soc.client.SOCAccountClient yourserver.example.com 8880`
     - At connect, should see a message like "This server does not use accounts"
 
 ### Tests for each DB type
 
 Test all of these with each supported DB type: sqlite first, mariadb, mysql, postgres.
-See [Database.md](Database.md) for versions to test ("JSettlers is tested with...").
+See [Database.md](Database.md) for versions to test ("Sammys-Settlers is tested with...").
 
 - Set up a new DB with instructions from the "Database Creation" section of [Database.md](Database.md),
   including (for any 1 DB type) running `-Djsettlers.db.bcrypt.work_factor=test`
@@ -1230,11 +1230,11 @@ See [Database.md](Database.md) for versions to test ("JSettlers is tested with..
 - Run SOCPlayerClient: Nonexistent usernames with a password specified should have a pause before returning
   status from server, as if they were found but password was wrong
 - SOCPlayerClient: Log in with a case-insensitive account nickname (use all-caps or all-lowercase)
-- Test SOCServer parameter `--pw-reset username`  
+- Test SOCServer parameter `--pw-reset username`
   SOCPlayerClient: Log in afterwards with new password and start a game
-- Server prop to require accounts (`jsettlers.accounts.required=Y`):  
+- Server prop to require accounts (`jsettlers.accounts.required=Y`):
   Should not allow login as nonexistent user with no password
-- Server prop for games saved in DB (`jsettlers.db.save.games=Y`):  
+- Server prop for games saved in DB (`jsettlers.db.save.games=Y`):
   Play a complete game, check for results there: `select * from games2;`
 - Test creating as old schema (before v2.0.00 or 1.2.00) and upgrading
     - Get the old schema SQL files you'll need from the git repo by using an earlier release tag
@@ -1279,8 +1279,8 @@ See [Database.md](Database.md) for versions to test ("JSettlers is tested with..
     - Run DB upgrade by running SOCServer with `-Djsettlers.db.upgrade_schema=Y` property
       - postgres: Test at least once with an empty games table, at least once with some games saved there
     - Run SOCServer as usual; startup should print `User database initialized`
-    - Run JSettlers.jar; log in as `Adm` to test case-insensitive nicknames.  
-      Make sure you can create a game, to test password encoding conversion.  
+    - Run Sammys-Settlers.jar; log in as `Adm` to test case-insensitive nicknames.
+      Make sure you can create a game, to test password encoding conversion.
       Run the `*DBSETTINGS*` admin command to verify BCrypt password encoding is being used.
 
 ### Other Database Tests
@@ -1292,16 +1292,16 @@ Start with a recently-created database with latest schema/setup scripts.
     - Start a server with db-connect properties and:
       `-Djsettlers.startrobots=0 -Djsettlers.accounts.open=Y -Djsettlers.allow.debug=Y -Djsettlers.db.save.games=Y`
     - Create 3 test-user player accounts: TU1 TU2 TU3
-        - `java -cp JSettlers-2.*.jar soc.client.SOCAccountClient localhost 8880`
+        - `java -cp Sammys-Settlers-2.*.jar soc.client.SOCAccountClient localhost 8880`
     - Play each game listed below, checking the DB afterwards for results
         - Players will be: The `debug` user; sometimes players with accounts in the DB
           (`TU1` etc); sometimes players without accounts (`non1` etc)
         - Hint to speed up games: The `debug` user can give a player the resources
-          to win (build and upgrade to 4 cities, connected by Longest Road) with:  
-          `rsrcs: 8 12 2 10 8 #0`  
+          to win (build and upgrade to 4 cities, connected by Longest Road) with:
+          `rsrcs: 8 12 2 10 8 #0`
           Change `#0` to their player number as needed.
         - sqlite command to check DB results after each game: Shows test-user win-loss records,
-          and latest game's details if jsettlers.db.save.games=Y:  
+          and latest game's details if jsettlers.db.save.games=Y:
           `sqlite3 t.sqlite3 "select nickname,games_won,games_lost from users where nickname_lc like 'tu%' order by nickname; select * from games2_players where gameid=(select max(gameid) from games2);"`
     - Games to play and win, with defaults for game options:
         - No players in db: debug, non2, non3 (let any player win)
@@ -1309,18 +1309,18 @@ Start with a recently-created database with latest schema/setup scripts.
         - Loser TU3 in db, others aren't: debug
         - Winner TU1 and 1 loser TU2 in db, other isn't: debug
         - 6-player game with winner TU1 (sits in position # 4 or 5), 2 losers in db: TU2, TU3, other isn't: debug
-    - Win-loss counts in DB after those games (see SQL above) should be:  
-      TU1: W 2 L 0  
-      TU2: W 1 L 2  
+    - Win-loss counts in DB after those games (see SQL above) should be:
+      TU1: W 2 L 0
+      TU2: W 1 L 2
       TU3: W 0 L 2
     - Stop and restart server, but with `-Djsettlers.db.save.games=N`
     - Re-run each of those games; server should update win-loss counts in DB, but not add any new games
-    - Win-loss counts in DB after those games (see SQL above) should be:  
-      TU1: W 4 L 0  
-      TU2: W 2 L 4  
+    - Win-loss counts in DB after those games (see SQL above) should be:
+      TU1: W 4 L 0
+      TU2: W 2 L 4
       TU3: W 0 L 4
 - Admin commands
-    - Be sure server is started with savegame feature: Use command-line property to set path to save-dir, like  
+    - Be sure server is started with savegame feature: Use command-line property to set path to save-dir, like
       `-Djsettlers.savegame.dir=/tmp/jsgame`
     - SOCPlayerClient: Log in as non-admin user, create game
         - `*who*` works (not an admin command)
@@ -1343,13 +1343,13 @@ Start with a recently-created database with latest schema/setup scripts.
         - `git show release-1.1.20:src/bin/sql/jsettlers-tables.sql > ../tmp/jsettlers-tables-1120.sql`
         - If not using sqlite, you'll need more sql files; search this doc for "Files to test upgrade from original schema"
     - Create a DB with that schema
-        - Rough example: `java -jar JSettlersServer.jar -Djsettlers.db.jar=sqlite-jdbc.jar -Djsettlers.db.url=jdbc:sqlite:uptest.sqlite3 -Djsettlers.db.script.setup=../tmp/jsettlers-tables-1120.sql`
+        - Rough example: `java -jar Sammys-SettlersServer.jar -Djsettlers.db.jar=sqlite-jdbc.jar -Djsettlers.db.url=jdbc:sqlite:uptest.sqlite3 -Djsettlers.db.script.setup=../tmp/jsettlers-tables-1120.sql`
         - That example creates `uptest.sqlite3`
         - See [Database.md](Database.md) for instructions if needed
-    - Start a server including these parameters:  
+    - Start a server including these parameters:
       `-Djsettlers.accounts.open=Y -Djsettlers.allow.debug=Y -Djsettlers.db.save.games=Y`
     - Create 3 users: UPTEST1 UpTest2 uptest3
-        - `java -cp JSettlers-2.*.jar soc.client.SOCAccountClient localhost 8880`
+        - `java -cp Sammys-Settlers-2.*.jar soc.client.SOCAccountClient localhost 8880`
     - Shut down the server
     - To temporarily prevent an upgrade to the latest schema, make a table that will conflict with the upgrade's new tables
         - SQL: `CREATE TABLE upg_tmp_games (upg_stop_field varchar(20));`
@@ -1360,26 +1360,26 @@ Start with a recently-created database with latest schema/setup scripts.
                 User database initialized.
                 *** Problem occurred during schema upgrade to v2000:
                 org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (table upg_tmp_games already exists)
-                
+
                 * Will attempt to roll back to schema v1200.
-                
+
                 * All rollbacks were successful.
-                
+
                 org.sqlite.SQLiteException: (repeat of above error message)
-                
+
                 * DB schema upgrade failed. Exiting now.
 
     - Verify that the 3 users have been upgraded to schema v1200, gaining nickname_lc:
         - SQL: `SELECT nickname,nickname_lc FROM users WHERE nickname_lc LIKE 'uptest%' ORDER BY nickname_lc;`
-    - Run the server normally, including parameters:  
+    - Run the server normally, including parameters:
 	  `-Djsettlers.allow.debug=Y -Djsettlers.db.save.games=Y`
         - You should see output:
 
                 * Schema upgrade: Beginning background tasks
-                
+
                 Schema upgrade: Encoding passwords for users
                 Schema upgrade: User password encoding: Completed
-                
+
                 * Schema upgrade: Completed background tasks
 
     - Play and win a game named `uptestgame`
@@ -1391,22 +1391,22 @@ Start with a recently-created database with latest schema/setup scripts.
         - SQL: `DROP TABLE upg_tmp_games;`
     - Run the server in DB upgrade mode
         - Use this parameter: `-Djsettlers.db.upgrade_schema=Y`
-        - You should see output:  
+        - You should see output:
           `DB schema upgrade was successful; some upgrade tasks will complete in the background during normal server operation. Exiting now.`
     - Start the server normally
         - No special parameters are needed
         - Shut it down after you see this output:
 
                 * Schema upgrade: Beginning background tasks
-                
+
                 Schema upgrade: Normalizing games into games2
                 Schema upgrade: Normalizing games into games2: Completed
-                
+
                 * Schema upgrade: Completed background tasks
 
     - Verify that `uptestgame` has been upgraded to schema v2000
-        - SQL:  
-          `SELECT gameid,gamename,duration_sec,winner FROM games2 WHERE gamename='uptestgame';`  
+        - SQL:
+          `SELECT gameid,gamename,duration_sec,winner FROM games2 WHERE gamename='uptestgame';`
           `SELECT * from games2_players WHERE gameid=(SELECT gameid FROM games2 WHERE gamename='uptestgame');`
         - If each SQL statement shows 1 or more rows, upgrade was successful
 
@@ -1549,8 +1549,8 @@ Start with a recently-created database with latest schema/setup scripts.
     - Practice games should continue
 - Robot stability:
     - This test can be started and run in the background.
-    - At a command line, start and run a server with 100 robot-only games:  
-      `java -jar JSettlersServer-2.*.jar -Djsettlers.bots.botgames.total=100 -Djsettlers.bots.botgames.parallel=6 -Djsettlers.bots.fast_pause_percent=5 -Djsettlers.bots.botgames.gametypes=3 -Djsettlers.debug.bots.datacheck.rsrc=Y -Djsettlers.allow.debug=Y -Djsettlers.bots.botgames.shutdown=Y 8118 15`
+    - At a command line, start and run a server with 100 robot-only games:
+      `java -jar Sammys-SettlersServer-2.*.jar -Djsettlers.bots.botgames.total=100 -Djsettlers.bots.botgames.parallel=6 -Djsettlers.bots.fast_pause_percent=5 -Djsettlers.bots.botgames.gametypes=3 -Djsettlers.debug.bots.datacheck.rsrc=Y -Djsettlers.allow.debug=Y -Djsettlers.bots.botgames.shutdown=Y 8118 15`
     - To optionally see progress, connect to port 8118 with a client. Game numbers start at 100 and count down.
     - These games should complete in under 10 minutes
     - Once the games complete, that server will exit
@@ -1561,27 +1561,27 @@ Start with a recently-created database with latest schema/setup scripts.
     - See `TestBoardLayoutsRounds` in "extraTest" section
 - Build contents and built artifacts:
     - `gradle dist` runs without errors or unusual warnings, under gradle 6.9.x and 7.5.x
-    - Full jar and server jar manifests should include correct JSettlers version and git commit id:
-        - `unzip -q -c build/libs/JSettlers-*.jar META-INF/MANIFEST.MF | grep 'Build-Revision\|Implementation-Version'`
-        - `unzip -q -c build/libs/JSettlersServer-*.jar META-INF/MANIFEST.MF | grep 'Build-Revision\|Implementation-Version'`
+    - Full jar and server jar manifests should include correct Sammys-Settlers version and git commit id:
+        - `unzip -q -c build/libs/Sammys-Settlers-*.jar META-INF/MANIFEST.MF | grep 'Build-Revision\|Implementation-Version'`
+        - `unzip -q -c build/libs/Sammys-SettlersServer-*.jar META-INF/MANIFEST.MF | grep 'Build-Revision\|Implementation-Version'`
     - Diff list of files from `gradle dist` outputs in `build/distributions/`:
         - `unzip -t jsettlers-2.*-full.zip | sort`
         - `tar tzf jsettlers-2.*-full.tar.gz | sort` (same files as above)
         - `tar tzf jsettlers-2.*-src.tar.gz | sort` (same but without *.jar)
     - Diff that list of files against previously released version's `full.tar.gz`
         - Make sure any missing/moved/removed files are deliberate (from refactoring, etc)
-    - In a temp dir, do a fresh git checkout and compare contents:  
+    - In a temp dir, do a fresh git checkout and compare contents:
       Example if using `bash`:
 
             cd my_project_top_level_dir  # containing src, doc, etc
             MYTOPDIR=$(pwd)
             cd /tmp && mkdir jt && cd jt
-            git clone https://github.com/jdmonin/JSettlers2.git
-            cd JSettlers2
+            git clone https://github.com/samuelih/Sammys-Settlers.git
+            cd Sammys-Settlers
             X_IGNORES="-x .git -x build -x target -x tmp"
             diff -ur $X_IGNORES . "$MYTOPDIR" | grep ^Only  # check for missing/extra files
             diff -ur $X_IGNORES . "$MYTOPDIR"  # check for uncommitted or unpushed changes
-            cd .. && rm -rf JSettlers2
+            cd .. && rm -rf Sammys-Settlers
             cd .. && rmdir jt
 
 
@@ -1591,10 +1591,10 @@ A few functional tests are scripted to set up, begin, and run in the background
 while you're doing other work or other testing.
 
 Open a terminal or command prompt, go to the project's top-level directory
-(containing `build.gradle`), and run:  
+(containing `build.gradle`), and run:
 `gradle extraTest`
 
-These tests will run for several minutes, and should end without errors:  
+These tests will run for several minutes, and should end without errors:
 `BUILD SUCCESSFUL`
 
 The current Extra Tests are:
@@ -1605,7 +1605,7 @@ The current Extra Tests are:
       by running a couple thousand rounds of a unit test.
     - When run in this mode, each round of TestBoardLayouts performs extra checks of the layout structure.
       If any layout failures occur, that's a bug to be triaged or corrected before release.
-    - Command to run this test by itself:  
+    - Command to run this test by itself:
       `gradle extraTest -D 'test.single=*TestBoardLayouts*' -x :extraTestPython`
 - Server: `test_startup_params.py`: Various argument/property combinations:
     - The test script should run for about two minutes, and end without errors
@@ -1613,7 +1613,7 @@ The current Extra Tests are:
 
 ## Platform-specific
 
-On most recent and less-recent OSX and Windows; JRE 8 and a new JDK:  
+On most recent and less-recent OSX and Windows; JRE 8 and a new JDK:
 (Note: Java 8 runs on Win XP and higher; can download installer from https://jdk.java.net/ )
 
 - Dialog keyboard shortcuts, including New Game and Game Reset dialogs' esc/enter keys, FaceChooserFrame arrow keys
@@ -1658,7 +1658,7 @@ On most recent and less-recent OSX and Windows; JRE 8 and a new JDK:
       - Resize game window sightly, to save preference for next run
     - Quick re-test with "Force UI scale" user pref unset, set to 1, set to 2;
       make sure this pref's checkbox can be cleared
-- Persistent user prefs (sound, auto-reject bot offer, window size, hex graphics set, face icon)  
+- Persistent user prefs (sound, auto-reject bot offer, window size, hex graphics set, face icon)
   Then, re-run to check default size, with jvm property `-Djsettlers.debug.clear_prefs=PI_width,PI_height`
 - Accessibility/High-Contrast mode
     - Test debug jvm property `-Djsettlers.uiContrastMode=light`
@@ -1666,7 +1666,7 @@ On most recent and less-recent OSX and Windows; JRE 8 and a new JDK:
     - On Windows, test debug jvm property `-Djsettlers.uiContrastMode=dark` while using a dark theme
     - Those test-runs should include:
       - Move robber to hex with 2 opponents, choose a player to steal from
-      - Offer, counter-offer, and reject trade offers, and auto-reject a bot's trade,  
+      - Offer, counter-offer, and reject trade offers, and auto-reject a bot's trade,
         check visibility of Trade Panel and Message Panel text
       - Gain Largest Army or Longest Road, check visibility of those labels
 - DB testing: SQLite
@@ -1683,7 +1683,7 @@ On most recent and less-recent OSX and Windows; JRE 8 and a new JDK:
 
 ## Instructions and Setup
 
-- [Readme.md](../Readme.md), [Readme.developer.md](Readme.developer.md), [Database.md](Database.md), and this file:  
+- [Readme.md](../Readme.md), [Readme.developer.md](Readme.developer.md), [Database.md](Database.md), and this file:
   Validate all URLs, including JDBC driver downloads
 - Follow server setup instructions in [Readme.md](../Readme.md)
 - Set up a new DB: Covered above in "Platform-specific"

@@ -1,6 +1,6 @@
-# JSettlers Web Client
+# Sammys-Settlers Web Client
 
-A modern **TypeScript / React / SVG** client for JSettlers (Settlers of Catan). It
+A modern **TypeScript / React / SVG** client for Sammys-Settlers (Settlers of Catan). It
 replaces *only* the Java Swing client: it speaks the existing
 `soc.message.SOCMessage` protocol to the unchanged Java `SOCServer` over a new,
 **additive WebSocket transport**. The server, game logic, robots, scenarios and
@@ -155,7 +155,7 @@ the **Java server must already be running** on WS 8888. The specs are:
 The Map Editor (reachable from the app shell, no server connection required) edits a
 sea-board layout, validates it live in the browser (mirroring
 `soc.server.CustomMapValidator`), and exports a `.map.json` file. The honest proof
-that the exported file is *actually* accepted by JSettlers is a round-trip through
+that the exported file is *actually* accepted by Sammys-Settlers is a round-trip through
 the real Java validator:
 
 ```bash

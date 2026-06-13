@@ -1,4 +1,4 @@
-// JSettlers build script for gradle 6 or 7
+// Sammys-Settlers build script for gradle 6 or 7
 // See bottom of file for copyright and license information (GPLv3).
 
 apply plugin: 'java'
@@ -131,7 +131,7 @@ distZip.enabled = false   // dist builds distFullZip
 distTar.enabled = false   // dist builds distSrcTar, distFullTar
 
 task serverJar(type: Jar) {
-    archiveBaseName = 'JSettlersServer'
+    archiveBaseName = 'Sammys-SettlersServer'
     archiveVersion = project.version
     manifest {
         attributes(
@@ -160,7 +160,7 @@ task serverJar(type: Jar) {
 }
 
 task fullJar(type: Jar) {
-    archiveBaseName = 'JSettlers'
+    archiveBaseName = 'Sammys-Settlers'
     archiveVersion = project.version
     manifest {
         attributes(
@@ -228,35 +228,35 @@ FileTree srcTree = fileTree(dir: '.', includes: ['src/**', 'doc/**', 'build.*', 
 
 // Naming reminder: [archiveBaseName]-[archiveAppendix]-[archiveVersion]-[archiveClassifier].[archiveExtension]
 
-// jsettlers-2.x.xx-src.tar.gz
+// sammys-settlers-2.x.xx-src.tar.gz
 task distSrcTar(type: Tar) {
     dependsOn cleanRemovePyc
-    archiveBaseName = 'jsettlers'
+    archiveBaseName = 'sammys-settlers'
     archiveClassifier = 'src'
     compression = Compression.GZIP
     archiveExtension = 'tar.gz'
     from srcTree
-    into 'jsettlers-' + project.version + '-src/'
+    into 'sammys-settlers-' + project.version + '-src/'
 }
 
-// jsettlers-2.x.xx-full.tar.gz
+// sammys-settlers-2.x.xx-full.tar.gz
 task distFullTar(type: Tar) {
     dependsOn cleanRemovePyc
-    archiveBaseName = 'jsettlers'
+    archiveBaseName = 'sammys-settlers'
     archiveClassifier = 'full'
     compression = Compression.GZIP
     archiveExtension = 'tar.gz'
     from srcTree, fullJar.outputs.files, serverJar.outputs.files
-    into 'jsettlers-' + project.version + '/'
+    into 'sammys-settlers-' + project.version + '/'
 }
 
-// jsettlers-2.x.xx-full.zip
+// sammys-settlers-2.x.xx-full.zip
 task distFullZip(type: Zip) {
     dependsOn cleanRemovePyc
-    archiveBaseName = 'jsettlers'
+    archiveBaseName = 'sammys-settlers'
     archiveClassifier = 'full'
     from srcTree, fullJar.outputs.files, serverJar.outputs.files
-    into 'jsettlers-' + project.version + '/'
+    into 'sammys-settlers-' + project.version + '/'
 }
 
 tasks.withType(AbstractArchiveTask) {
@@ -305,7 +305,7 @@ task dist {
 javadoc {    // generates into build/docs/javadoc/
     source = sourceSets.main.allJava
     classpath = sourceSets.main.runtimeClasspath
-    title = 'JSettlers ' + project.version + ' API'
+    title = 'Sammys-Settlers ' + project.version + ' API'
     excludes ['**/fedorahosted/**']
     options.memberLevel = JavadocMemberLevel.PACKAGE
     options.encoding = 'UTF-8'
@@ -385,7 +385,7 @@ task runServer(type: JavaExec) {
 
 
 /*
- * This file is part of the JSettlers project.
+ * This file is part of the Sammys-Settlers project.
  *
  * This file Copyright (C) 2017 Ruud Poutsma <rtimon@gmail.com>
  * Portions of this file Copyright (C) 2017,2019-2024 Jeremy D Monin <jeremy@nand.net>

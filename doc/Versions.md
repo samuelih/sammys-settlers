@@ -1,10 +1,10 @@
-# Released Versions of JSettlers
+# Released Versions of Sammys-Settlers
 
-Project home and source history are at [https://github.com/jdmonin/JSettlers2](https://github.com/jdmonin/JSettlers2).
-Source history for version `1.1.06` and earlier is at [https://github.com/jdmonin/JSettlers1](https://github.com/jdmonin/JSettlers1).
+Project home and source history are at [https://github.com/samuelih/Sammys-Settlers](https://github.com/samuelih/Sammys-Settlers).
+Source history for version `1.1.06` and earlier is at [https://github.com/samuelih/Sammys-Settlers](https://github.com/samuelih/Sammys-Settlers).
 
-JARs for recent JSettlers versions can be downloaded from
-[https://github.com/jdmonin/JSettlers2/releases](https://github.com/jdmonin/JSettlers2/releases).
+JARs for recent Sammys-Settlers versions can be downloaded from
+[https://github.com/samuelih/Sammys-Settlers/releases](https://github.com/samuelih/Sammys-Settlers/releases).
 
 
 ## `3.0.00` (build JX202xxxxx)
@@ -43,7 +43,7 @@ JARs for recent JSettlers versions can be downloaded from
 	        - Improve menu item text to cancel card before placing first free road or ship
 	        - Confirm with dialog when player skips (cancels) placing second free road or ship
 	    - Forgotten Tribe scenario: When placing a gift port from your inventory, can use board's right-click menu to cancel placement (previous versions used Hand Panel's Cancel button)
-	    - Discard, Year of Plenty dialogs: Each resource pick square won't go past prompted amount  
+	    - Discard, Year of Plenty dialogs: Each resource pick square won't go past prompted amount
 	      (was no limit in previous versions)
 	    - `*STATS*`: De-clutter player resource trade stats output
 	        - If hasn't made trades of a type, show "None" instead of all 0s
@@ -83,7 +83,7 @@ JARs for recent JSettlers versions can be downloaded from
 	    - Even if client can't join game, show its options (with server v2.7.00 or newer)
 	    - Added context menu to copy game name to clipboard
 	- Main window:
-	    - Version info is underlined; click to show new "About JSettlers" dialog
+	    - Version info is underlined; click to show new "About Sammys-Settlers" dialog
 	    - Added "What's New" info window; can be shown from About dialog
 	- When started with command line params, and then connection to server is lost, show same buttons as when started with none: Reconnect, practice, etc (issue #108)
 	- Don't set gotPassword field while joining a practice game
@@ -378,8 +378,8 @@ JARs for recent JSettlers versions can be downloaded from
 	    - New inactive options, to show or help debug gameplay details, from STAC concepts:
 	        - `PLAY_VPO`: Show all players' VP/dev card info
 	        - `PLAY_FO`: Show all player info as fully observable: Resources, VP/dev cards
-	    - "Third-Party Options" concept: Gameopts defined by a 3rd-party client, bot, or server JSettlers fork,
-	      as a way to add features or flags but remain compatible with standard JSettlers.
+	    - "Third-Party Options" concept: Gameopts defined by a 3rd-party client, bot, or server Sammys-Settlers fork,
+	      as a way to add features or flags but remain compatible with standard Sammys-Settlers.
 	        - When connecting, client must ask server if it knows about all such gameopts, regardless of version
 	        - Associated with a given client feature; server looks for feature when a client connects
 	    - Refactored option maps to SOCGameOptionSet
@@ -459,10 +459,10 @@ JARs for recent JSettlers versions can be downloaded from
 	    - Roll dice with Ctrl-R/Alt-R/Cmd-R
 	    - End turn (Done) with Ctrl-D/Alt-D/Cmd-D
 	    - Accept/ReJect/Counter trade offers when just one is visible, with Ctrl or Alt or Cmd + A/J/C
-	      - Since chat input field already has a hotkey for Ctrl/Alt/Cmd-A when focused:  
+	      - Since chat input field already has a hotkey for Ctrl/Alt/Cmd-A when focused:
 	        When cursor is in chat, hit Ctrl/Alt/Cmd-A once to select all text, again to Accept the trade offer
 	  - Draw ships with slimmer sails, for better spacing next to other pieces
-	  - Bugfix: If player had SVP, square showing SVP amount overlapped trade offer display  
+	  - Bugfix: If player had SVP, square showing SVP amount overlapped trade offer display
 	    and, at end of game, their revealed VP cards
 	  - Bugfix: Wonders scenario: Player's Wonder shown in hand panel overlapped trade offer display
 	  - Chat textarea, server textarea: Add context menu with Select All and Copy, since new hotkeys claim Ctrl-A and Ctrl-C
@@ -478,10 +478,10 @@ JARs for recent JSettlers versions can be downloaded from
 - Server:
 	- Game `*STATS*`: When game over, keep its duration constant instead of still increasing
 	- Administration:
-	  - Customized client welcome message, with optional server property `jsettlers.admin.welcome`  
+	  - Customized client welcome message, with optional server property `jsettlers.admin.welcome`
 	    (see `jsserver.properties.sample` comments for details)
 	  - Admin users can chat and run commands while observing a game
-	  - Can now run these commands from any admin account, not only as Debug:  
+	  - Can now run these commands from any admin account, not only as Debug:
 	    `*BCAST*, *BOTLIST*, *BOTLIST*, *RESETBOT*, *KILLBOT*, *GC*`
 	  - Daily Stats file: New optional server property `jsettlers.stats.file.name`: Appends output of `*STATS*` command daily
 	    (see `jsserver.properties.sample` comments for details)
@@ -503,8 +503,8 @@ JARs for recent JSettlers versions can be downloaded from
 - For AI/Robot development:
 	- SOCRobotBrain debug stack trace: Print bot name
 	- When server starts robot-only games (jsettlers.bots.botgames.total > 0),
-	  can specify a mix of game sizes and board types with new startup option:  
-	  `-Djsettlers.bots.botgames.gametypes=3`  
+	  can specify a mix of game sizes and board types with new startup option:
+	  `-Djsettlers.bots.botgames.gametypes=3`
 	  For details, search for that property in src/main/bin/jsserver.properties.sample
 	- Increased `jsettlers.bots.botgames.parallel` default to 4 from 2
 - Network/Message traffic:
@@ -512,7 +512,7 @@ JARs for recent JSettlers versions can be downloaded from
 	  - For 6-player game, send players' ASK_SPECIAL_BUILD flag if set
 	  - For scenario Cloth Villages, send updated General Supply count if game has started
 	- Game data sent to client sitting down to play:
-	  - If client is this version or newer, omit messages meant to clear player's inventory contents:  
+	  - If client is this version or newer, omit messages meant to clear player's inventory contents:
 	    Client player now clears inventory when SitDown message received
 	  - When client is joining and sitting down to take over a frozen connection, omit unneeded messages
 	    which add and then clear unknown cards in that player's inventory
@@ -533,8 +533,8 @@ JARs for recent JSettlers versions can be downloaded from
 	  - For convenience, if JVM properties don't contain `org.sqlite.tmpdir` but that property is set in
 	    `jsserver.properties` file or command line, copy it into JVM properties
 - For AI/Robot development:
-	- Server can automatically start some third-party bots with new startup option:  
-	  `-Djsettlers.bots.start3p=3,com.example.BotXClient,5,net.example.BotZClient`  
+	- Server can automatically start some third-party bots with new startup option:
+	  `-Djsettlers.bots.start3p=3,com.example.BotXClient,5,net.example.BotZClient`
 	  For details, search for that property in src/main/bin/jsserver.properties.sample
 	- Strategy classes made easier to change or subclass for 3rd-party bots; added SampleDiscardStrategy
 	- Human players can't use the robot nickname prefix "extrabot "
@@ -605,7 +605,7 @@ JARs for recent JSettlers versions can be downloaded from
 	  - First warning: If less than 6 minutes remains, auto-add a few minutes to expiration time
 	  - `*ADDTIME*` command: Make sure new expiration time gives at least 30 minutes remaining
 	- Server closes connections to rejected clients or bots
-	- Server Config Validation mode: Test the current config and exit, with new startup option:  
+	- Server Config Validation mode: Test the current config and exit, with new startup option:
 	  `-t` or `--test-config`
 - Misc bugfixes:
 	- If a new game is created but no one has sat down, then another client joins and leaves it, don't delete that game
@@ -628,23 +628,23 @@ JARs for recent JSettlers versions can be downloaded from
 	  Their option keynames all start with '_' and are hidden in the New Game options window.
 	- Player's inventory can hold more than just development cards
 - For AI/Robot development:
-	- The server can run bot-only games with new startup options:  
-	  `-Djsettlers.bots.botgames.total=7`  
+	- The server can run bot-only games with new startup options:
+	  `-Djsettlers.bots.botgames.total=7`
 	  `-Djsettlers.bots.botgames.parallel=3`
-	- Those bot-only games begin at server startup, or can be delayed with startup option:  
+	- Those bot-only games begin at server startup, or can be delayed with startup option:
 	  `-Djsettlers.bots.botgames.wait_sec=30`
 	  (this example uses 30 seconds) to give bot clients more time to connect first.
 	- Server can use third-party bots as a certain percentage of the bots in each game
-	  with new startup option: (this example uses 50%)  
+	  with new startup option: (this example uses 50%)
 	  `-Djsettlers.bots.percent3p=50`
 	- Third-party bots can have more time to plan their turn with new server startup option:
-	  (this example uses 18 seconds)  
+	  (this example uses 18 seconds)
 	  `-Djsettlers.bots.timeout.turn=18`
 	- Third-party bots can be sent config or debug settings with new game option `_EXT_BOT`
-	  from server command line:  
-	  `java -jar JSettlersServer.jar -o _EXT_BOT=abcde`  
+	  from server command line:
+	  `java -jar Sammys-SettlersServer.jar -o _EXT_BOT=abcde`
 	- Tuning for length of SOCRobotBrain pauses during bot-only games:
-	  To pause only 10% as long as in normal games, use  
+	  To pause only 10% as long as in normal games, use
 	  `-Djsettlers.bots.fast_pause_percent=10`
 	- New debug command `*STARTBOTGAME* [maxBots]` to begin current game as bots-only
 	- If the last human player leaves a game with bots and observers, server continues that game as bots-only
@@ -734,7 +734,7 @@ JARs for recent JSettlers versions can be downloaded from
      - If using postgresql: Tables are created by socuser, not postgres system user
 - Game window during debug: Reset "current player" indicator when exiting `*FREEPLACE*` debug mode
 - Client debug, bot debug: Print network message contents if system property `jsettlers.debug.traffic=Y` is set
-- Startup: Show error if can't read own JSettlers version info
+- Startup: Show error if can't read own Sammys-Settlers version info
 
 
 ## `1.1.20` (build OV20161024)
@@ -851,7 +851,7 @@ JARs for recent JSettlers versions can be downloaded from
 - Road Building: Player may skip (cancel) placing second free road, if they want to use just one road piece
 - Road Building: While placing first free road, don't enable Cancel in popup menu
 - If jar client can't connect to server, returns to first panel, with buttons to connect or practice
-- If try to start server in JSettlers.jar, but port already in use, show message instead of exiting immediately
+- If try to start server in Sammys-Settlers.jar, but port already in use, show message instead of exiting immediately
 - If server's debug commands are on, warn at connect
 - Get Practice Game options from practice server, not from most recently started game
 - If join a server after a practice game, re-enable name and password fields
@@ -878,7 +878,7 @@ JARs for recent JSettlers versions can be downloaded from
 	`-Djsettlers.db.save.games=Y`
 - Server db property for jdbc driver jar file: `-Djsettlers.db.jar=sqlite-jdbc-3.7.2.jar`
 - Server db easy setup script options:
-	`-Djsettlers.db.url=jdbc:sqlite:jsettlers.sqlite`  
+	`-Djsettlers.db.url=jdbc:sqlite:jsettlers.sqlite`
 	`-Djsettlers.db.script.setup=../src/bin/sql/jsettlers-tables.sql`
 - Server db sqlite driver URLs updated in readme
 
@@ -889,7 +889,7 @@ JARs for recent JSettlers versions can be downloaded from
 - Discard dialog has "Clear" button (sourceforge bug# 3443414)
 - Show 'Server is ready' message at end of initialization
 - At server shutdown, try to disconnect from database (helpful for sqlite)
-- Debug commands are off by default, except practice games; you can enable them with:  
+- Debug commands are off by default, except practice games; you can enable them with:
 	`-Djsettlers.allow.debug=Y`
 - Split out sql from README, add indexes (Chad McHenry mchenryc in 2005 cvs)
 
@@ -958,8 +958,8 @@ JARs for recent JSettlers versions can be downloaded from
 - Game owner tracked at server
 - Security: Limit the maximum simultaneous games/chat channels created per client:
 	- Once a game/channel is removed (all members leave), they can create another.
-	- Defaults are 5 games, 2 channels.  Use these properties to change the default:    
-	`jsettlers.client.maxcreategames`  
+	- Defaults are 5 games, 2 channels.  Use these properties to change the default:
+	`jsettlers.client.maxcreategames`
 	`jsettlers.client.maxcreatechannels`
 
 
@@ -978,8 +978,8 @@ JARs for recent JSettlers versions can be downloaded from
 - 6-player robots: Slow down a little: Pause 75% of 4-player's pause duration, not 50%
 - At end of game, hilight winner with yellow arrow
 - At end of game, show number of rounds, along with time elapsed and your resources rolled
-- Game options: Change of wording in minimum-version warning: ("friendly" format)  
-	from: Client version 1107 or higher is required for these game options.  
+- Game options: Change of wording in minimum-version warning: ("friendly" format)
+	from: Client version 1107 or higher is required for these game options.
 	to :  Client version 1.1.07 or newer is required for these game options.
 - Double-clicking your face icon, or many rapid clicks, brings up the Face Chooser
 - Allow 3rd-party Robot AIs, via new rbclass param in IMAROBOT message, SOCClientData.isBuiltInRobot
@@ -997,7 +997,7 @@ JARs for recent JSettlers versions can be downloaded from
 - When running local server: Main panel: Show version, buildnum in tooltip
 - Command line: Error if dashed arguments appear after port/maxconns/db params
 - Command line: Allow -Djsettlers.option=value syntax (mchenryc)
-- Command line: Auto-start robots when the server starts, with this parameter:  
+- Command line: Auto-start robots when the server starts, with this parameter:
 	`-Djsettlers.startrobots=7`
 - Debug assist: SOCBoardLayout2 prints array contents
 - Debug assist: Connection, LocalStringConnection +toString()
@@ -1059,7 +1059,7 @@ JARs for recent JSettlers versions can be downloaded from
 
 
 ## `1.1.05` (reverted before `1.1.06`)
-JSettlers 1.1.05 had been under development (build 2008-09-13) but its direction is being re-considered.
+Sammys-Settlers 1.1.05 had been under development (build 2008-09-13) but its direction is being re-considered.
 Further development is based on 1.1.04.
 - Use Log4j 1.2, vs previous homegrown soc.debug/disableDebug
 
@@ -1145,7 +1145,7 @@ These older releases were in a separate cvs repo at sourceforge
 maintained by Robert S Thomas and Chad McHenry.
 
 For historical reference, Jeremy Monin has converted that repo to git:
-https://github.com/jdmonin/JSettlers1
+https://github.com/samuelih/Sammys-Settlers
 
 
 ## `1.0.6` (build 2004-11-17)  http://sourceforge.net/projects/jsettlers
@@ -1208,9 +1208,9 @@ to Markdown format where possible.
 
 I have recently created a SourceForge project called
 [jsettlers](http://sourceforge.net/projects/jsettlers/) to
-maintain the Java Settlers code base. There you can access a copy of my
+maintain the Sammys-Settlers code base. There you can access a copy of my
 dissertation which describes how the system as well as the bots work.
-Also, you can download the Java Settlers class files as well as brief
+Also, you can download the Sammys-Settlers class files as well as brief
 instructions on how to run your own server. In addition, I have made the
 source code available under the [Gnu Public License](http://www.gnu.org/copyleft/gpl.html). You
 can access it using CVS at cvs.sf.net/cvsroot/jsettlers. If you are
@@ -1240,7 +1240,7 @@ This will add their name to the list of people you're ignoring.
 - To stop ignoring a player, type `\unignore <nickname>`
 This will remove their name from your list.
 
-These commands work in both game and channel windows and the list will be maintained as long as you are connected to the server. If the commands aren't working, it's probably because you're not using the most recent version of the client. To get the most recent version, simply close your web browser and then run it again to load the Java Settlers page. The latest version of the client should automatically be downloaded to your computer.
+These commands work in both game and channel windows and the list will be maintained as long as you are connected to the server. If the commands aren't working, it's probably because you're not using the most recent version of the client. To get the most recent version, simply close your web browser and then run it again to load the Sammys-Settlers page. The latest version of the client should automatically be downloaded to your computer.
 
 If you're having trouble loading the client (you only see a grey box when you load the page), you need to update your java plug-in by going here. After doing that, restart your computer and you should be able to access the site again.
 
@@ -1249,7 +1249,7 @@ If you're having trouble loading the client (you only see a grey box when you lo
 I'm trying out some variations of the robot decision making algorithms. The 'bots have strange suffixes
 added to their names so I know which algorithms each one is running.
 
-### 2002-02-15 
+### 2002-02-15
 
 I figured out a way to make scroll bars work correctly on both Mac and PC, so now the interface has
 them. I also modified how the face button works. If you click on the right
@@ -1271,15 +1271,15 @@ any bugs that take more than a day to manifest.
 
 ### 2001-07-18
 
-Fixed a couple bugs in the 'bot strategy code. 
+Fixed a couple bugs in the 'bot strategy code.
 
 ### 2001-07-16
 
-Now the server will list any victory point cards that the winner has when he or she wins. 
+Now the server will list any victory point cards that the winner has when he or she wins.
 
 ### 2001-07-02
 
-I made the seat lock button smaller so that it doesn't cover the counter offer buttons. 
+I made the seat lock button smaller so that it doesn't cover the counter offer buttons.
 
 ### 2001-07-01
 
@@ -1293,7 +1293,7 @@ of booting people, so this is a compromise. Let me know what you think.
 
 ### 2001-06-28
 
-Still working on some bugs in the networking code, but I think it's getting better. I also added a cancel button on the counter offer box. 
+Still working on some bugs in the networking code, but I think it's getting better. I also added a cancel button on the counter offer box.
 
 ### 2001-06-27
 
@@ -1310,7 +1310,7 @@ int currentDice = die1 + die2;
 
 `Math.random()` produces a number between `0` and `0.999` correct?
 (I'm only printing to 3 decimal places for all this)
- 
+
 Then the resultant numbers passed to Math.round() that range from `0 to 4.999`
 
     0.000 - 0.499 -> 0 + 1 = 1
@@ -1319,10 +1319,10 @@ Then the resultant numbers passed to Math.round() that range from `0 to 4.999`
     2.500 - 3.499 -> 3 + 1 = 4
     3.500 - 4.499 -> 4 + 1 = 5
     4.500 - 4.999 -> 5 + 1 = 6
- 
+
 As you can see from this chart, the 1 and 6 are only half as likely to
 get rolled as 2,3,4,and 5.
- 
+
 Shouldn't your formulas be...
 
 ``` java
@@ -1332,14 +1332,14 @@ int currentDice = die1 + die2;
 ```
 
 This produces numbers passed to `Math.round()` that range from `0.5` to `6.499`
- 
+
     0.500 - 1.499 -> 1
     1.500 - 2.499 -> 2
     2.500 - 3.499 -> 3
     3.500 - 4.499 -> 4
     4.500 - 5.499 -> 5
     5.500 - 6.499 -> 6
- 
+
 Now all numbers are evenly distributed.
 
 Thanks for the help Joe!
@@ -1373,7 +1373,7 @@ making the deal better and they might take it.
 
 I'm trying out a new addition to the interface. Now when an offer is presented, you will have three options: Accept, Reject, and Counter. The Counter button allows you to easily make a counter offer. If you have any comments either good or bad about the new button, please let me know.
 
-Note: I'm still running the old 'bot code which doesn't react to counter offers, so I would NOT recommend making counter offers to 'bots. Very soon I will have new 'bots that will make and consider counter offers. 
+Note: I'm still running the old 'bot code which doesn't react to counter offers, so I would NOT recommend making counter offers to 'bots. Very soon I will have new 'bots that will make and consider counter offers.
 
 ### 2001-06-13 (later that day)
 
@@ -1383,24 +1383,24 @@ faster 'bots.
 
 ### 2001-06-13
 
-Modified the trading algorithm so that robots will make counter offers rather than just saying "That deal isn't good for me.". The result is that the robots reach an agreement or an impass faster with fewer offers made. Also, the experiment is over and all robots are using the same code now. 
+Modified the trading algorithm so that robots will make counter offers rather than just saying "That deal isn't good for me.". The result is that the robots reach an agreement or an impass faster with fewer offers made. Also, the experiment is over and all robots are using the same code now.
 
 ### 2001-05-31
 
-Ok, this is a big update. I fixed a bunch of bugs and I changed the trading algorithm in a major way. Now the 'bots will make multiple offers if it thinks that you want them. The way you signal to the 'bots that you're willing to sell but are waiting for a better deal is to say something like, "Gimme a better deal." before you hit the Reject button. Actually, you can say anything as long as it has the word "deal" in it, and you'll have conveyed the message. If the 'bot has other deals in mind, it will put them up. You can also make counter offers to the 'bots for a similar effect. Another addition is that the 'bots will give some feedback as to why they rejected an offer. This may get annoying, so I might change it in the future. Now on the to-do list is to have some way to communicate better with the 'bots so that they don't just rattle off a series of offers. Oh, I'm also doing an experiment, so some of the bots have the new trading stuff, and other's do not. It should be obvious which is which when you play against them. 
+Ok, this is a big update. I fixed a bunch of bugs and I changed the trading algorithm in a major way. Now the 'bots will make multiple offers if it thinks that you want them. The way you signal to the 'bots that you're willing to sell but are waiting for a better deal is to say something like, "Gimme a better deal." before you hit the Reject button. Actually, you can say anything as long as it has the word "deal" in it, and you'll have conveyed the message. If the 'bot has other deals in mind, it will put them up. You can also make counter offers to the 'bots for a similar effect. Another addition is that the 'bots will give some feedback as to why they rejected an offer. This may get annoying, so I might change it in the future. Now on the to-do list is to have some way to communicate better with the 'bots so that they don't just rattle off a series of offers. Oh, I'm also doing an experiment, so some of the bots have the new trading stuff, and other's do not. It should be obvious which is which when you play against them.
 
 
 ### 2001-05-08
 
-Fixed some bugs. 
+Fixed some bugs.
 
 ### 2001-05-06
 
-I've updated the strategy component for the 'bots one last time. I think they play better than they did before, but because their trading algorithm is so dumb, it's hard to tell. Next step is to improve the trading algorithm. Then after that, I'll write my dissertation and be in the home stretch. 
+I've updated the strategy component for the 'bots one last time. I think they play better than they did before, but because their trading algorithm is so dumb, it's hard to tell. Next step is to improve the trading algorithm. Then after that, I'll write my dissertation and be in the home stretch.
 
 ### 2001-04-25
 
-Changed the strategy for the bots again, but now they play worse. I'll fix it as soon as I get some time to program again. Also, still haven't figured out what is causing the bots to stop 
+Changed the strategy for the bots again, but now they play worse. I'll fix it as soon as I get some time to program again. Also, still haven't figured out what is causing the bots to stop
 
 ### 2001-04-06
 
@@ -1411,14 +1411,14 @@ times when you can't get a robot to play.
 
 ### 2001-03-21
 
-Did some minor cosmetic stuff. The robber is drawn a little to the right, so you can read the number on the hex. Also the server will tell you what dice were rolled instead of just the sum. 
+Did some minor cosmetic stuff. The robber is drawn a little to the right, so you can read the number on the hex. Also the server will tell you what dice were rolled instead of just the sum.
 
 ### 2001-03-11
 
-I fixed a bunch of bugs including (hopefully) the longest road bug. Big thanks to all the people who sent me bug reports! 
+I fixed a bunch of bugs including (hopefully) the longest road bug. Big thanks to all the people who sent me bug reports!
 
 ### 2001-03-06
-Trying something new in the networking code. Removed the game status code for now. 
+Trying something new in the networking code. Removed the game status code for now.
 
 ### 2001-03-05
 
@@ -1449,15 +1449,15 @@ deadlock conditions. Hmm...
 
 ### 2001-02-19 (later that day)
 
-Ok, I just fixed a bug where if a game was started and a player sat and then left, no one could sit in that spot. The game server has been running for over 5 hours now without locking up, so I'm taking that as a good sign. 
+Ok, I just fixed a bug where if a game was started and a player sat and then left, no one could sit in that spot. The game server has been running for over 5 hours now without locking up, so I'm taking that as a good sign.
 
 ### 2001-02-19
 
-I'm still trying to fix the latest major bug in the server, and therefore the server will be going down a lot. Thank you for your patience during this rough period. 
+I'm still trying to fix the latest major bug in the server, and therefore the server will be going down a lot. Thank you for your patience during this rough period.
 
 ### 2001-02-16
 
-Hello Settlers playin' folks! I'm sorry the server has been down for a bit. I found a nasty deadlock condition and needed a day to work out the problem. I think I got it, but the real test is running it for a day with lots of people connecting, so here we go (cross your fingers). 
+Hello Settlers playin' folks! I'm sorry the server has been down for a bit. I found a nasty deadlock condition and needed a day to work out the problem. I think I got it, but the real test is running it for a day with lots of people connecting, so here we go (cross your fingers).
 
 ### 2001-02-12
 
@@ -1465,11 +1465,11 @@ In response to your feedback, I've modified the game list to display whether or 
 
 Another change I've made is with how the robots trade. Now thay will only make offers to players that they think can actually give them what they want. So now you won't see robots offering to trade with players that have no resources. For those that are curious about how much information the robots have, they rely on the exact same information that human players use. They watch the dice and can see the resources being handed out. They can't see things like what resources were discarded after a roll of a 7, or what resource was stolen from another player. So they may not offer to trade with you even though you have what they want. If this happens, try making a counter offer. They'll probably take it as long as they don't think you're about to win.
 
-One more thing. I've made it so that you can't boot a robot in the middle of its turn. This should cut down on the number of hung games. 
+One more thing. I've made it so that you can't boot a robot in the middle of its turn. This should cut down on the number of hung games.
 
 ### 2001-02-09
 
-Added a new feature to the game list. Next to each game you will see something like this: [2 2 3 4]. This is a list of the scores for the players in that game. If you see a "-", that means that a seat is open. I'm hoping this will help poeple find games with empty seats easier. Also you can see how far a game has progressed in case you want to join a game that has just started. 
+Added a new feature to the game list. Next to each game you will see something like this: [2 2 3 4]. This is a list of the scores for the players in that game. If you see a "-", that means that a seat is open. I'm hoping this will help poeple find games with empty seats easier. Also you can see how far a game has progressed in case you want to join a game that has just started.
 
 ### 2001-02-07
 
@@ -1517,7 +1517,7 @@ Things to do:
 
 ### 2000-08-04
 
-Computer doesn't discard at random anymore. Now it throws away resources it can't use right away, and after that, resources that are easier for it to get. 
+Computer doesn't discard at random anymore. Now it throws away resources it can't use right away, and after that, resources that are easier for it to get.
 
 Here is current to-do list for the computer players:
 
@@ -1554,10 +1554,10 @@ The computer uses some strategy when moving the robber, rather than just moving 
   You're on your honor not to abuse this for cheating.
 
 ### 2000-05-15
-The computer players will now trade with the bank and any ports that they might be on. Also sped up the algorithm that determines who has the longest road. 
+The computer players will now trade with the bank and any ports that they might be on. Also sped up the algorithm that determines who has the longest road.
 
 ### 2000-05-10
-Computer players do a better job of building. Still working on getting the computer to trade with the bank and ports. 
+Computer players do a better job of building. Still working on getting the computer to trade with the bank and ports.
 
 ### 2000-05-03
-Now the computer players can build. It's not great, but its a start. I'm currently working on better algorithms for where to build, and getting the computer to trade with the bank and ports.  
+Now the computer players can build. It's not great, but its a start. I'm currently working on better algorithms for where to build, and getting the computer to trade with the bank and ports.

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2018-2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -1458,7 +1458,7 @@ public class TestGameOptions
         knowns.addKnownOption(opt3PKnown);
         assertNotNull(knowns.getKnownOption("T3P", false));
 
-        // for purposes of this test, if this copy of JSettlers has been modified to add 3rd-party gameopts,
+        // for purposes of this test, if this copy of Sammys-Settlers has been modified to add 3rd-party gameopts,
         // remove those gameopts
         Iterator<SOCGameOption> opti = knowns.iterator();
         while (opti.hasNext())

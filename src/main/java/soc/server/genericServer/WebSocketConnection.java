@@ -1,5 +1,5 @@
 /**
- * JSettlers network message system.
+ * Sammys-Settlers network message system.
  * This file Copyright (C) 2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -39,7 +39,7 @@ import soc.message.SOCMessage;
  * length-prefix or {@code writeUTF}-encode each command: each WebSocket text frame carries
  * exactly one raw {@link SOCMessage#toCmd()} string, since WebSocket already provides framing.
  *<P>
- * As used within JSettlers, the structure of this class has much in common
+ * As used within Sammys-Settlers, the structure of this class has much in common
  * with {@link NetConnection} and {@link StringConnection}, as they all subclass {@link Connection}.
  *
  * @author Jeremy D Monin &lt;jeremy@nand.net&gt;

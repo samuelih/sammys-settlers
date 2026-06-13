@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2019-2020 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -37,9 +37,9 @@ import java.util.prefs.Preferences;
  * v1.x {@code getUserPreference(..)} -> v2.x {@code UserPreferences.getPref(..)}, etc.
  *<P>
  * Because the user preference storage namespace is based on the {@code soc.client} package
- * and not a class name, preferences are shared among all JSettlers client versions.
+ * and not a class name, preferences are shared among all Sammys-Settlers client versions.
  *<P>
- * Is public for possible use by anyone extending JSettlers in a different package.
+ * Is public for possible use by anyone extending Sammys-Settlers in a different package.
  *
  * @author Jeremy D Monin &lt;jeremy@nand.net&gt;
  * @since 2.0.00

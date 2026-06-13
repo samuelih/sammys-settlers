@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2012-2025 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ import soc.message.SOCMessage;
  * for the current list of all known scenarios.
  *<P>
  * For information about adding or changing game scenarios in a
- * later version of JSettlers, please see {@link #initAllScenarios()}.
+ * later version of Sammys-Settlers, please see {@link #initAllScenarios()}.
  *<P>
  * Scenarios use {@link SOCGameOption}s to change the game to the scenario's concept.
  * Each scenario's {@link #scOpts} field gives the scenario's option names and values.
@@ -65,10 +65,10 @@ import soc.message.SOCMessage;
  * Scenarios were introduced in 2.0.00, and negotiate the same way as {@link SOCGameOption}s;
  * check server, client versions against {@link #VERSION_FOR_SCENARIOS}.
  * Each scenario has version information, because scenarios can be added or changed
- * with new versions of JSettlers.  Since games run on the server, the server is
+ * with new versions of Sammys-Settlers.  Since games run on the server, the server is
  * authoritative about game scenarios and options:  If the client is newer, it must defer to the
  * server's older set of known scenarios and options.  At client connect, the client compares its
- * JSettlers version number to the server's, and asks for any changes if
+ * Sammys-Settlers version number to the server's, and asks for any changes if
  * their versions differ.
  *<P>
  * <B>I18N:</B><br>
@@ -100,7 +100,7 @@ public class SOCScenario
 
     /**
      * The highest {@link SOCVersionedItem#minVersion} of all scenarios in {@link #getAllKnownScenarios()}, or 0.
-     * Value may change when a new JSettlers server version is released.
+     * Value may change when a new Sammys-Settlers server version is released.
      *<P>
      * This is meant for use at the server, so its value won't be changed by calls to
      * {@link #addKnownScenario(SOCScenario)} or {@link #removeUnknownScenario(String)};

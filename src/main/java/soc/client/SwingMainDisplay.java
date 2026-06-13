@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2019-2026 Jeremy D Monin <jeremy@nand.net>
  * Extracted in 2019 from SOCPlayerClient.java, so:
  * Portions of this file Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
@@ -154,7 +154,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
     public static final String PROP_JSETTLERS_UI_CONTRAST_MODE = "jsettlers.uiContrastMode";
 
     /**
-     * The classic JSettlers goldenrod dialog background color; pale yellow-orange tint #FFE6A2.
+     * The classic Sammys-Settlers goldenrod dialog background color; pale yellow-orange tint #FFE6A2.
      * Typically used with foreground {@link Color#BLACK}, like in game/chat text areas,
      * {@link TradePanel}, {@link MessagePanel}, and {@link AskDialog}.
      * @see #getForegroundBackgroundColors(boolean)
@@ -165,7 +165,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
     public static final Color DIALOG_BG_GOLDENROD = new Color(255, 230, 162);
 
     /**
-     * The classic JSettlers green background color; green tone #61AF71.
+     * The classic Sammys-Settlers green background color; green tone #61AF71.
      * Typically used with foreground color {@link Color#BLACK},
      * like in {@link SwingMainDisplay}'s main panel.
      * Occasionally used with {@link #MISC_LABEL_FG_OFF_WHITE}.
@@ -620,7 +620,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
      * @param isForLightBG  True for a light background like {@link #DIALOG_BG_GOLDENROD},
      *     false for a dark background like {@link #JSETTLERS_BG_GREEN}
      * @param wantSystemColors  True to return the default system-theme colors (not always accurate)
-     *     from {@link SystemColor#textText} and {@link SystemColor#text} instead of JSettlers colors.
+     *     from {@link SystemColor#textText} and {@link SystemColor#text} instead of Sammys-Settlers colors.
      *     If true: Won't return null, and ignores {@code isForLightBG}.
      * @return Array of 3 colors: { Main foreground, misc foreground, background },
      *     or {@code null} if OS is using high-contrast or reverse-video colors.
@@ -706,7 +706,7 @@ public class SwingMainDisplay extends JPanel implements MainDisplay
     /**
      * Is the OS using high-contrast or reverse-video colors (accessibility mode)? If so, to get those colors call
      * {@link #getForegroundBackgroundColors(boolean, boolean) getForegroundBackgroundColors(false, true)}.
-     * @return true if high-contrast or reverse instead of usual JSettlers colors
+     * @return true if high-contrast or reverse instead of usual Sammys-Settlers colors
      * @since 2.0.00
      */
     public static final boolean isOSColorHighContrast()

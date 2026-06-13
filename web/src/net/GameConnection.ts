@@ -46,7 +46,7 @@ export const CLIENT_LOCALE = 'en_US';
  *   * {@code 6pl}  — CLIENT_6_PLAYERS: can play 6-player games (PL &gt; 4 / PLB).
  *   * {@code sb}   — CLIENT_SEA_BOARD: can render the sea board (SBL option).
  *   * {@code sc=<vers>} — CLIENT_SCENARIO_VERSION: supports scenarios up to this
- *     JSettlers version (and the {@code SC} / {@code _SC_*} options).
+ *     Sammys-Settlers version (and the {@code SC} / {@code _SC_*} options).
  *
  * Without these the server marks the connection "feature-limited" and returns
  * SBL / PLB / scenario options (and a 6-max PL) as OTYPE_UNKNOWN, so the New
@@ -118,7 +118,7 @@ function defaultSocketFactory(url: string): WebSocketLike {
 }
 
 /**
- * WebSocket wrapper for the JSettlers protocol. Construct one, register
+ * WebSocket wrapper for the Sammys-Settlers protocol. Construct one, register
  * handlers with {@link on} / {@link onMessage} / {@link onStateChange}, then
  * call {@link connect}.
  */

@@ -5,7 +5,7 @@
 # ./client.sh some.host.net   connect to some.host.net, default port
 # ./client.sh some.host.net 8888  connect to some.host.net, port 8888
 
-# xtitle "Java Settlers of Catan client"
+# xtitle "Sammys-Settlers of Catan client"
 
 HOST=localhost
 PORT=8880
@@ -17,6 +17,6 @@ if [ ! -z $1 ]; then
 	fi
 fi
 
-echo "Starting Java Settlers of Catan Client..."
+echo "Starting Sammys-Settlers of Catan Client..."
 
-java -jar JSettlers.jar $HOST $PORT
+java -jar Sammys-Settlers.jar $HOST $PORT

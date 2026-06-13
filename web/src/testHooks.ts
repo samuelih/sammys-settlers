@@ -1,7 +1,7 @@
 // Test-only window hooks for end-to-end (Playwright) driving.
 //
 // The Phase-4 interaction E2E test (web/e2e/interactions.spec.ts) needs to send
-// JSettlers debug chat-commands (e.g. "rsrcs: 4 0 0 0 0 #0", "dev: 9 #0") to the
+// Sammys-Settlers debug chat-commands (e.g. "rsrcs: 4 0 0 0 0 #0", "dev: 9 #0") to the
 // live Java server while connected as the "debug" user, and to read a snapshot
 // of the in-game store for assertions. These commands have no place in the
 // normal UI, so they are exposed here as a small, clearly-namespaced bridge on
@@ -14,7 +14,7 @@
 import { getConnection, sendDebug, useGameStore } from './store/gameStore';
 
 /** The shape of the test bridge installed on `window.__jsettlers`. */
-export interface JSettlersTestHooks {
+export interface SammysSettlersTestHooks {
   /**
    * Send a debug chat-command as a SOCGameTextMsg in the joined game. Requires
    * the local nickname to be "debug" and the server to run with
@@ -78,7 +78,7 @@ export function installTestHooks(): void {
     return; // <--- Early return: no DOM (SSR / unit env) ---
   }
 
-  const hooks: JSettlersTestHooks = {
+  const hooks: SammysSettlersTestHooks = {
     sendDebug: (text: string): boolean => {
       const cg = useGameStore.getState().currentGame;
       if (cg === null) {
@@ -141,7 +141,7 @@ export function installTestHooks(): void {
     },
   };
 
-  (window as unknown as { __jsettlers?: JSettlersTestHooks }).__jsettlers = hooks;
+  (window as unknown as { __jsettlers?: SammysSettlersTestHooks }).__jsettlers = hooks;
 }
 
 /** Sum the counts in a dev-card bag. */

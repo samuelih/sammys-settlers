@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2009-2010,2012-2014,2016-2023,2026 Jeremy D Monin <jeremy@nand.net>
  *
@@ -39,7 +39,7 @@ import soc.util.SOCFeatureSet;  // for javadocs only
  * <H3>Status values:</H3>
  * The Status Value parameter (nonnegative integer) was added in version 1.1.06.
  * For backwards compatibility, the status value (integer {@link #getStatusValue()} ) is not sent
- * as a parameter if it is 0.  (In JSettlers older than 1.1.06, status value
+ * as a parameter if it is 0.  (In Sammys-Settlers older than 1.1.06, status value
  * is always 0.)  Earlier versions simply printed the entire message as text,
  * without trying to parse anything.
  *

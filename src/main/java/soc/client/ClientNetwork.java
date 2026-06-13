@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2019-2023 Jeremy D Monin <jeremy@nand.net>
  * Extracted in 2019 from SOCPlayerClient.java, so:
  * Portions of this file Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
@@ -142,7 +142,7 @@ import soc.util.Version;
     Thread reader = null;
 
     /**
-     * Features supported by this built-in JSettlers client.
+     * Features supported by this built-in Sammys-Settlers client.
      * @since 2.0.00
      */
     private final SOCFeatureSet cliFeats;
@@ -271,7 +271,7 @@ import soc.util.Version;
             {
                 if (Version.versionNumber() == 0)
                 {
-                    throw new IllegalStateException("Packaging error: Cannot determine JSettlers version");
+                    throw new IllegalStateException("Packaging error: Cannot determine Sammys-Settlers version");
                 }
 
                 practiceServer = new SOCServer(SOCServer.PRACTICE_STRINGPORT, SOCServer.SOC_MAXCONN_DEFAULT, null, null);
@@ -427,7 +427,7 @@ import soc.util.Version;
 
         if (Version.versionNumber() == 0)
         {
-            throw new IllegalStateException("Packaging error: Cannot determine JSettlers version");
+            throw new IllegalStateException("Packaging error: Cannot determine Sammys-Settlers version");
         }
 
         ex = null;

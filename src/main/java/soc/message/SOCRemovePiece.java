@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013,2019-2025 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -129,7 +129,7 @@ public class SOCRemovePiece extends SOCMessageTemplate3i
     /**
      * Minimum version where this message type is used.
      * REMOVEPIECE introduced in 2.0.00 for the Pirate Islands scenario ({@code _SC_PIRI}).
-     * @return Version number, 2000 for JSettlers 2.0.00.
+     * @return Version number, 2000 for Sammys-Settlers 2.0.00.
      */
     public int getMinimumVersion() { return 2000; }
 

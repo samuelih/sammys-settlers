@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013-2025 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -357,7 +357,7 @@ public class SOCSimpleAction extends SOCMessageTemplate4i
     /**
      * Minimum version where this message type is used.
      * SIMPLEACTION introduced in 1.1.19.
-     * @return Version number, 1119 for JSettlers 1.1.19.
+     * @return Version number, 1119 for Sammys-Settlers 1.1.19.
      */
     public final int getMinimumVersion() { return VERSION_FOR_SIMPLEACTION; /* == 1119 */ }
 

@@ -1,9 +1,9 @@
 {
-  "name": "jsettlers-web",
+  "name": "sammys-settlers-web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "JSettlers web client (TypeScript/React/SVG) — speaks the SOCMessage protocol over WebSocket to the Java SOCServer.",
+  "description": "Sammys-Settlers web client (TypeScript/React/SVG) — speaks the SOCMessage protocol over WebSocket to the Java SOCServer.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

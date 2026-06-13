@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013-2015,2017-2020,2022 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2017 Ruud Poutsma <rtimon@gmail.com>
  *
@@ -273,7 +273,7 @@ public class SOCDiceResultResources extends SOCMessageTemplateMi
     /**
      * Minimum version where this message type is used ({@link #VERSION_FOR_DICERESULTRESOURCES}).
      * DICERESULTRESOURCES introduced in 2.0.00 for dice roll result resources.
-     * @return Version number, 2000 for JSettlers 2.0.00.
+     * @return Version number, 2000 for Sammys-Settlers 2.0.00.
      */
     public int getMinimumVersion() { return VERSION_FOR_DICERESULTRESOURCES; /* == 2000 */ }
 

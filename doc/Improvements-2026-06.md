@@ -1,4 +1,4 @@
-# JSettlers Improvements — June 2026
+# Sammys-Settlers Improvements — June 2026
 
 This is the single summary of an improvement initiative carried out on top of the
 `2.7.00`-in-development line. It is the place to read first if you want to understand
@@ -6,7 +6,7 @@ everything that changed and why. Every claim here is verifiable in the repositor
 where something is groundwork, a limitation, or deliberately deferred, this document
 says so plainly rather than overselling it.
 
-Baseline for "what changed" is commit `aa68826` ("Baseline: JSettlers2 as downloaded,
+Baseline for "what changed" is commit `aa68826` ("Baseline: Sammys-Settlers as downloaded,
 before improvement work"). All work landed in four commits on `main`, built and tested
 in waves behind green gates, plus one post-review fix commit:
 

@@ -22,7 +22,7 @@ ALTER TABLE robotparams OWNER TO :to;
 -- Reminder: psql shell can list existing privs with \dn+  and  \z [objectname]
 
 
--- This file is part of the JSettlers project.
+-- This file is part of the Sammys-Settlers project.
 --
 --  This file Copyright (C) 2017 Jeremy D Monin (jeremy@nand.net)
 --

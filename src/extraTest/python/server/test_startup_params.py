@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# JSettlers functional testing: Server startup params
+# Sammys-Settlers functional testing: Server startup params
 # Covers command-line params and jsserver.properties files
 # See bottom of file for copyright and license information (GPLv3+).
 
@@ -8,7 +8,7 @@
 # - Python interpreter is python 2 or 3
 # - This script lives in extraTest/python/server/ and that's the current directory when ran
 # - Properties files can be created and deleted in test/tmp/  [tests dir existence only]
-# - Server JAR has been built already, as build/libs/JSettlersServer-?.?.??.jar
+# - Server JAR has been built already, as build/libs/Sammys-SettlersServer-?.?.??.jar
 # - java command is on the PATH
 # Since this is a testing script, most error conditions will throw an exception
 # instead of being caught (for example, os.chdir failure).
@@ -27,7 +27,7 @@ from threading import Thread
 
 EXPECTED_STARTUP_DIR = "src/extraTest/python"
 STARTUP_POSSIBLE_SUBDIR = "server"  # starts here if ran directly from command line, not part of discovered set of all tests
-REL_PATH_JS_SERVER_JAR_GLOB = "../../../build/libs/JSettlersServer-?.?.??.jar"
+REL_PATH_JS_SERVER_JAR_GLOB = "../../../build/libs/Sammys-SettlersServer-?.?.??.jar"
 REL_PATH_TEMPDIR = "../../test/tmp"
 FNAME_JSSERVER_PROPS = "jsserver.properties"
 MAX_TIMEOUT_SEC = 20
@@ -241,7 +241,7 @@ def test_run_and_get_outputs():
     print_result("Test 4: program should not exist", got_err)
 
 def arg_test(should_startup, cmdline_params="", propsfile_contents=None, expected_output_incl=None):
-    """Run a single test of JSettlersServer command-line/properties-file arguments.
+    """Run a single test of Sammys-SettlersServer command-line/properties-file arguments.
     Assumes already running in test/tmp/ and can rewrite or delete jsserver.properties if needed.
 
     Args:
@@ -510,7 +510,7 @@ if __name__ == '__main__':
     unittest.main()
 
 
-# This file is part of the JSettlers project.
+# This file is part of the Sammys-Settlers project.
 #
 # This file Copyright (C) 2016-2017,2019-2021 Jeremy D Monin <jeremy@nand.net>
 #

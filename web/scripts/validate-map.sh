@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validate an exported .map.json against the REAL JSettlers Java custom-map validator.
+# Validate an exported .map.json against the REAL Sammys-Settlers Java custom-map validator.
 #
 # This is the round-trip proof for the web map editor (Phase 5): a .map.json produced by the
 # TypeScript editor is fed through the actual soc.server.CustomMapLoader /

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013,2015,2017,2019-2020,2022-2023,2025-2026 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file from SOCGameOption.java Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
  *
@@ -38,10 +38,10 @@ import soc.message.SOCMessage;
  *<P>
  * <B>Version negotiation:</B><br>
  * Each item has version information, because items can be added or changed
- * with new versions of JSettlers.  Since games run on the server, the server is
+ * with new versions of Sammys-Settlers.  Since games run on the server, the server is
  * authoritative about all items:  If the client is newer, it must defer to the
  * server's older set of known items.  At client connect, the client compares its
- * JSettlers version number to the server's, and asks for any changes to items if
+ * Sammys-Settlers version number to the server's, and asks for any changes to items if
  * their versions differ.
  *<P>
  * @author Jeremy D Monin &lt;jeremy@nand.net&gt;

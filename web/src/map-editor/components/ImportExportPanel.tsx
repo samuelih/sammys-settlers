@@ -36,7 +36,7 @@ export function ImportExportPanel({ map, issues, onLoad, sampleJson }: ImportExp
   const playCommand = [
     'mkdir -p custommaps',
     `cp ~/Downloads/${filename} custommaps/${filename}`,
-    'java -Djsettlers.custommaps.dir=custommaps -jar build/libs/JSettlersServer-*.jar',
+    'java -Djsettlers.custommaps.dir=custommaps -jar build/libs/Sammys-SettlersServer-*.jar',
   ].join('\n');
 
   const doImport = (text: string): void => {

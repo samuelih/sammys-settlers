@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2025 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012-2013 Paul Bilnoski <paul@bilnoski.net>
@@ -238,7 +238,7 @@ import javax.swing.UIManager;
 
     /**
      * If true, our constructor has set the Swing tooltip default font/foreground/background.
-     * Currently SOCHandPanel is the only JSettlers class using Swing tooltips.
+     * Currently SOCHandPanel is the only Sammys-Settlers class using Swing tooltips.
      * @since 2.0.00
      */
     private static boolean didSwingTooltipDefaults;

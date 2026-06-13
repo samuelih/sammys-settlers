@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013 Luis A. Ramirez <lartkma@gmail.com>
  * Some parts of this file Copyright (C) 2013,2017-2023,2026 Jeremy D Monin <jeremy@nand.net>
  *
@@ -40,7 +40,7 @@ import soc.game.SOCResourceSet;
 
 /**
  * String Manager for retrieving I18N localized text from {@code .properties} bundle files
- * with special methods for formatting JSettlers objects.
+ * with special methods for formatting Sammys-Settlers objects.
  *<P>
  * For backwards compatibility, text sent to v1.x.xx clients will always use {@code en_US} regardless of
  * the server's own locale. The empty file {@code toClient_en.properties} exists to support this fallback.
@@ -52,7 +52,7 @@ import soc.game.SOCResourceSet;
  *       >java.util.Properties</A> (Java 6)
  * <LI> <A href="http://stackoverflow.com/questions/4659929/how-to-use-utf-8-in-resource-properties-with-resourcebundle"
  *       >Stack Overflow: How to use UTF-8 in resource properties with ResourceBundle</A> (asked on 2011-01-11)
- * <LI> Java 9 supports UTF-8 properties files, but JSettlers must also be able to run on older java versions
+ * <LI> Java 9 supports UTF-8 properties files, but Sammys-Settlers must also be able to run on older java versions
  *     <UL>
  *       <LI> <A href="http://openjdk.java.net/jeps/226">JEP 226: UTF-8 Property Resource Bundles</A>
  *       <LI> <A href="https://docs.oracle.com/javase/9/intl/internationalization-enhancements-jdk-9.htm"

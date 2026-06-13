@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2009,2011-2026 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
  *
@@ -47,7 +47,7 @@ import soc.util.Version;
  * and robot clients both want to change their "known options" in different ways.
  *<P>
  * For information about adding or changing game options in a
- * later version of JSettlers, please see {@link SOCGameOptionSet#getAllKnownOptions()}.
+ * later version of Sammys-Settlers, please see {@link SOCGameOptionSet#getAllKnownOptions()}.
  *
  *<H3>Naming and referencing Game Options</H3>
  *
@@ -131,8 +131,8 @@ import soc.util.Version;
  *
  *<H3>Third-Party Options</H3>
  *
- * "Third-party" game options can be defined by any 3rd-party client, bot, or server JSettlers fork,
- * as a way to add features or flags but remain backwards-compatible with standard JSettlers;
+ * "Third-party" game options can be defined by any 3rd-party client, bot, or server Sammys-Settlers fork,
+ * as a way to add features or flags but remain backwards-compatible with standard Sammys-Settlers;
  * such game opts might not be known by all currently connected clients/servers at the same version.
  * These are defined as having {@link #FLAG_3RD_PARTY} to avoid problems while syncing game option info
  * when clients connect to servers. To use such an option, the client and server must both be
@@ -147,11 +147,11 @@ import soc.util.Version;
  * {@link soc.message.SOCNewGameWithOptions#VERSION_FOR_NEWGAMEWITHOPTIONS}.
  *<P>
  * Each option has version information, because options can be added or changed
- * with new versions of JSettlers.  Since games run on the server, the server is
+ * with new versions of Sammys-Settlers.  Since games run on the server, the server is
  * authoritative about game options:  If the client is newer, it must defer to the
  * server's older set of known options.
  *<P>
- * At client connect, the client compares its JSettlers version number to the server's,
+ * At client connect, the client compares its Sammys-Settlers version number to the server's,
  * and asks for any changes to options if client and server versions differ.
  * The newer server or client calls methods which check Known Options'
  * {@link SOCVersionedItem#minVersion minVersion} and {@link SOCVersionedItem#lastModVersion lastModVersion}.
@@ -253,8 +253,8 @@ public class SOCGameOption
 
     /**
      * {@link #optFlags} bitfield constant for a "third-party" game option defined by
-     * a 3rd-party client, bot, or server JSettlers fork, as a way to add features or flags
-     * but remain backwards-compatible with standard JSettlers; this game option might not be known by all
+     * a 3rd-party client, bot, or server Sammys-Settlers fork, as a way to add features or flags
+     * but remain backwards-compatible with standard Sammys-Settlers; this game option might not be known by all
      * currently connected clients/servers at the same version.
      *<UL>
      * <LI> Each such game opt requires an accompanying client feature name, so a server

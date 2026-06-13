@@ -69,7 +69,7 @@ async function snapshot(page: Page): Promise<GameSnapshot | null> {
   });
 }
 
-/** Send a JSettlers debug chat-command via the test bridge; returns success. */
+/** Send a Sammys-Settlers debug chat-command via the test bridge; returns success. */
 async function sendDebug(page: Page, text: string): Promise<boolean> {
   return page.evaluate((cmd) => {
     const w = window as unknown as {

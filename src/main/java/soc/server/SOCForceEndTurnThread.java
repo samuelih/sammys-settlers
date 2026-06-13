@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2013,2015,2019-2022 Jeremy D Monin <jeremy@nand.net>
  * This class was created in 2010 within SOCServer; reading SOCServer.java's
  * commit history led to this notice when the class was split out in 2013 to its own file:

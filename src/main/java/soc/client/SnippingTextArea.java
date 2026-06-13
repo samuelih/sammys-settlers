@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * This file appears (by its comments) to be (C) 1999 Brian Davies
  * Portions of this file Copyright (C) 2004 Chad McHenry
@@ -46,7 +46,7 @@ import java.awt.TextArea;
      * appears to work normally, resulting in the oldest line in the display
      * will be short 1 char. To avoid we work on the text itself for 1.4.2. It
      * flickers, but works.
-     * Added 2004-06-24 by Chad McHenry - JSettlers 1.1 CVS
+     * Added 2004-06-24 by Chad McHenry - Sammys-Settlers 1.1 CVS
      * @since 1.1.06
      */
     static final boolean isJava142 =

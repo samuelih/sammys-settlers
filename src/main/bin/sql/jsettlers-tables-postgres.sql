@@ -127,7 +127,7 @@ INSERT INTO db_version(from_vers, to_vers, ddl_done, bg_tasks_done)
 	VALUES(0, 2000, now(), now());
 
 
--- This file is part of the JSettlers project.
+-- This file is part of the Sammys-Settlers project.
 --
 --  This file Copyright (C) 2012,2014-2017,2019-2022 Jeremy D Monin (jeremy@nand.net)
 --  Portions of this file Copyright (C) 2004-2005 Chadwick A McHenry (mchenryc@acm.org)

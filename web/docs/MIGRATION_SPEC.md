@@ -1,10 +1,10 @@
-# JSettlers Web Migration — Shared Architecture Spec
+# Sammys-Settlers Web Migration — Shared Architecture Spec
 
 > This is the **single source of truth** for the web-migration initiative. Every workflow agent
 > MUST read this file first and follow it exactly. It encodes decisions already made from a deep
 > read of the Java codebase. Do not re-litigate these decisions.
 
-Repo root: `/Users/samharrell/Personal Projects/JSettlers2-main`
+Repo root: `/Users/samharrell/Personal Projects/Sammys-Settlers-main`
 Java: `/opt/homebrew/opt/openjdk@17/bin/java` (set `JAVA_HOME=/opt/homebrew/opt/openjdk@17` for builds).
 Gradle 7.6.6 is on PATH and finds Java 17 itself. Node v20, npm 10.
 

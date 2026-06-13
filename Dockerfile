@@ -8,7 +8,7 @@ COPY src ./src
 
 RUN gradle --no-daemon serverJar \
     && mkdir -p build/docker-server \
-    && cp build/libs/JSettlersServer-*.jar build/docker-server/JSettlersServer.jar \
+    && cp build/libs/Sammys-SettlersServer-*.jar build/docker-server/Sammys-SettlersServer.jar \
     && cp "$(find "$HOME/.gradle/caches/modules-2/files-2.1" -name 'gson-2.8.6.jar' | head -n 1)" \
         build/docker-server/gson.jar \
     && cp "$(find "$HOME/.gradle/caches/modules-2/files-2.1" -name 'Java-WebSocket-1.5.6.jar' | head -n 1)" \

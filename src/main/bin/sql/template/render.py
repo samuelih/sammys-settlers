@@ -14,7 +14,7 @@
 #   ./render.py -i jsettlers-tables-tmpl.sql -d mysql,sqlite,postgres -o ../jsettlers-tables-%s.sql
 #   git status
 #
-# This file is part of the JSettlers project.
+# This file is part of the Sammys-Settlers project.
 #
 # This file Copyright (C) 2017,2019-2022 Jeremy D Monin <jeremy@nand.net>
 #

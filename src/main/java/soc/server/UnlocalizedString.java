@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2017 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -39,7 +39,7 @@ public final class UnlocalizedString
     public final Object[] params;
 
     /**
-     * If true, message contains special JSettlers-specific tokens and should be localized
+     * If true, message contains special Sammys-Settlers-specific tokens and should be localized
      * using {@link SOCStringManager#getSpecial(soc.game.SOCGame, String, Object...)}
      */
     public final boolean isSpecial;
@@ -74,7 +74,7 @@ public final class UnlocalizedString
      *
      * @param k  Message localization key, to retrieve text with {@link SOCStringManager#get(String)}
      * @param p  Parameters to use when localizing {@code k}'s string
-     * @param isSpecial  If true, message contains special JSettlers-specific tokens and should
+     * @param isSpecial  If true, message contains special Sammys-Settlers-specific tokens and should
      *     be localized using {@link SOCStringManager#getSpecial(soc.game.SOCGame, String, Object...)}
      * @throws IllegalArgumentException if {@code k} is null or {@code p} is a 0-length array
      */

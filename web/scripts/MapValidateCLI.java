@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2026 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@ import soc.server.CustomMapLoader.CustomMapException;
 import soc.server.CustomMapLoader.ParsedCustomMap;
 
 /**
- * Dev-only command-line wrapper around the real JSettlers custom-map validator, for the
+ * Dev-only command-line wrapper around the real Sammys-Settlers custom-map validator, for the
  * web map editor's round-trip proof.  Reads a {@code .map.json} file path from {@code args[0]},
  * runs it through the actual {@link CustomMapLoader#parseAndValidateForTests(File)} /
  * {@link soc.server.CustomMapValidator} pipeline (GSON deserialize + every validation rule),
@@ -37,7 +37,7 @@ import soc.server.CustomMapLoader.ParsedCustomMap;
  *<P>
  * This class is NOT part of the shipped JARs; it lives under {@code web/scripts/} and is
  * compiled on demand by {@code web/scripts/validate-map.sh}.  It is placed in the default
- * package and uses no JSettlers-internal access beyond the public
+ * package and uses no Sammys-Settlers-internal access beyond the public
  * {@code parseAndValidateForTests} entry point, so it stays a thin, standalone tool.
  *<P>
  * {@code parseAndValidateForTests} is used (rather than {@code loadAndRegisterOne}) on purpose:

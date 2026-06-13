@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2010,2013-2014,2016-2018,2020 Jeremy D Monin <jeremy@nand.net>
  *
@@ -55,7 +55,7 @@ public class SOCImARobot extends SOCMessage
 
     /**
      * Name of built-in robot brain class: {@code "soc.robot.SOCRobotBrain"}.
-     * This robot is the original robot, distributed with the JSettlers server,
+     * This robot is the original robot, distributed with the Sammys-Settlers server,
      * which permits some optimized communications.
      * Other (3rd-party) robots must use a different class in their IMAROBOT messages.
      * See the {@link SOCImARobot class javadoc} for more details.

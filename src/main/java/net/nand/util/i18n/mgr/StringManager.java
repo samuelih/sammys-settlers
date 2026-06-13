@@ -27,7 +27,7 @@ import java.util.ResourceBundle;
 
 /**
  * String Manager for retrieving I18N localized text from {@code .properties} bundle files.
- * Written for the JSettlers2 client by Luis A. Ramirez, extended and enhanced by Jeremy Monin.
+ * Written for the Sammys-Settlers client by Luis A. Ramirez, extended and enhanced by Jeremy Monin.
  *<P>
  * Your app may want to extend this class if it has objects which want special formatting methods,
  * or to provide and cache a single manager instance whose locale is set at startup.
@@ -77,8 +77,8 @@ public class StringManager
     /**
      * Parse and construct a Locale for this locale string.
      *<P>
-     * This method used to be in the JSettlers {@code soc.util.I18n} package;
-     * moved here for JSettlers v2.2 and net.nand.util.i18n editor version 1.2.
+     * This method used to be in the Sammys-Settlers {@code soc.util.I18n} package;
+     * moved here for Sammys-Settlers v2.2 and net.nand.util.i18n editor version 1.2.
      *
      * @param loc  Locale string, such as "en_US" from {@link Locale#toString()}
      * @return A Locale object, or {@link Locale#getDefault()} if {@code loc} is "" or null

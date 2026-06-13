@@ -1287,7 +1287,7 @@ public class PropertiesTranslatorEditor
      */
     private static class PTCellRenderer extends DefaultTableCellRenderer
     {
-        /** created for JSettlers 2.0.00, no changes since then */
+        /** created for Sammys-Settlers 2.0.00, no changes since then */
         private static final long serialVersionUID = 2000L;
 
         final PTSwingTableModel model;

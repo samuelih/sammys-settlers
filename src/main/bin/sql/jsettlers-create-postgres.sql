@@ -23,7 +23,7 @@ CREATE ROLE socuser LOGIN PASSWORD 'socpass'
 -- Tested with postgres 8.4 and 9.5 on centos 6, postgres 11.6 and 12.1 on centos7
 
 
--- This file is part of the JSettlers project.
+-- This file is part of the Sammys-Settlers project.
 --
 --  This file Copyright (C) 2014,2016-2017,2020 Jeremy D Monin (jeremy@nand.net)
 --

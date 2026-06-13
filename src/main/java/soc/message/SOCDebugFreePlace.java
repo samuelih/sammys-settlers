@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2011,2014,2017,2020-2022 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  *
@@ -217,7 +217,7 @@ public class SOCDebugFreePlace extends SOCMessage
     /**
      * Minimum version where this message type is used.
      * DEBUGFREEPLACE introduced in 1.1.12 for debugging.
-     * @return Version number, 1112 for JSettlers 1.1.12.
+     * @return Version number, 1112 for Sammys-Settlers 1.1.12.
      * @see #VERSION_FOR_DEBUGFREEPLACE
      */
     @Override

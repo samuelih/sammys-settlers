@@ -5,7 +5,7 @@
 # Lives in same place as render.py, for easier import.
 # Called from build.gradle with 1 arg: SOCDBHelper.java with full path
 #
-# This file is part of the JSettlers project.
+# This file is part of the Sammys-Settlers project.
 #
 # This file Copyright (C) 2019-2020 Jeremy D Monin <jeremy@nand.net>
 #

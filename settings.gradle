@@ -1,12 +1,14 @@
-// JSettlers gradle settings
+// Sammys-Settlers gradle settings
 // See bottom of file for copyright and license information (GPLv3).
+
+rootProject.name = 'Sammys-Settlers'
 
 org.apache.tools.ant.DirectoryScanner.removeDefaultExclude("**/.gitignore")
 org.apache.tools.ant.DirectoryScanner.addDefaultExclude("**/__pycache__")
 
 
 /*
- * This file is part of the JSettlers project.
+ * This file is part of the Sammys-Settlers project.
  *
  * This file Copyright (C) 2022 Jeremy D Monin <jeremy@nand.net>
  *

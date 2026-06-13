@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2025 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -135,7 +135,7 @@ import java.util.Vector;
  * The bot can be sent debug commands to examine its state; see
  * {@link SOCRobotClient#handleGAMETEXTMSG(soc.message.SOCGameTextMsg)}.
  *<P>
- * Extending this class is one way to begin developing a custom JSettlers bot:
+ * Extending this class is one way to begin developing a custom Sammys-Settlers bot:
  *<UL>
  * <LI> Factory is {@link SOCRobotClient#createBrain(SOCRobotParameters, SOCGame, CappedQueue)},
  *      which can be overridden in a custom bot client like {@link soc.robot.sample3p.Sample3PClient}

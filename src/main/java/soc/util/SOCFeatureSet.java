@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2014-2021 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@ import soc.game.SOCGameOptionSet;  // for javadocs only
  *<P>
  * Client features were added in v2.0.00 ({@link #VERSION_FOR_CLIENTFEATURES})
  * to simplify development of third-party bots and clients, which might not want to implement all features.
- * Earlier servers assume the client is using the features that standard JSettlers implements. Use the
+ * Earlier servers assume the client is using the features that standard Sammys-Settlers implements. Use the
  * {@link #SOCFeatureSet(boolean, boolean) SOCFeatureSet(true, false)} constructor when connecting to a client older
  * than 2.0.00. See that constructor's javadoc for the list of client features always assumed active before 2.0.00.
  *<P>
@@ -133,9 +133,9 @@ public class SOCFeatureSet
     /**
      * Client scenario version (numeric feature).
      * If not set, client doesn't support scenarios or game option {@code SC}.
-     * Clients supporting scenarios should set this feature's value to the JSettlers version
+     * Clients supporting scenarios should set this feature's value to the Sammys-Settlers version
      * having all scenarios they support: For example if the client supports all scenarios
-     * included in JSettlers 2.0.01, the value would be 2001.
+     * included in Sammys-Settlers 2.0.01, the value would be 2001.
      *<P>
      * If client doesn't have this feature, server also assumes it doesn't support
      * any scenario-related {@link SOCGameOption}s (the options starting with {@code _SC_*},

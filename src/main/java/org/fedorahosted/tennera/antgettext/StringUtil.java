@@ -14,12 +14,12 @@ import java.io.InputStreamReader;
 /**
  * String utilities and i18n pseudolocalization from the JBoss Ant-Gettext utilities.
  * <P>
- * For the JSettlers project, retrieved 2013-09-10 from
+ * For the Sammys-Settlers project, retrieved 2013-09-10 from
  *   <A href="https://github.com/zanata/tennera/blob/master/ant-gettext/src/main/java/org/fedorahosted/tennera/antgettext/StringUtil.java"
  *   >https://github.com/zanata/tennera/blob/master/ant-gettext/src/main/java/org/fedorahosted/tennera/antgettext/StringUtil.java</A><BR>
  *  Retrieved version was last modified 2009-05-05, LGPL license.
  * <P>
- *  Changes for JSettlers:
+ *  Changes for Sammys-Settlers:
  * <UL>
  * <LI> 2013-09-12  jeremy  Make class and removeFileExtension public;
  *                          pseudolocalise: shorten prefix, suffix to {@code "[-- ", " --]"},

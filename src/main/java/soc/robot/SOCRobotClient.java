@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2026 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -200,7 +200,7 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
     protected String rbclass = SOCImARobot.RBCLASS_BUILTIN;
 
     /**
-     * Features supported by this built-in JSettlers robot client.
+     * Features supported by this built-in Sammys-Settlers robot client.
      * Initialized in {@link #init()}.
      * @since 2.0.00
      */
@@ -1600,7 +1600,7 @@ public class SOCRobotClient extends SOCDisplaylessPlayerClient
     {
         if (args.length < 5)
         {
-            System.err.println("Java Settlers robotclient " + Version.version() +
+            System.err.println("Sammys-Settlers robotclient " + Version.version() +
                     ", build " + Version.buildnum());
             System.err.println("usage: java soc.robot.SOCRobotClient host port_number bot_nickname password cookie");
             return;

@@ -1,5 +1,5 @@
 /**
- * JSettlers network message system.
+ * Sammys-Settlers network message system.
  * This file Copyright (C) 2007-2009,2016-2017,2020,2022 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or

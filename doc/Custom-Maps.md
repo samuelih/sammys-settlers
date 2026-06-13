@@ -1,4 +1,4 @@
-# Java Settlers - Custom Maps (User-Defined Board Layouts)
+# Sammys-Settlers - Custom Maps (User-Defined Board Layouts)
 
 Server-side support for user-defined board layouts, loaded from JSON files at
 server startup and offered to players as custom scenarios. **Standard rules only
@@ -47,7 +47,7 @@ Set the server property `jsettlers.custommaps.dir` to the directory to scan.
 The server scans it once at startup for files ending in `.map.json`.
 
 ```
-java -jar JSettlersServer-<ver>.jar -Djsettlers.custommaps.dir=/path/to/custommaps
+java -jar Sammys-SettlersServer-<ver>.jar -Djsettlers.custommaps.dir=/path/to/custommaps
 ```
 
 or in `jsserver.properties`:
@@ -196,7 +196,7 @@ impossible. If two custom files derive the **same** key (e.g. `island1` and
 `island2` both → `SC_XISLA`), the second one is logged and skipped. Rename one
 of the files so their first 4 alphanumerics differ.
 
-All custom scenarios have a minimum version of `2000` (JSettlers 2.0), the floor
+All custom scenarios have a minimum version of `2000` (Sammys-Settlers 2.0), the floor
 for all scenarios.
 
 

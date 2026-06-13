@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2007-2010,2013,2016-2017,2020-2021 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -41,14 +41,14 @@ import java.util.Vector;
  * This class has a run method, but you must start the thread yourself.
  * Constructors will not create or start a thread.
  *<P>
- * As used within JSettlers, the structure of this class has much in common
+ * As used within Sammys-Settlers, the structure of this class has much in common
  * with {@link StringConnection}, as they both subclass {@link Connection}.
  * If you add something to one class you should probably add it to the other,
  * or to the superclass instead.
  *<P>
  * Refactored in v2.0.0 to extend {@link Connection} instead of Thread.
  *<P>
- * Before JSettlers v2.0.00, this class was called {@code Connection}.
+ * Before Sammys-Settlers v2.0.00, this class was called {@code Connection}.
  *
  * @author <A HREF="http://www.nada.kth.se/~cristi">Cristian Bogdan</A>
  */

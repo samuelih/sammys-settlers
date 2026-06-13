@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2014,2017,2019-2020 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  *
@@ -201,7 +201,7 @@ public class SOCAuthRequest extends SOCMessage
     /**
      * Minimum version where this message type is used.
      * AUTHREQUEST was introduced in 1.1.19.
-     * @return Version number, 1119 for JSettlers 1.1.19.
+     * @return Version number, 1119 for Sammys-Settlers 1.1.19.
      */
     public final int getMinimumVersion() { return VERSION_FOR_AUTHREQUEST; }
 

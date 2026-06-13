@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * Copyright (C) 2003  Robert S. Thomas
  * Portions of this file Copyright (C) 2007-2012,2018-2020,2022-2024 Jeremy D Monin <jeremy@nand.net>
  *
@@ -52,7 +52,7 @@ import javax.swing.JComponent;
  * {@link #setMinimumSize(Dimension)} to change minimum. Minimum isn't set by setSize,
  * to avoid a "disappearing" 0-height or 0-width square when layout manager calls setSize or setBounds.
  *<P>
- * Most colorsquares in JSettlers are actually {@link ColorSquareLarger} instances:
+ * Most colorsquares in Sammys-Settlers are actually {@link ColorSquareLarger} instances:
  * Creating that subclass was easier than changing the values of {@link #WIDTH} and {@link #HEIGHT} here,
  * which are also used for setting the size of many UI elements.
  *

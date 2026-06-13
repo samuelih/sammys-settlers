@@ -179,7 +179,7 @@ The React client (`web/src/components/ck`) renders:
 - Piece-like knight tokens for the aggregate server knight counts.
 - A full official Cities & Knights reference catalog sourced from
   `web/src/components/ck/ckCatalog.ts`: all components, all 54 progress cards, official
-  deck counts, current-edition names, older aliases used by JSettlers/server text, and
+  deck counts, current-edition names, older aliases used by Sammys-Settlers/server text, and
   support status.
 - No base development-card action panel in `SC_CK` games; official Cities & Knights replaces
   development cards with progress cards. The Java server still has the legacy dev-card deck,
@@ -201,7 +201,7 @@ decision states can block them. City downgrades reach bots as standard
 
 ## Simplifications
 
-Differences from the boxed game, chosen to fit JSettlers' architecture (see design doc):
+Differences from the boxed game, chosen to fit Sammys-Settlers' architecture (see design doc):
 
 - No event/red dice: the standard dice double as them (die1 = deck select, die2 = draw gate;
   barbarians advance every roll instead of on the ship face).

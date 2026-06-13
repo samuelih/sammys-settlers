@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start a JSettlers Java server with the WebSocket listener enabled, for web-client
+# Start a Sammys-Settlers Java server with the WebSocket listener enabled, for web-client
 # development and Playwright E2E. Runs the already-compiled classes directly via `java`
 # (SOCServer reads jsettlers.* options as PROGRAM args, not JVM -D flags).
 #
@@ -56,7 +56,7 @@ ARGS=(soc.server.SOCServer
   "-Djsettlers.websocket.port=$JS_WS_PORT"
   "-Djsettlers.startrobots=$JS_BOTS")
 
-echo "Starting JSettlers server: TCP=$JS_TCP_PORT WS=$JS_WS_PORT bots=$JS_BOTS (debug user enabled)"
+echo "Starting Sammys-Settlers server: TCP=$JS_TCP_PORT WS=$JS_WS_PORT bots=$JS_BOTS (debug user enabled)"
 if [ "$FOREGROUND" = "1" ]; then
   exec "$JAVA_BIN" "${JVM_ARGS[@]}" -cp "$CP" "${ARGS[@]}"
 fi

@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2009-2010,2013,2017,2019-2023 Jeremy D Monin <jeremy@nand.net>
  * Portions of this file Copyright (C) 2003  Robert S. Thomas <thomas@infolab.northwestern.edu>
  * Portions of this file Copyright (C) 2012 Paul Bilnoski <paul@bilnoski.net>
@@ -225,7 +225,7 @@ public class SOCGameOptionGetInfos extends SOCMessage
     /**
      * Minimum version where this message type is used.
      * GAMEOPTIONGETINFOS introduced in 1.1.07 for game-options feature.
-     * @return Version number, 1107 for JSettlers 1.1.07.
+     * @return Version number, 1107 for Sammys-Settlers 1.1.07.
      */
     @Override
     public int getMinimumVersion() { return 1107; }

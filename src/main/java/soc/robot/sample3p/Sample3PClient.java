@@ -1,5 +1,5 @@
 /*
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file Copyright (C) 2017-2020 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -137,7 +137,7 @@ public class Sample3PClient extends SOCRobotClient
     {
         if (args.length < 5)
         {
-            System.err.println("Java Settlers sample robotclient");
+            System.err.println("Sammys-Settlers sample robotclient");
             System.err.println("usage: java " + RBCLASSNAME_SAMPLE + " hostname port_number bot_nickname password cookie");
 
             return;

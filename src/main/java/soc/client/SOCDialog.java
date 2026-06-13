@@ -1,5 +1,5 @@
 /**
- * Java Settlers - An online multiplayer version of the game Settlers of Catan
+ * Sammys-Settlers - An online multiplayer version of the game Settlers of Catan
  * This file copyright (C) 2019-2020,2023 Jeremy D Monin <jeremy@nand.net>
  *
  * This program is free software; you can redistribute it and/or
@@ -58,7 +58,7 @@ import javax.swing.WindowConstants;
  * Dialog's Close button can optionally be ignored: See constructor.
  * When closeable, Escape key also calls the {@link #windowCloseChosen()} callback.
  *<P>
- * Uses JSettlers dialog colors of black on {@link SwingMainDisplay#DIALOG_BG_GOLDENROD}
+ * Uses Sammys-Settlers dialog colors of black on {@link SwingMainDisplay#DIALOG_BG_GOLDENROD}
  * with default dialog font, increased to 12 points if default is smaller.
  * The root pane is given an empty border of 8 pixels.
  *<P>
@@ -74,7 +74,7 @@ import javax.swing.WindowConstants;
  *
  * Like most GUI classes, SOCDialog is not thread-safe.
  *<P>
- * Public for possible use by anyone extending JSettlers in a different package.
+ * Public for possible use by anyone extending Sammys-Settlers in a different package.
  *
  * @author Jeremy D Monin &lt;jeremy@nand.net&gt;
  * @since 2.0.00

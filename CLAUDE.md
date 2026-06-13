@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-JSettlers is a Java client-server implementation of *Settlers of Catan*. The same codebase builds two JARs: a server (`SOCServer`) and a full client (`SOCPlayerClient`) that can also host a server or run offline practice games against robot players. It originated as Robert S Thomas' AI-agent dissertation, so the robot/bot subsystem is first-class, not an afterthought.
+Sammys-Settlers is a Java client-server implementation of *Settlers of Catan*. The same codebase builds two JARs: a server (`SOCServer`) and a full client (`SOCPlayerClient`) that can also host a server or run offline practice games against robot players. It originated as Robert S Thomas' AI-agent dissertation, so the robot/bot subsystem is first-class, not an afterthought.
 
 ## Build & test
 
@@ -24,7 +24,7 @@ Run a **single Java test** (extraTest example — same `--tests` flag works for 
 gradle extraTest --exclude-task extraTestPython --exclude-task testPython --tests TestActionsMessages.testBuildAndMove
 ```
 
-> **IMPORTANT:** Even when running `SOCServer`/`SOCPlayerClient` directly from an IDE, you must first run `gradle assemble` (or `build`) at least once to copy `src/main/resources/` into the build output. Otherwise startup fails with `Packaging error: Cannot determine JSettlers version`.
+> **IMPORTANT:** Even when running `SOCServer`/`SOCPlayerClient` directly from an IDE, you must first run `gradle assemble` (or `build`) at least once to copy `src/main/resources/` into the build output. Otherwise startup fails with `Packaging error: Cannot determine Sammys-Settlers version`.
 
 Test layout: unit tests in `src/test/java/soctest/**` (+ `src/test/python/`); long-running functional tests in `src/extraTest/java/soctest/**` (+ `src/extraTest/python/`). The `extraTest` source set has its own classpath wired in `build.gradle` and is **not** part of the shipped JARs.
 
@@ -33,8 +33,8 @@ The `test` task also runs `testSrcDBTemplateTokens` and `testSrcDBTemplates`, wh
 ## Running locally
 
 ```bash
-java -jar build/libs/JSettlersServer-<ver>.jar              # server, port 8880, 7 bots, no DB needed
-java -jar build/libs/JSettlers-<ver>.jar localhost 8880     # client connecting to that server
+java -jar build/libs/Sammys-SettlersServer-<ver>.jar              # server, port 8880, 7 bots, no DB needed
+java -jar build/libs/Sammys-Settlers-<ver>.jar localhost 8880     # client connecting to that server
 ```
 
 Useful dev JVM flags (place **before** `-jar`): `-Djsettlers.allow.debug=Y` (enable the `debug` chat-command user outside practice games), `-Djsettlers.debug.traffic=Y` (log all SOCMessage traffic in/out), `-Djsettlers.startrobots=N`. Game-option defaults are set with `-o NAME=value` (e.g. `-o VP=t13`) or the equivalent `-Djsettlers.gameopt.NAME=value`. A `jsserver.properties` file in the working dir is read at startup; validate config with `--test-config`.

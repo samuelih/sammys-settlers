@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Playwright E2E config for the JSettlers web client.
+// Playwright E2E config for the Sammys-Settlers web client.
 //
 // IMPORTANT: The Java SOCServer must be started SEPARATELY before running
 // these E2E tests — Playwright only serves the built web app, not the game

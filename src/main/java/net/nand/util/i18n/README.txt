@@ -1,11 +1,11 @@
 README.txt - Notes and current status for the nand.net i18n translator's editor
 
 
-This internationalization editor is used by the JSettlers project, so its "home" is here:
+This internationalization editor is used by the Sammys-Settlers project, so its "home" is here:
 	download:    https://nand.net/jsettlers/devel/i18n/PTE-1.2.0.jar
 	webpage:     https://nand.net/jsettlers/devel/i18n/
-	bug-tracker: https://github.com/jdmonin/JSettlers2/issues
-	source:      https://github.com/jdmonin/JSettlers2/tree/main/src/main/java/net/nand/util/i18n
+	bug-tracker: https://github.com/samuelih/Sammys-Settlers/issues
+	source:      https://github.com/samuelih/Sammys-Settlers/tree/main/src/main/java/net/nand/util/i18n
 in the net.nand.util.i18n and net.nand.util.i18n.gui packages.
 
 
@@ -60,7 +60,7 @@ When starting the editor this message is harmless, because preferences are store
 
 Developers
 ----------
-The project code lives at https://github.com/jdmonin/JSettlers2 .
+The project code lives at https://github.com/samuelih/Sammys-Settlers .
 
 To build PTE.jar, use: gradle i18neditorJar
 
