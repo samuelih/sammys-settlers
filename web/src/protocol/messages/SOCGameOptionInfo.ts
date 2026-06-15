@@ -32,13 +32,15 @@
 
 import { MessageType, SEP, EMPTYSTR, OTYPE_MIN, OTYPE_MAX, OptionType } from '../constants';
 import { registerParser, type SOCMessage } from '../SOCMessage';
+import { parseJavaInt } from '../javaInt';
 
 /** Strict integer check matching Java Integer.parseInt. */
 function parseIntStrict(s: string): number {
-  if (!/^[+-]?\d+$/.test(s)) {
+  const parsed = parseJavaInt(s);
+  if (parsed === null) {
     throw new Error(`not an integer: ${s}`);
   }
-  return Number.parseInt(s, 10);
+  return parsed;
 }
 
 /**

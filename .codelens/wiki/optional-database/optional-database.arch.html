@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:60%"></i></span>
       <span class="conf-val">0.60</span></span></div>
         <h1 class="doc-title">Optional Database</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Optional Database</h1>
@@ -70,14 +70,14 @@ graph TD
     Persisted_Settings_Guard["Persisted-Settings Guard"]
     Runtime_Schema_Upgrade["Runtime Schema Upgrade"]
     SOCDBHelper["SOCDBHelper"]
-    SQL_Schema_Template___Generator["SQL Schema Template & Generator"]
+    SQL_Schema_Template___Generator["SQL Schema Template &amp; Generator"]
     Template_Consistency_Build_Gate["Template Consistency Build Gate"]
 
     ext_External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_["External RDBMS (MySQL/PostgreSQL/SQLite/Oracle)"]:::default
 
-    SOCDBHelper -.->|"JDBC"| ext_External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_
-    SQL_Schema_Template___Generator -->|"Generated jsettlers-tables-*.sql DDL ..."| SOCDBHelper
-    Template_Consistency_Build_Gate -->|"testSrcDBTemplateTokens / testSrcDBTe..."| SQL_Schema_Template___Generator
+    SOCDBHelper -.-&gt;|"JDBC"| ext_External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_
+    SQL_Schema_Template___Generator --&gt;|"Generated jsettlers-tables-*.sql DDL ..."| SOCDBHelper
+    Template_Consistency_Build_Gate --&gt;|"testSrcDBTemplateTokens / testSrcDBTe..."| SQL_Schema_Template___Generator
 
 
 
@@ -99,13 +99,13 @@ sequenceDiagram
     participant print_usage as print_usage
     participant len as len
 
-    main ->> render_one: render_one(dbtype, infile, outfile, compfile)
-    main ->> parse_cmdline: parse_cmdline()
-    render_one ->> read: public ArrayList<Integer> read(final JsonReader…
-    render_one ->> render: render(in_str)
-    render_one ->> setup_tokens: setup_tokens(dbtype, infile_name)
-    parse_cmdline ->> print_usage: print_usage()
-    parse_cmdline ->> len: private static final int len(final SOCPlayer pl,…
+    main -&gt;&gt; render_one: render_one(dbtype, infile, outfile, compfile)
+    main -&gt;&gt; parse_cmdline: parse_cmdline()
+    render_one -&gt;&gt; read: public ArrayList&lt;Integer&gt; read(final JsonReader…
+    render_one -&gt;&gt; render: render(in_str)
+    render_one -&gt;&gt; setup_tokens: setup_tokens(dbtype, infile_name)
+    parse_cmdline -&gt;&gt; print_usage: print_usage()
+    parse_cmdline -&gt;&gt; len: private static final int len(final SOCPlayer pl,…
     Note over len: +1 more calls truncated
 </pre>
 <h2>Source Linkage</h2>
@@ -195,7 +195,7 @@ sequenceDiagram
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

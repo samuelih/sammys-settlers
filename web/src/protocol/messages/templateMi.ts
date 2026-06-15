@@ -14,13 +14,11 @@
 // at least one param, so an empty param list is garbled regardless.
 
 import { SEP } from '../constants';
+import { parseJavaInt } from '../javaInt';
 
-/** Strict integer check matching Java Integer.parseInt (allows leading '-'). */
+/** Strict integer check matching Java Integer.parseInt (allows leading sign). */
 export function parseIntStrict(s: string): number | null {
-  if (!/^[+-]?\d+$/.test(s)) {
-    return null;
-  }
-  return Number.parseInt(s, 10);
+  return parseJavaInt(s);
 }
 
 /**

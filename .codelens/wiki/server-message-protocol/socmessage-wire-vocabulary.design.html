@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:70%"></i></span>
       <span class="conf-val">0.70</span></span></div>
         <h1 class="doc-title">SOCMessage Wire Vocabulary</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>SOCMessage Wire Vocabulary</h1>
@@ -139,7 +139,7 @@ classDiagram
         +getIntArrayPart()
         +public int getIntPart(String pkey)
         +public String getStringPart(String pkey)
-        +public HashMap<String, int[]> getAddedParts()
+        +public HashMap&lt;String, int[]&gt; getAddedParts()
         +@Override
     public String toCmd()
         +public static SOCBoardLayout2 parseDataStr(String s)
@@ -192,34 +192,34 @@ graph TD
 
 
     ext_src_main_java_soc_game_GameAction_java["GameAction.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_GameAction_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_GameAction_java
     ext_src_main_java_soc_game_SOCBoard_java["SOCBoard.java"]:::default
-    src_main_java_soc_message_SOCBoardLayout2_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoard_java
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoard_java
+    src_main_java_soc_message_SOCBoardLayout2_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoard_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoard_java
     ext_src_main_java_soc_game_SOCDevCardConstants_java["SOCDevCardConstants.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
     ext_src_main_java_soc_game_SOCGame_java["SOCGame.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCGame_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGame_java
     ext_src_main_java_soc_game_SOCGameOption_java["SOCGameOption.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
     ext_src_main_java_soc_game_SOCGameOptionSet_java["SOCGameOptionSet.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
     ext_src_main_java_soc_game_SOCPlayer_java["SOCPlayer.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
     ext_src_main_java_soc_game_SOCPlayingPiece_java["SOCPlayingPiece.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
     ext_src_main_java_soc_game_SOCResourceConstants_java["SOCResourceConstants.java"]:::default
-    src_main_java_soc_message_SOCPlayerElements_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
+    src_main_java_soc_message_SOCPlayerElements_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
     ext_src_main_java_soc_game_SOCResourceSet_java["SOCResourceSet.java"]:::default
-    src_main_java_soc_message_SOCPlayerElements_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
+    src_main_java_soc_message_SOCPlayerElements_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
     ext_src_main_java_soc_game_SOCScenario_java["SOCScenario.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCScenario_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCScenario_java
     ext_src_main_java_soc_game_SOCTradeOffer_java["SOCTradeOffer.java"]:::default
-    src_test_java_soctest_message_TestToCmdToStringParse_java -.->|"imports"| ext_src_main_java_soc_game_SOCTradeOffer_java
+    src_test_java_soctest_message_TestToCmdToStringParse_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCTradeOffer_java
     ext_src_main_java_soc_util_DataUtils_java["DataUtils.java"]:::default
-    src_main_java_soc_message_SOCBoardLayout2_java -.->|"imports"| ext_src_main_java_soc_util_DataUtils_java
+    src_main_java_soc_message_SOCBoardLayout2_java -.-&gt;|"imports"| ext_src_main_java_soc_util_DataUtils_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -326,7 +326,7 @@ Scope architecture: <a href="server-message-protocol.arch.html">server-message-p
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

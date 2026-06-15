@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:60%"></i></span>
       <span class="conf-val">0.60</span></span></div>
         <h1 class="doc-title">Desktop Swing Client</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Desktop Swing Client</h1>
@@ -78,7 +78,7 @@
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}}}%%
 graph TD
 
-    Client_Preferences___Settings["Client Preferences & Settings"]
+    Client_Preferences___Settings["Client Preferences &amp; Settings"]
     ClientNetwork["ClientNetwork"]
     ColorSquare["ColorSquare"]
     GameMessageSender["GameMessageSender"]
@@ -90,43 +90,43 @@ graph TD
     SnippingTextArea["SnippingTextArea"]
     SwingMainDisplay["SwingMainDisplay"]
 
-    ClientNetwork -->|"SOCMessage over TCP (writeUTF/readUTF... — calls (2)"| MessageHandler
-    ClientNetwork -->|"calls (3)"| SOCPlayerClient
-    ClientNetwork -->|"calls (6)"| SwingMainDisplay
-    GameMessageSender -->|"calls (2)"| ClientNetwork
-    GameMessageSender -->|"calls (1)"| SOCPlayerClient
-    MessageHandler -->|"calls (1)"| ClientNetwork
-    MessageHandler -->|"calls (13)"| SOCPlayerClient
-    MessageHandler -->|"calls (63)"| SOCPlayerInterface
-    MessageHandler -->|"calls (2)"| SnippingTextArea
-    MessageHandler -->|"in-process Java interface callbacks (... — calls (20)"| SwingMainDisplay
-    SOCBoardPanel -->|"calls (20)"| ColorSquare
-    SOCBoardPanel -->|"calls (2)"| GameMessageSender
-    SOCBoardPanel -->|"calls (6), inherits (1)"| SOCHandPanel
-    SOCBoardPanel -->|"in-process Java method calls"| SOCPlayerClient
-    SOCBoardPanel -->|"calls (8)"| SOCPlayerInterface
-    SOCBoardPanel -->|"calls (3)"| SnippingTextArea
-    SOCHandPanel -->|"calls (23)"| ColorSquare
-    SOCHandPanel -->|"calls (10)"| SOCBoardPanel
-    SOCHandPanel -->|"calls (15)"| SOCPlayerInterface
-    SOCHandPanel -->|"calls (2)"| SnippingTextArea
-    SOCHandPanel -->|"calls (2)"| SwingMainDisplay
-    SOCPlayerClient -->|"calls (3)"| ClientNetwork
-    SOCPlayerClient -->|"calls (1)"| ColorSquare
-    SOCPlayerClient -->|"calls (2)"| SOCPlayerInterface
-    SOCPlayerClient -->|"calls (9)"| SwingMainDisplay
-    SOCPlayerInterface -->|"calls (4)"| ColorSquare
-    SOCPlayerInterface -->|"calls (4)"| GameMessageSender
-    SOCPlayerInterface -->|"calls (26)"| SOCBoardPanel
-    SOCPlayerInterface -->|"calls (54)"| SOCHandPanel
-    SOCPlayerInterface -->|"calls (3)"| SOCPlayerClient
-    SOCPlayerInterface -->|"calls (13)"| SnippingTextArea
-    SOCPlayerInterface -->|"calls (8)"| SwingMainDisplay
-    SwingMainDisplay -->|"calls (10)"| ClientNetwork
-    SwingMainDisplay -->|"calls (5)"| ColorSquare
-    SwingMainDisplay -->|"calls (1)"| SOCBoardPanel
-    SwingMainDisplay -->|"calls (7)"| SOCHandPanel
-    SwingMainDisplay -->|"calls (10)"| SOCPlayerClient
+    ClientNetwork --&gt;|"SOCMessage over TCP (writeUTF/readUTF... — calls (2)"| MessageHandler
+    ClientNetwork --&gt;|"calls (3)"| SOCPlayerClient
+    ClientNetwork --&gt;|"calls (6)"| SwingMainDisplay
+    GameMessageSender --&gt;|"calls (2)"| ClientNetwork
+    GameMessageSender --&gt;|"calls (1)"| SOCPlayerClient
+    MessageHandler --&gt;|"calls (1)"| ClientNetwork
+    MessageHandler --&gt;|"calls (13)"| SOCPlayerClient
+    MessageHandler --&gt;|"calls (63)"| SOCPlayerInterface
+    MessageHandler --&gt;|"calls (2)"| SnippingTextArea
+    MessageHandler --&gt;|"in-process Java interface callbacks (... — calls (20)"| SwingMainDisplay
+    SOCBoardPanel --&gt;|"calls (20)"| ColorSquare
+    SOCBoardPanel --&gt;|"calls (2)"| GameMessageSender
+    SOCBoardPanel --&gt;|"calls (6), inherits (1)"| SOCHandPanel
+    SOCBoardPanel --&gt;|"in-process Java method calls"| SOCPlayerClient
+    SOCBoardPanel --&gt;|"calls (8)"| SOCPlayerInterface
+    SOCBoardPanel --&gt;|"calls (3)"| SnippingTextArea
+    SOCHandPanel --&gt;|"calls (23)"| ColorSquare
+    SOCHandPanel --&gt;|"calls (10)"| SOCBoardPanel
+    SOCHandPanel --&gt;|"calls (15)"| SOCPlayerInterface
+    SOCHandPanel --&gt;|"calls (2)"| SnippingTextArea
+    SOCHandPanel --&gt;|"calls (2)"| SwingMainDisplay
+    SOCPlayerClient --&gt;|"calls (3)"| ClientNetwork
+    SOCPlayerClient --&gt;|"calls (1)"| ColorSquare
+    SOCPlayerClient --&gt;|"calls (2)"| SOCPlayerInterface
+    SOCPlayerClient --&gt;|"calls (9)"| SwingMainDisplay
+    SOCPlayerInterface --&gt;|"calls (4)"| ColorSquare
+    SOCPlayerInterface --&gt;|"calls (4)"| GameMessageSender
+    SOCPlayerInterface --&gt;|"calls (26)"| SOCBoardPanel
+    SOCPlayerInterface --&gt;|"calls (54)"| SOCHandPanel
+    SOCPlayerInterface --&gt;|"calls (3)"| SOCPlayerClient
+    SOCPlayerInterface --&gt;|"calls (13)"| SnippingTextArea
+    SOCPlayerInterface --&gt;|"calls (8)"| SwingMainDisplay
+    SwingMainDisplay --&gt;|"calls (10)"| ClientNetwork
+    SwingMainDisplay --&gt;|"calls (5)"| ColorSquare
+    SwingMainDisplay --&gt;|"calls (1)"| SOCBoardPanel
+    SwingMainDisplay --&gt;|"calls (7)"| SOCHandPanel
+    SwingMainDisplay --&gt;|"calls (10)"| SOCPlayerClient
 
 
 
@@ -262,7 +262,7 @@ graph TD
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

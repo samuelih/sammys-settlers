@@ -55,6 +55,11 @@ describe('SOCTurn (1026)', () => {
   it('rejects a non-integer player number', () => {
     expect(decode('1026|ga,x')).toBeNull();
   });
+
+  it('rejects player numbers outside Java int range', () => {
+    expect(decode('1026|ga,2147483648')).toBeNull();
+    expect(decode('1026|ga,-2147483649')).toBeNull();
+  });
 });
 
 describe('SOCSetTurn / SOCFirstPlayer / SOCLongestRoad / SOCLargestArmy (game,pn)', () => {

@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:55%"></i></span>
       <span class="conf-val">0.55</span></span></div>
         <h1 class="doc-title">Game-Action Message Sequences</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Game-Action Message Sequences</h1>
@@ -147,7 +147,7 @@ classDiagram
         -testExtractEventSequence()
     }
     class ExtractResultsChecker {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class TestRecorder {
         +@BeforeClass
@@ -191,80 +191,80 @@ graph TD
 
 
     ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java["SOCDisplaylessPlayerClient.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java
     ext_src_main_java_soc_extra_robot_GameActionExtractor_java["GameActionExtractor.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_extra_robot_GameActionExtractor_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_extra_robot_GameActionExtractor_java
     ext_src_main_java_soc_extra_robot_GameActionLog_java["GameActionLog.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_extra_robot_GameActionLog_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_extra_robot_GameActionLog_java
     ext_src_main_java_soc_extra_server_GameEventLog_java["GameEventLog.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_extra_server_GameEventLog_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_extra_server_GameEventLog_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_extra_server_GameEventLog_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_extra_server_GameEventLog_java
     ext_src_main_java_soc_extra_server_RecordingSOCServer_java["RecordingSOCServer.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_extra_server_RecordingSOCServer_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_extra_server_RecordingSOCServer_java
     ext_src_main_java_soc_game_GameAction_java["GameAction.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_GameAction_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_GameAction_java
     ext_src_main_java_soc_game_SOCBoard_java["SOCBoard.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoard_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoard_java
     ext_src_main_java_soc_game_SOCBoardLarge_java["SOCBoardLarge.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoardLarge_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoardLarge_java
     ext_src_main_java_soc_game_SOCCity_java["SOCCity.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCCity_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCCity_java
     ext_src_main_java_soc_game_SOCDevCardConstants_java["SOCDevCardConstants.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCDevCardConstants_java
     ext_src_main_java_soc_game_SOCGame_java["SOCGame.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCGame_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCGame_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGame_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGame_java
     ext_src_main_java_soc_game_SOCGameOption_java["SOCGameOption.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
     ext_src_main_java_soc_game_SOCGameOptionSet_java["SOCGameOptionSet.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
     ext_src_main_java_soc_game_SOCMoveRobberResult_java["SOCMoveRobberResult.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCMoveRobberResult_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCMoveRobberResult_java
     ext_src_main_java_soc_game_SOCPlayer_java["SOCPlayer.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
     ext_src_main_java_soc_game_SOCPlayingPiece_java["SOCPlayingPiece.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
     ext_src_main_java_soc_game_SOCResourceConstants_java["SOCResourceConstants.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceConstants_java
     ext_src_main_java_soc_game_SOCResourceSet_java["SOCResourceSet.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCResourceSet_java
     ext_src_main_java_soc_game_SOCRoad_java["SOCRoad.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCRoad_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCRoad_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCRoad_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCRoad_java
     ext_src_main_java_soc_game_SOCScenario_java["SOCScenario.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCScenario_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCScenario_java
     ext_src_main_java_soc_game_SOCSettlement_java["SOCSettlement.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCSettlement_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCSettlement_java
     ext_src_main_java_soc_game_SOCShip_java["SOCShip.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_game_SOCShip_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCShip_java
     ext_src_main_java_soc_game_SOCTradeOffer_java["SOCTradeOffer.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_game_SOCTradeOffer_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCTradeOffer_java
     ext_src_main_java_soc_message_SOCRollDiceRequest_java["SOCRollDiceRequest.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_message_SOCRollDiceRequest_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_message_SOCRollDiceRequest_java
     ext_src_main_java_soc_server_SOCClientData_java["SOCClientData.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_SOCClientData_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_SOCClientData_java
     ext_src_main_java_soc_server_SOCGameHandler_java["SOCGameHandler.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_SOCGameHandler_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_SOCGameHandler_java
     ext_src_main_java_soc_server_SOCGameListAtServer_java["SOCGameListAtServer.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_SOCGameListAtServer_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_SOCGameListAtServer_java
     ext_src_main_java_soc_server_SOCServer_java["SOCServer.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_SOCServer_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_SOCServer_java
     ext_src_main_java_soc_server_genericServer_Connection_java["Connection.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_genericServer_Connection_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_genericServer_Connection_java
     ext_src_main_java_soc_server_savegame_SavedGameModel_java["SavedGameModel.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_server_savegame_SavedGameModel_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_server_savegame_SavedGameModel_java
     ext_src_main_java_soc_util_SOCStringManager_java["SOCStringManager.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
     ext_src_main_java_soc_util_Version_java["Version.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
     ext_src_test_java_soctest_server_TestGameEventLog_java["TestGameEventLog.java"]:::default
-    src_test_java_soctest_robot_TestGameActionExtractor_java -.->|"imports"| ext_src_test_java_soctest_server_TestGameEventLog_java
+    src_test_java_soctest_robot_TestGameActionExtractor_java -.-&gt;|"imports"| ext_src_test_java_soctest_server_TestGameEventLog_java
     ext_src_test_java_soctest_server_savegame_TestLoadgame_java["TestLoadgame.java"]:::default
-    src_test_java_soctest_server_TestRecorder_java -.->|"imports"| ext_src_test_java_soctest_server_savegame_TestLoadgame_java
+    src_test_java_soctest_server_TestRecorder_java -.-&gt;|"imports"| ext_src_test_java_soctest_server_savegame_TestLoadgame_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -362,7 +362,7 @@ Scope architecture: <a href="server-message-protocol.arch.html">server-message-p
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

@@ -204,6 +204,12 @@ describe('SOCGameOptionInfo (multi-message)', () => {
   it('returns null when fewer than 11 fields (garbled)', () => {
     expect(decode('1082|PL|2|-1|1108|f|4|2|6|f|4')).toBeNull();
   });
+
+  it('returns null when an integer field is outside Java int range', () => {
+    expect(
+      decode('1082|PL|2|-1|2147483648|f|4|2|6|f|4|0|Maximum # players'),
+    ).toBeNull();
+  });
 });
 
 describe('SOCScenarioInfo (multi-message)', () => {

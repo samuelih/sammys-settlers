@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:40%"></i></span>
       <span class="conf-val">0.40</span></span></div>
         <h1 class="doc-title">Side-by-side properties translation editing</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Side-by-side properties translation editing</h1>
@@ -85,13 +85,13 @@ classDiagram
         +public final String toString()
     }
     class FileKeyEntry {
-        +public FileKeyEntry(final List<String> srcComment)
+        +public FileKeyEntry(final List&lt;String&gt; srcComment)
         +public final String toString()
     }
     class FileEntry {
     }
     class KeyPairLine {
-        +public KeyPairLine(final List<String> comment)
+        +public KeyPairLine(final List&lt;String&gt; comment)
         +public final String toString()
     }
     class PropsFileParser {
@@ -117,14 +117,14 @@ classDiagram
     class ParsedPropsFilePair {
         +public ParsedPropsFilePair(final File src, final File dest)
         +public int size()
-        +public Iterator<FileEntry> getContents()
+        +public Iterator&lt;FileEntry&gt; getContents()
         +extractContentsHalf()
         +getRow()
         +public boolean isKeyDestOnly(final String key)
         +public int getDestOnlySize()
-        +public Iterator<PropsFileParser.KeyPairLine> getDestOnly()
-        +public Map<String, String> getSrcDupeKeys()
-        +public Map<String, String> getDestDupeKeys()
+        +public Iterator&lt;PropsFileParser.KeyPairLine&gt; getDestOnly()
+        +public Map&lt;String, String&gt; getSrcDupeKeys()
+        +public Map&lt;String, String&gt; getDestDupeKeys()
         +parseSrc()
         +setDestIsNew()
         +parseDest()
@@ -173,8 +173,8 @@ classDiagram
         +public void removeUpdate(DocumentEvent e)
     }
 
-    FileCommentEntry --|> FileEntry : extends
-    FileKeyEntry --|> FileEntry : extends
+    FileCommentEntry --|&gt; FileEntry : extends
+    FileKeyEntry --|&gt; FileEntry : extends
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -278,7 +278,7 @@ Scope architecture: <span class="dead-ref" title="referenced doc not present in 
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

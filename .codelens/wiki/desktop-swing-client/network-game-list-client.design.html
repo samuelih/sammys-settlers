@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:40%"></i></span>
       <span class="conf-val">0.40</span></span></div>
         <h1 class="doc-title">Network &amp; Game-List Client</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Network &amp; Game-List Client</h1>
@@ -109,9 +109,9 @@ classDiagram
         -MainDisplay getMainDisplay()
         -ClientNetwork getNet()
         -PlayerClientListener getClientListener(String gameName)
-        -Map<String, PlayerClientListener> getClientListeners()
+        -Map&lt;String, PlayerClientListener&gt; getClientListeners()
         -void reloadBoardGraphics()
-        -HashMap<String, Map<String, Object>> getGameReqLocalPrefs()
+        -HashMap&lt;String, Map&lt;String, Object&gt;&gt; getGameReqLocalPrefs()
         +public GameMessageSender getGameMessageSender()
         -final MessageHandler getMessageHandler()
         -final boolean wantsI18nStrings(final boolean isPractice)
@@ -142,29 +142,29 @@ graph TD
 
 
     ext_src_main_java_net_nand_util_i18n_mgr_StringManager_java["StringManager.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_net_nand_util_i18n_mgr_StringManager_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_net_nand_util_i18n_mgr_StringManager_java
     ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java["SOCDisplaylessPlayerClient.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_baseclient_SOCDisplaylessPlayerClient_java
     ext_src_main_java_soc_game_SOCGame_java["SOCGame.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_game_SOCGame_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGame_java
     ext_src_main_java_soc_game_SOCGameOption_java["SOCGameOption.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOption_java
     ext_src_main_java_soc_game_SOCGameOptionSet_java["SOCGameOptionSet.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
     ext_src_main_java_soc_game_SOCPlayer_java["SOCPlayer.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
     ext_src_main_java_soc_game_SOCScenario_java["SOCScenario.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_game_SOCScenario_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCScenario_java
     ext_src_main_java_soc_util_I18n_java["I18n.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_util_I18n_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_util_I18n_java
     ext_src_main_java_soc_util_SOCFeatureSet_java["SOCFeatureSet.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
     ext_src_main_java_soc_util_SOCGameList_java["SOCGameList.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_util_SOCGameList_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCGameList_java
     ext_src_main_java_soc_util_SOCStringManager_java["SOCStringManager.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
     ext_src_main_java_soc_util_Version_java["Version.java"]:::default
-    src_main_java_soc_client_SOCPlayerClient_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
+    src_main_java_soc_client_SOCPlayerClient_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -270,7 +270,7 @@ Scope architecture: <a href="desktop-swing-client.arch.html">desktop-swing-clien
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

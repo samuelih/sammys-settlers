@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { decode, encode, SOCVersion, SOCServerPing } from './index';
+import { parseJavaInt } from './javaInt';
 
 describe('decode/encode core', () => {
   it('dispatches on the type id up to the first SEP', () => {
@@ -36,6 +37,12 @@ describe('decode/encode core', () => {
     expect(msg?.type).toBe(9999);
   });
 
+  it('rejects type ids outside Java int range', () => {
+    expect(decode('2147483648|x')).toBeNull();
+    expect(decode('-2147483649|x')).toBeNull();
+    expect(decode('999999999999999999999999999999999999|x')).toBeNull();
+  });
+
   it('returns null when the parser rejects garbled data', () => {
     // SERVERPING data must be an integer.
     expect(decode('9999|notanint')).toBeNull();
@@ -51,5 +58,20 @@ describe('decode/encode core', () => {
   it('encode is equivalent to toCmd', () => {
     const v = new SOCVersion(2700, '2.7.00', null, null, 'en_US');
     expect(encode(v)).toBe(v.toCmd());
+  });
+});
+
+describe('parseJavaInt', () => {
+  it('matches Java int range boundaries', () => {
+    expect(parseJavaInt('2147483647')).toBe(2147483647);
+    expect(parseJavaInt('-2147483648')).toBe(-2147483648);
+    expect(parseJavaInt('2147483648')).toBeNull();
+    expect(parseJavaInt('-2147483649')).toBeNull();
+  });
+
+  it('rejects lenient JavaScript parseInt inputs', () => {
+    expect(parseJavaInt('1083abc')).toBeNull();
+    expect(parseJavaInt(' 1083')).toBeNull();
+    expect(parseJavaInt('1e3')).toBeNull();
   });
 });

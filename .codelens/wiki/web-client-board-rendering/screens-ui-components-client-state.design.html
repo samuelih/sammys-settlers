@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:65%"></i></span>
       <span class="conf-val">0.65</span></span></div>
         <h1 class="doc-title">Screens, UI Components &amp; Client State</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Screens, UI Components &amp; Client State</h1>
@@ -98,15 +98,15 @@
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}}}%%
 classDiagram
     class UiStoreState {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class MockGlobalWS {
         +static instances: MockGlobalWS[] = []
         +sent: string[] = []
         +readyState = 1
-        +onopen: ((ev: unknown) => void) | null = null
-        +onclose: ((ev: unknown) => void) | null = null
-        +onerror: ((ev: unknown) => void) | null = null
+        +onopen: ((ev: unknown) =&gt; void) | null = null
+        +onclose: ((ev: unknown) =&gt; void) | null = null
+        +onerror: ((ev: unknown) =&gt; void) | null = null
         +onmessage: ((ev:
         +constructor(readonly url: string)
         +send(data: string): void
@@ -116,34 +116,34 @@ classDiagram
         +drop(): void
     }
     class SettingsState {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class EditorHistory {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class Highlights {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class MaritimeOption {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class PlayableCard {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class CKBarbarianAttack {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class CurrentGame {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class DevCardInventory {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class DiceGainEvent {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class DiceRoll {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
 
 </pre>
@@ -159,17 +159,17 @@ graph TD
 
 
     ext_web_src_store____board_boardModel_ts["boardModel.ts"]:::default
-    web_src_store_gameStore_ts -.->|"imports"| ext_web_src_store____board_boardModel_ts
+    web_src_store_gameStore_ts -.-&gt;|"imports"| ext_web_src_store____board_boardModel_ts
     ext_web_src_store____board_types_ts["types.ts"]:::default
-    web_src_store_gameStore_ts -.->|"imports"| ext_web_src_store____board_types_ts
+    web_src_store_gameStore_ts -.-&gt;|"imports"| ext_web_src_store____board_types_ts
     ext_web_src_store____net_GameConnection_ts["GameConnection.ts"]:::default
-    web_src_store_gameStore_ts -.->|"imports"| ext_web_src_store____net_GameConnection_ts
+    web_src_store_gameStore_ts -.-&gt;|"imports"| ext_web_src_store____net_GameConnection_ts
     ext_web_src_store____protocol_index_ts["index.ts"]:::default
-    web_src_store_gameStore_ts -.->|"imports"| ext_web_src_store____protocol_index_ts
+    web_src_store_gameStore_ts -.-&gt;|"imports"| ext_web_src_store____protocol_index_ts
     ext_web_src_store____util_sound_ts["sound.ts"]:::default
-    web_src_store_settingsStore_ts -.->|"imports"| ext_web_src_store____util_sound_ts
+    web_src_store_settingsStore_ts -.-&gt;|"imports"| ext_web_src_store____util_sound_ts
     ext_web_src_store_types_ts["types.ts"]:::default
-    web_src_store_gameStore_ts -.->|"imports"| ext_web_src_store_types_ts
+    web_src_store_gameStore_ts -.-&gt;|"imports"| ext_web_src_store_types_ts
 </pre>
 <h2>Source Linkage</h2>
 <ul>

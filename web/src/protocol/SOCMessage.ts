@@ -8,6 +8,7 @@
 // Multi-messages (SOCMessageMulti) may contain several SEP groups.
 
 import { SEP } from './constants';
+import { parseJavaInt } from './javaInt';
 
 /**
  * A decoded protocol message. Every message exposes its numeric `type`
@@ -84,15 +85,12 @@ export function decode(raw: string): SOCMessage | null {
   // empty "1083") has its type id as the whole string and an empty data part.
   const typeStr = sepIdx === -1 ? raw : raw.substring(0, sepIdx);
   // Java's toMsg does Integer.parseInt(token) and returns null (via its outer
-  // catch) on any non-integer token. JS Number.parseInt is lenient (it stops at
-  // the first non-digit, so "1083abc" -> 1083), so reject tokens that Java's
-  // Integer.parseInt would reject before dispatching. Integer.parseInt accepts
-  // an optional leading +/- followed by digits only.
-  if (!/^[+-]?\d+$/.test(typeStr)) {
-    return null;
-  }
-  const type = Number.parseInt(typeStr, 10);
-  if (!Number.isInteger(type)) {
+  // catch) on malformed or out-of-range integer tokens. JS Number.parseInt is
+  // lenient (it stops at the first non-digit, so "1083abc" -> 1083) and does
+  // not enforce Java's 32-bit signed integer range, so parse with an explicit
+  // Java-compatible helper before dispatching.
+  const type = parseJavaInt(typeStr);
+  if (type === null) {
     return null;
   }
 

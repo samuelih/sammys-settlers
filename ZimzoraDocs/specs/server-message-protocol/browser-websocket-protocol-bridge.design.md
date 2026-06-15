@@ -51,13 +51,13 @@ Outbound, a UI/store layer constructs a typed SOCMessage and calls encode(), whi
 ## Design Decisions
 - **Type-id-first dispatch via a runtime parser registry**: decode() mirrors Java's SOCMessage.toMsg(String): read the type id token, look up a parser, pass it the data tail. This keeps the TypeScript port behaviorally identical to the authoritative Java dispatch switch so both ends agree on framing, rather than inventing a new browser-side message-routing scheme.
 - **Parsers self-register through side-effecting module imports**: Each message module calls registerParser at import time, and index.ts imports them all. This decouples the SOCMessage core from the concrete message catalogue — the core never references individual message classes — so new ported messages plug in by being exported from index.ts.
-- **Stricter integer validation than JS Number.parseInt**: Number.parseInt is lenient ('1083abc' → 1083) whereas Java's Integer.parseInt rejects such tokens. decode() applies a /^[+-]?\d+$/ guard before parsing so the browser rejects exactly what the Java server would reject, preserving cross-runtime parity.
+- **Stricter integer validation than JS Number.parseInt**: Number.parseInt is lenient ('1083abc' → 1083) and does not enforce Java's 32-bit signed integer range. decode() applies `parseJavaInt` before dispatch so the browser rejects malformed and out-of-range type tokens exactly as the Java server would, preserving cross-runtime parity.
 - **decode() returns null instead of throwing on unknown/garbled input**: Matches Java's toMsg, which ignores unknown types and catches parse errors. Returning null lets the caller skip a frame without crashing the receive loop on an unrecognized or malformed message.
 - **Constants as `as const` objects with derived union types, not TS enums**: Values are copied verbatim from the Java source and exposed both as runtime lookups and as literal-union types (e.g. MessageTypeId), giving wire-accurate constants without TS enum runtime/iteration quirks.
 
 ## Constraints
 - **[UNVERIFIED]** registerParser MUST reject a second parser registration for an already-registered type id (throws to catch accidental duplicate registration). — web/src/protocol/SOCMessage.ts::registerParser (throws `Duplicate parser registration for message type ${type}`) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
-- **[UNVERIFIED]** A decoded type-id token MUST match Java's Integer.parseInt semantics (optional sign + digits only); tokens JS parseInt would leniently accept MUST be rejected before dispatch. — web/src/protocol/SOCMessage.ts::decode (`/^[+-]?\d+$/.test(typeStr)` guard) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
+- **[UNVERIFIED]** A decoded type-id token MUST match Java's Integer.parseInt semantics (optional sign + digits only, within signed 32-bit integer range); tokens JS parseInt would leniently accept or round MUST be rejected before dispatch. — web/src/protocol/SOCMessage.ts::decode; web/src/protocol/javaInt.ts::parseJavaInt (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
 - **[UNVERIFIED]** decode MUST return null (not throw) for unknown type ids or parser failures, mirroring Java's ignore-unknown-types behavior. — web/src/protocol/SOCMessage.ts::decode (try/catch returns null; undefined-parser branch returns null) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
 - **[SOFT]** Each WebSocket text frame SHOULD carry exactly one toCmd() command string (no transport framing added by encode). — web/src/protocol/constants.ts header comment ("Each WebSocket text frame carries exactly one `toCmd()` string"); hypothesis, not exercised by supplied code
 
@@ -80,10 +80,10 @@ export function registerParser(type: number, parser: MessageParser): void {
 *Illustrates the strict integer guard that aligns decode with Java's Integer.parseInt rather than lenient JS parsing.*
 *Source: `web/src/protocol/SOCMessage.ts::decode`*
 ```
-if (!/^[+-]?\d+$/.test(typeStr)) {
+const type = parseJavaInt(typeStr);
+  if (type === null) {
     return null;
   }
-  const type = Number.parseInt(typeStr, 10);
 ```
 
 ## Diagrams
@@ -103,6 +103,7 @@ graph TD
 ## Source Linkage
 - [encode serializes via msg.toCmd()](../../../web/src/protocol/SOCMessage.ts::encode)
 - [decode reads type id from first SEP token and dispatches to registered parser](../../../web/src/protocol/SOCMessage.ts::decode)
+- [Java-compatible integer parser for type tokens](../../../web/src/protocol/javaInt.ts::parseJavaInt)
 - [registerParser throws on duplicate type-id registration](../../../web/src/protocol/SOCMessage.ts::registerParser)
 - [Parser registry clearing helper for tests](../../../web/src/protocol/SOCMessage.ts::_clearParsersForTest)
 - [Web protocol constants mirror Java message vocabulary](../../../web/src/protocol/constants.ts)
@@ -122,6 +123,7 @@ _Per-row confidence; `_unverified_` rows are disclosed, not verified; `0.08 (res
 |---------|--------------|---------------|-----------:|
 | Source Linkage: encode serializes via msg.toCmd() | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:64-66 | 0.75 |
 | Source Linkage: decode reads type id from first SEP token and dispatches to registered parser | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:79-112 | 0.75 |
+| Source Linkage: Java-compatible integer parser for type tokens | Java-style decimal syntax and signed 32-bit range validation. | web/src/protocol/javaInt.ts | 0.75 |
 | Source Linkage: registerParser throws on duplicate type-id registration | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:50-55 | 0.75 |
 | Source Linkage: Parser registry clearing helper for tests | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:118-120 | 0.75 |
 | Source Linkage: Web protocol constants mirror Java message vocabulary | Protocol constants ported from soc.message.SOCMessage (Java). | web/src/protocol/constants.ts | 0.83 |

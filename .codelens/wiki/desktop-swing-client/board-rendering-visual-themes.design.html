@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:50%"></i></span>
       <span class="conf-val">0.50</span></span></div>
         <h1 class="doc-title">Board Rendering &amp; Visual Themes</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Board Rendering &amp; Visual Themes</h1>
@@ -97,7 +97,7 @@ if (borderColor.equals(c))
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}}}%%
 classDiagram
     class ColorSquare {
-        -private static Map<String, int[]> makeColorBlindPalettes()
+        -private static Map&lt;String, int[]&gt; makeColorBlindPalettes()
         -private static void applyColorBlindPalette()
         +ColorSquare()
         +public void setInteractive(final boolean inter)
@@ -331,39 +331,39 @@ graph TD
 
 
     ext_src_main_java_soc_game_GameAction_java["GameAction.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_GameAction_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_GameAction_java
     ext_src_main_java_soc_game_SOCBoard_java["SOCBoard.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoard_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoard_java
     ext_src_main_java_soc_game_SOCBoardLarge_java["SOCBoardLarge.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCBoardLarge_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCBoardLarge_java
     ext_src_main_java_soc_game_SOCCity_java["SOCCity.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCCity_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCCity_java
     ext_src_main_java_soc_game_SOCFortress_java["SOCFortress.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCFortress_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCFortress_java
     ext_src_main_java_soc_game_SOCGame_java["SOCGame.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCGame_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGame_java
     ext_src_main_java_soc_game_SOCGameOptionSet_java["SOCGameOptionSet.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCGameOptionSet_java
     ext_src_main_java_soc_game_SOCInventoryItem_java["SOCInventoryItem.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCInventoryItem_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCInventoryItem_java
     ext_src_main_java_soc_game_SOCPlayer_java["SOCPlayer.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayer_java
     ext_src_main_java_soc_game_SOCPlayingPiece_java["SOCPlayingPiece.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCPlayingPiece_java
     ext_src_main_java_soc_game_SOCRoad_java["SOCRoad.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCRoad_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCRoad_java
     ext_src_main_java_soc_game_SOCRoutePiece_java["SOCRoutePiece.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCRoutePiece_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCRoutePiece_java
     ext_src_main_java_soc_game_SOCScenario_java["SOCScenario.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCScenario_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCScenario_java
     ext_src_main_java_soc_game_SOCSettlement_java["SOCSettlement.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCSettlement_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCSettlement_java
     ext_src_main_java_soc_game_SOCShip_java["SOCShip.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCShip_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCShip_java
     ext_src_main_java_soc_game_SOCVillage_java["SOCVillage.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_game_SOCVillage_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_game_SOCVillage_java
     ext_src_main_java_soc_util_SOCStringManager_java["SOCStringManager.java"]:::default
-    src_main_java_soc_client_SOCBoardPanel_java -.->|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
+    src_main_java_soc_client_SOCBoardPanel_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCStringManager_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -489,7 +489,7 @@ Scope architecture: <a href="desktop-swing-client.arch.html">desktop-swing-clien
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

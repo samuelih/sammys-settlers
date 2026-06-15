@@ -9,6 +9,7 @@
 
 import { MessageType, SEP, SEP2 } from '../constants';
 import { registerParser, type SOCMessage } from '../SOCMessage';
+import { parseJavaInt } from '../javaInt';
 
 /** pieceType to cancel playing a non-Road-Building dev card / deny dev-card buy (-2). */
 export const CANCEL_CARD = -2;
@@ -16,12 +17,9 @@ export const CANCEL_CARD = -2;
 /** pieceType to cancel special inventory-item placement (-3). */
 export const CANCEL_INV_ITEM_PLACE = -3;
 
-/** Strict integer check matching Java Integer.parseInt (allows leading '-'). */
+/** Strict integer check matching Java Integer.parseInt (allows leading sign). */
 function parseIntStrict(s: string): number | null {
-  if (!/^[+-]?\d+$/.test(s)) {
-    return null;
-  }
-  return Number.parseInt(s, 10);
+  return parseJavaInt(s);
 }
 
 /**

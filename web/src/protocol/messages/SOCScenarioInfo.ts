@@ -22,6 +22,7 @@
 
 import { MessageType, SEP, EMPTYSTR } from '../constants';
 import { registerParser, type SOCMessage } from '../SOCMessage';
+import { parseJavaInt } from '../javaInt';
 
 /** Marker: client asks for any new/changed scenarios (last item in list). */
 export const MARKER_ANY_CHANGED = '?';
@@ -37,10 +38,11 @@ export const MARKER_KEY_UNKNOWN = -2;
 
 /** Strict integer check matching Java Integer.parseInt. */
 function parseIntStrict(s: string): number {
-  if (!/^[+-]?\d+$/.test(s)) {
+  const parsed = parseJavaInt(s);
+  if (parsed === null) {
     throw new Error(`not an integer: ${s}`);
   }
-  return Number.parseInt(s, 10);
+  return parsed;
 }
 
 /** Parsed scenario details (server reply with a known scenario). */

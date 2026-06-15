@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:70%"></i></span>
       <span class="conf-val">0.70</span></span></div>
         <h1 class="doc-title">Game Options &amp; Scenarios</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Game Options &amp; Scenarios</h1>
@@ -135,10 +135,10 @@ classDiagram
         +public boolean add(final SOCGameOption opt)
         +public SOCGameOption put(final SOCGameOption opt)
         +public SOCGameOption get(final String optKey)
-        +public Map<String, SOCGameOption> getAll()
-        +public Collection<SOCGameOption> values()
-        +public Set<String> keySet()
-        +public Iterator<SOCGameOption> iterator()
+        +public Map&lt;String, SOCGameOption&gt; getAll()
+        +public Collection&lt;SOCGameOption&gt; values()
+        +public Set&lt;String&gt; keySet()
+        +public Iterator&lt;SOCGameOption&gt; iterator()
         +public SOCGameOption remove(final String optKey)
         +public void clear()
         +public boolean isOptionSet(final String optKey)
@@ -162,11 +162,11 @@ classDiagram
     public String toString()
     }
     class SOCScenario {
-        -private static Map<String, SOCScenario> initAllScenarios()
+        -private static Map&lt;String, SOCScenario&gt; initAllScenarios()
         -findAllScenariosGreatestMinVersion()
         -SOCScenario()
         +getAllKnownScenarios()
-        +public static Set<String> getAllKnownScenarioKeynames()
+        +public static Set&lt;String&gt; getAllKnownScenarioKeynames()
         +public static boolean addKnownScenario(SOCScenario scNew)
         +removeUnknownScenario()
         +registerCustomScenario()
@@ -191,7 +191,7 @@ classDiagram
         +RemoveOpportunisticResults()
     }
     class ChangeListener {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
 
 </pre>
@@ -206,13 +206,13 @@ graph TD
 
 
     ext_src_main_java_soc_util_DataUtils_java["DataUtils.java"]:::default
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_DataUtils_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_DataUtils_java
     ext_src_main_java_soc_util_SOCFeatureSet_java["SOCFeatureSet.java"]:::default
-    src_main_java_soc_game_SOCGameOption_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_game_SOCGameOption_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
     ext_src_main_java_soc_util_Version_java["Version.java"]:::default
-    src_main_java_soc_game_SOCGameOption_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
+    src_main_java_soc_game_SOCGameOption_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -292,7 +292,7 @@ Scope architecture: <a href="game-model-rules-engine.arch.html">game-model-rules
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

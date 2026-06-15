@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:82%"></i></span>
       <span class="conf-val">0.82</span></span></div>
         <h1 class="doc-title">Sammys-Settlers — Client-Server Settlers of Catan Platform</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Sammys-Settlers — Client-Server Settlers of Catan Platform</h1>
@@ -81,22 +81,22 @@
 graph TD
 
     Desktop_Swing_Client["Desktop Swing Client"]
-    Game_Model___Rules_Engine["Game Model & Rules Engine"]
-    Optional_Database___Persistence["Optional Database & Persistence"]
-    Quality___Verification_Infrastructure["Quality & Verification Infrastructure"]
+    Game_Model___Rules_Engine["Game Model &amp; Rules Engine"]
+    Optional_Database___Persistence["Optional Database &amp; Persistence"]
+    Quality___Verification_Infrastructure["Quality &amp; Verification Infrastructure"]
     Robot___AI_Players["Robot / AI Players"]
-    Server_Runtime___Dispatch["Server Runtime & Dispatch"]
+    Server_Runtime___Dispatch["Server Runtime &amp; Dispatch"]
     Web_Client__TypeScript_React_["Web Client (TypeScript/React)"]
-    Wire_Protocol___Message_Vocabulary["Wire Protocol & Message Vocabulary"]
+    Wire_Protocol___Message_Vocabulary["Wire Protocol &amp; Message Vocabulary"]
     i18n_Translation_Tooling__PTE_["PTE"]
 
-    Desktop_Swing_Client -->|"in-process Java calls"| Game_Model___Rules_Engine
-    Robot___AI_Players -->|"SOCMessage over TCP socket or in-JVM ..."| Server_Runtime___Dispatch
-    Server_Runtime___Dispatch -->|"in-process Java calls"| Game_Model___Rules_Engine
-    Server_Runtime___Dispatch -->|"JDBC"| Optional_Database___Persistence
-    Server_Runtime___Dispatch -->|"TCP socket (SOCMessage strings, write..."| Wire_Protocol___Message_Vocabulary
-    Web_Client__TypeScript_React_ -->|"HTTP + WebSocket + TCP"| Server_Runtime___Dispatch
-    Web_Client__TypeScript_React_ -->|"WebSocket text frames (SOCMessage toC..."| Server_Runtime___Dispatch
+    Desktop_Swing_Client --&gt;|"in-process Java calls"| Game_Model___Rules_Engine
+    Robot___AI_Players --&gt;|"SOCMessage over TCP socket or in-JVM ..."| Server_Runtime___Dispatch
+    Server_Runtime___Dispatch --&gt;|"in-process Java calls"| Game_Model___Rules_Engine
+    Server_Runtime___Dispatch --&gt;|"JDBC"| Optional_Database___Persistence
+    Server_Runtime___Dispatch --&gt;|"TCP socket (SOCMessage strings, write..."| Wire_Protocol___Message_Vocabulary
+    Web_Client__TypeScript_React_ --&gt;|"HTTP + WebSocket + TCP"| Server_Runtime___Dispatch
+    Web_Client__TypeScript_React_ --&gt;|"WebSocket text frames (SOCMessage toC..."| Server_Runtime___Dispatch
 
 
 
@@ -114,20 +114,20 @@ sequenceDiagram
     autonumber
     participant ClientNetwork as ClientNetwork [Desktop Swing Client]
     participant SOCServer___soc_message as SOCServer / soc.message [Desktop Swing Client]
-    participant genericServer_transport_layer as genericServer transport layer [Server & Message Protocol]
-    participant Desktop_Swing_Client___Robot_players as Desktop Swing Client / Robot players [Server & Message Protocol]
-    participant SOCGameHandler as SOCGameHandler [Server & Message Protocol]
-    participant SOCGame___SOCPlayer as SOCGame / SOCPlayer [Server & Message Protocol]
-    participant SOCGame__Authoritative_Game_State_ as SOCGame (Authoritative Game State) [Game Model & Rules Engine]
-    participant SOCPlayerClient___SOCDisplaylessPlayerClient___SOCRobotBrain as SOCPlayerClient / SOCDisplaylessPlayerClient / SOCRobotBrain [Game Model & Rules Engine]
+    participant genericServer_transport_layer as genericServer transport layer [Server &amp; Message Protocol]
+    participant Desktop_Swing_Client___Robot_players as Desktop Swing Client / Robot players [Server &amp; Message Protocol]
+    participant SOCGameHandler as SOCGameHandler [Server &amp; Message Protocol]
+    participant SOCGame___SOCPlayer as SOCGame / SOCPlayer [Server &amp; Message Protocol]
+    participant SOCGame__Authoritative_Game_State_ as SOCGame (Authoritative Game State) [Game Model &amp; Rules Engine]
+    participant SOCPlayerClient___SOCDisplaylessPlayerClient___SOCRobotBrain as SOCPlayerClient / SOCDisplaylessPlayerClient / SOCRobotBrain [Game Model &amp; Rules Engine]
     participant MessageHandler as MessageHandler [Desktop Swing Client]
     participant SOCPlayerInterface__SwingMainDisplay as SOCPlayerInterface, SwingMainDisplay [Desktop Swing Client]
 
-    ClientNetwork ->> SOCServer___soc_message: sends lobby and game traffic to the authoritative server (SOCMessage over TCP...
-    genericServer_transport_layer ->> Desktop_Swing_Client___Robot_players: receives the UTF-encoded SOCMessage strings over the shared socket path (TCP ...
-    SOCGameHandler ->> SOCGame___SOCPlayer: applies the player action against the authoritative game model (in-process Ja...
-    SOCGame__Authoritative_Game_State_ ->> SOCPlayerClient___SOCDisplaylessPlayerClient___SOCRobotBrain: broadcasts validated state changes so clients mirror partial game state (SOCM...
-    MessageHandler ->> SOCPlayerInterface__SwingMainDisplay: decodes inbound messages and drives the Swing UI through the PlayerClientList...
+    ClientNetwork -&gt;&gt; SOCServer___soc_message: sends lobby and game traffic to the authoritative server (SOCMessage over TCP...
+    genericServer_transport_layer -&gt;&gt; Desktop_Swing_Client___Robot_players: receives the UTF-encoded SOCMessage strings over the shared socket path (TCP ...
+    SOCGameHandler -&gt;&gt; SOCGame___SOCPlayer: applies the player action against the authoritative game model (in-process Ja...
+    SOCGame__Authoritative_Game_State_ -&gt;&gt; SOCPlayerClient___SOCDisplaylessPlayerClient___SOCRobotBrain: broadcasts validated state changes so clients mirror partial game state (SOCM...
+    MessageHandler -&gt;&gt; SOCPlayerInterface__SwingMainDisplay: decodes inbound messages and drives the Swing UI through the PlayerClientList...
 </pre>
 <p>A human desktop player issues an in-game action through the Swing client. ClientNetwork transmits the SOCMessage over TCP to the authoritative Java server. The genericServer transport layer receives the UTF-encoded SOCMessage string and the dispatch handlers (SOCGameMessageHandler/SOCGameHandler) translate the player-action message into authoritative calls on the SOCGame and SOCPlayer game model. The validated state change is then mirrored back outbound as SOCMessage updates, which the client’s MessageHandler decodes and drives into the Swing layer (SOCPlayerInterface, SwingMainDisplay) through the PlayerClientListener / GameDisplay seam to repaint the board and panels.</p>
 <p>Involves: <a href="desktop-swing-client/desktop-swing-client.arch.html">Desktop Swing Client</a>, <a href="server-message-protocol/server-message-protocol.arch.html">Server &amp; Message Protocol</a>, <a href="game-model-rules-engine/game-model-rules-engine.arch.html">Game Model &amp; Rules Engine</a></p>
@@ -141,13 +141,13 @@ sequenceDiagram
     participant SOCGame___SOCPlayer as SOCGame / SOCPlayer [Robot / AI Players]
     participant SOCRobotDM__decision_maker___build_planner_ as SOCRobotDM (decision-maker / build planner) [Robot / AI Players]
     participant soc_util_DebugRecorder as soc.util.DebugRecorder [Robot / AI Players]
-    participant SOCGameHandler as SOCGameHandler [Server & Message Protocol]
+    participant SOCGameHandler as SOCGameHandler [Server &amp; Message Protocol]
 
-    SOCRobotClient__connection_layer_ ->> SOCServer___SOCMessage_protocol: connects and exchanges moves like a human client (SOCMessage strings over TCP...
-    SOCRobotBrain__per_game_decision_loop_ ->> SOCGame___SOCPlayer: folds inbound protocol updates into a local game-state mirror (in-process Jav...
-    SOCRobotDM__decision_maker___build_planner_ ->> SOCGame___SOCPlayer: reads the game model to score positions and produce building plans (in-proces...
-    SOCRobotDM__decision_maker___build_planner_ ->> soc_util_DebugRecorder: optionally emits planning traces for offline analysis (in-process Java calls)
-    SOCGameHandler ->> SOCGame___SOCPlayer: applies the robot's chosen move against the authoritative game model (in-proc...
+    SOCRobotClient__connection_layer_ -&gt;&gt; SOCServer___SOCMessage_protocol: connects and exchanges moves like a human client (SOCMessage strings over TCP...
+    SOCRobotBrain__per_game_decision_loop_ -&gt;&gt; SOCGame___SOCPlayer: folds inbound protocol updates into a local game-state mirror (in-process Jav...
+    SOCRobotDM__decision_maker___build_planner_ -&gt;&gt; SOCGame___SOCPlayer: reads the game model to score positions and produce building plans (in-proces...
+    SOCRobotDM__decision_maker___build_planner_ -&gt;&gt; soc_util_DebugRecorder: optionally emits planning traces for offline analysis (in-process Java calls)
+    SOCGameHandler -&gt;&gt; SOCGame___SOCPlayer: applies the robot's chosen move against the authoritative game model (in-proc...
 </pre>
 <p>A built-in or external robot connects to the authoritative server exactly like a human client, speaking the identical SOCMessage string protocol over a TCP socket or same-JVM StringConnection. As inbound protocol updates arrive, SOCRobotBrain folds them into a local SOCGame/SOCPlayer mirror so it can reason about state. The decision-maker SOCRobotDM (with SOCPlayerTracker) reads that game model to score positions and produce building plans, optionally emitting planning traces to the DebugRecorder utility for offline analysis. The resulting move is sent back to the server over the same SOCMessage channel, where the dispatch handlers apply it against the authoritative game model.</p>
 <p>Involves: <a href="robot-ai-players/robot-ai-players.arch.html">Robot / AI Players</a>, <a href="server-message-protocol/server-message-protocol.arch.html">Server &amp; Message Protocol</a></p>
@@ -155,22 +155,22 @@ sequenceDiagram
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}, 'sequence': {'mirrorActors': false, 'useMaxWidth': true, 'wrap': true, 'actorMargin': 40}}}%%
 sequenceDiagram
     autonumber
-    participant Screens___UI_Components as Screens & UI Components [Web Client & Board Rendering]
-    participant Server___Message_Protocol__Java_SOCServer_ as Server & Message Protocol (Java SOCServer) [Web Client & Board Rendering]
-    participant Network_Transport__GameConnection_ as Network Transport (GameConnection) [Web Client & Board Rendering]
-    participant genericServer_transport_layer as genericServer transport layer [Server & Message Protocol]
-    participant Web_protocol_layer__web_src_protocol_ as Web protocol layer (web/src/protocol) [Server & Message Protocol]
-    participant SOCGameHandler as SOCGameHandler [Server & Message Protocol]
-    participant SOCGame___SOCPlayer as SOCGame / SOCPlayer [Server & Message Protocol]
-    participant Client_State_Stores as Client State Stores [Web Client & Board Rendering]
-    participant Board_Geometry___SVG_Rendering as Board Geometry & SVG Rendering [Web Client & Board Rendering]
+    participant Screens___UI_Components as Screens &amp; UI Components [Web Client &amp; Board Rendering]
+    participant Server___Message_Protocol__Java_SOCServer_ as Server &amp; Message Protocol (Java SOCServer) [Web Client &amp; Board Rendering]
+    participant Network_Transport__GameConnection_ as Network Transport (GameConnection) [Web Client &amp; Board Rendering]
+    participant genericServer_transport_layer as genericServer transport layer [Server &amp; Message Protocol]
+    participant Web_protocol_layer__web_src_protocol_ as Web protocol layer (web/src/protocol) [Server &amp; Message Protocol]
+    participant SOCGameHandler as SOCGameHandler [Server &amp; Message Protocol]
+    participant SOCGame___SOCPlayer as SOCGame / SOCPlayer [Server &amp; Message Protocol]
+    participant Client_State_Stores as Client State Stores [Web Client &amp; Board Rendering]
+    participant Board_Geometry___SVG_Rendering as Board Geometry &amp; SVG Rendering [Web Client &amp; Board Rendering]
 
-    Screens___UI_Components ->> Server___Message_Protocol__Java_SOCServer_: translate user interactions into action-sender calls dispatched to the server...
-    Network_Transport__GameConnection_ ->> Server___Message_Protocol__Java_SOCServer_: carries one SOCMessage command string per WebSocket text frame (WebSocket (te...
-    genericServer_transport_layer ->> Web_protocol_layer__web_src_protocol_: bridges each WebSocket text frame to exactly one SOCMessage wire string (WebS...
-    SOCGameHandler ->> SOCGame___SOCPlayer: applies the action against the authoritative game model (in-process Java calls)
-    Client_State_Stores ->> Client_State_Stores: decode inbound frames via the codec and fold them into gameStore's pure reducers
-    Screens___UI_Components ->> Board_Geometry___SVG_Rendering: subscribe to the Zustand stores and render the board from them
+    Screens___UI_Components -&gt;&gt; Server___Message_Protocol__Java_SOCServer_: translate user interactions into action-sender calls dispatched to the server...
+    Network_Transport__GameConnection_ -&gt;&gt; Server___Message_Protocol__Java_SOCServer_: carries one SOCMessage command string per WebSocket text frame (WebSocket (te...
+    genericServer_transport_layer -&gt;&gt; Web_protocol_layer__web_src_protocol_: bridges each WebSocket text frame to exactly one SOCMessage wire string (WebS...
+    SOCGameHandler -&gt;&gt; SOCGame___SOCPlayer: applies the action against the authoritative game model (in-process Java calls)
+    Client_State_Stores -&gt;&gt; Client_State_Stores: decode inbound frames via the codec and fold them into gameStore's pure reducers
+    Screens___UI_Components -&gt;&gt; Board_Geometry___SVG_Rendering: subscribe to the Zustand stores and render the board from them
 </pre>
 <p>A browser player interacts with in-game React screens (including the Cities &amp; Knights panel), which translate interactions into action-sender calls on gameStore. The web Network Transport (GameConnection) carries one SOCMessage command string per WebSocket text frame to the authoritative Java SOCServer, bridged by the additive WebSocketServerBridge in the genericServer transport layer. The server applies the action via its dispatch handlers against SOCGame. Returning frames are decoded by the Protocol Codec &amp; Parser Registry and dispatched into gameStore’s pure reducers, which fold them into client state; React screens and the Board Geometry &amp; SVG renderer subscribe to those Zustand stores and re-render the board from them.</p>
 <p>Involves: <a href="web-client-board-rendering/web-client-board-rendering.arch.html">Web Client &amp; Board Rendering</a>, <a href="server-message-protocol/server-message-protocol.arch.html">Server &amp; Message Protocol</a></p>
@@ -178,19 +178,19 @@ sequenceDiagram
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}, 'sequence': {'mirrorActors': false, 'useMaxWidth': true, 'wrap': true, 'actorMargin': 40}}}%%
 sequenceDiagram
     autonumber
-    participant Editor_Operations as Editor Operations [Web Protocol & Map Editor]
-    participant web_src_screens_MapEditorScreen_tsx as web/src/screens/MapEditorScreen.tsx [Web Protocol & Map Editor]
-    participant Editor_Grid_Geometry as Editor Grid Geometry [Web Protocol & Map Editor]
-    participant web_src_board_coords_ts__hexToPixel as web/src/board/coords.ts::hexToPixel [Web Protocol & Map Editor]
-    participant Map_Validation as Map Validation [Web Protocol & Map Editor]
-    participant src_main_java_soc_server_genericServer_InboundMessageQueue_java as src/main/java/soc/server/genericServer/InboundMessageQueue.java [Web Protocol & Map Editor]
-    participant Custom_Map_Loading___Validation as Custom Map Loading & Validation [Game Model & Rules Engine]
-    participant Game_Options___Scenario_Registry as Game Options & Scenario Registry [Game Model & Rules Engine]
+    participant Editor_Operations as Editor Operations [Web Protocol &amp; Map Editor]
+    participant web_src_screens_MapEditorScreen_tsx as web/src/screens/MapEditorScreen.tsx [Web Protocol &amp; Map Editor]
+    participant Editor_Grid_Geometry as Editor Grid Geometry [Web Protocol &amp; Map Editor]
+    participant web_src_board_coords_ts__hexToPixel as web/src/board/coords.ts::hexToPixel [Web Protocol &amp; Map Editor]
+    participant Map_Validation as Map Validation [Web Protocol &amp; Map Editor]
+    participant src_main_java_soc_server_genericServer_InboundMessageQueue_java as src/main/java/soc/server/genericServer/InboundMessageQueue.java [Web Protocol &amp; Map Editor]
+    participant Custom_Map_Loading___Validation as Custom Map Loading &amp; Validation [Game Model &amp; Rules Engine]
+    participant Game_Options___Scenario_Registry as Game Options &amp; Scenario Registry [Game Model &amp; Rules Engine]
 
-    Editor_Operations ->> web_src_screens_MapEditorScreen_tsx: is driven by the editor screen which owns editor state
-    Editor_Grid_Geometry ->> web_src_board_coords_ts__hexToPixel: reuses the in-game board coordinate helpers read-only to translate coordinates
-    Map_Validation ->> src_main_java_soc_server_genericServer_InboundMessageQueue_java: pushes validation messages into the server inbound queue (heaviest TS→server ...
-    Custom_Map_Loading___Validation ->> Game_Options___Scenario_Registry: registers validated ParsedCustomMap layouts as SOCScenarios under the reserve...
+    Editor_Operations -&gt;&gt; web_src_screens_MapEditorScreen_tsx: is driven by the editor screen which owns editor state
+    Editor_Grid_Geometry -&gt;&gt; web_src_board_coords_ts__hexToPixel: reuses the in-game board coordinate helpers read-only to translate coordinates
+    Map_Validation -&gt;&gt; src_main_java_soc_server_genericServer_InboundMessageQueue_java: pushes validation messages into the server inbound queue (heaviest TS→server ...
+    Custom_Map_Loading___Validation -&gt;&gt; Game_Options___Scenario_Registry: registers validated ParsedCustomMap layouts as SOCScenarios under the reserve...
 </pre>
 <p>The MapEditorScreen owns editor state and drives the editor data layer, calling Editor Operations which consume the in-game board coordinate codec (coords.ts hexToPixel) read-only to translate packed coordinates for the Editor Canvas. Editor edits and the Map Validation layer push SOCMessage text frames into the authoritative server’s InboundMessageQueue over WebSocket — the validation edge is the heaviest TS→server path. On the server, CustomMapLoader parses and validates the layout, then registers the validated ParsedCustomMap as a SOCScenario under the reserved SC_X prefix in the Game Options &amp; Scenario Registry, making the custom map available for game creation.</p>
 <p>Involves: <a href="web-protocol-map-editor/web-protocol-map-editor.arch.html">Web Protocol &amp; Map Editor</a>, <a href="game-model-rules-engine/game-model-rules-engine.arch.html">Game Model &amp; Rules Engine</a></p>
@@ -198,17 +198,17 @@ sequenceDiagram
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}, 'sequence': {'mirrorActors': false, 'useMaxWidth': true, 'wrap': true, 'actorMargin': 40}}}%%
 sequenceDiagram
     autonumber
-    participant Game_Option_Discovery as Game Option Discovery [Web Protocol & Map Editor]
-    participant web_src_store_gameStore_ts__connectStore as web/src/store/gameStore.ts::connectStore [Web Protocol & Map Editor]
-    participant SOCServer__runtime___lifecycle_ as SOCServer (runtime & lifecycle) [Server & Message Protocol]
-    participant SOCGameOptionSet___SOCGameOption as SOCGameOptionSet / SOCGameOption [Server & Message Protocol]
-    participant SOCDBHelper as SOCDBHelper [Server & Message Protocol]
+    participant Game_Option_Discovery as Game Option Discovery [Web Protocol &amp; Map Editor]
+    participant web_src_store_gameStore_ts__connectStore as web/src/store/gameStore.ts::connectStore [Web Protocol &amp; Map Editor]
+    participant SOCServer__runtime___lifecycle_ as SOCServer (runtime &amp; lifecycle) [Server &amp; Message Protocol]
+    participant SOCGameOptionSet___SOCGameOption as SOCGameOptionSet / SOCGameOption [Server &amp; Message Protocol]
+    participant SOCDBHelper as SOCDBHelper [Server &amp; Message Protocol]
     participant External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_ as External RDBMS (MySQL/PostgreSQL/SQLite/Oracle) [Optional Database]
 
-    Game_Option_Discovery ->> web_src_store_gameStore_ts__connectStore: is read by the game store to negotiate options on connect
-    SOCServer__runtime___lifecycle_ ->> SOCGameOptionSet___SOCGameOption: resolves known game options and scenario rules at game creation (in-process J...
-    SOCServer__runtime___lifecycle_ ->> SOCDBHelper: optionally connects to the account/score/JDBC
-    SOCDBHelper ->> External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_: opens a JDBC connection and issues all durable reads/writes (JDBC)
+    Game_Option_Discovery -&gt;&gt; web_src_store_gameStore_ts__connectStore: is read by the game store to negotiate options on connect
+    SOCServer__runtime___lifecycle_ -&gt;&gt; SOCGameOptionSet___SOCGameOption: resolves known game options and scenario rules at game creation (in-process J...
+    SOCServer__runtime___lifecycle_ -&gt;&gt; SOCDBHelper: optionally connects to the account/score/JDBC
+    SOCDBHelper -&gt;&gt; External_RDBMS__MySQL_PostgreSQL_SQLite_Oracle_: opens a JDBC connection and issues all durable reads/writes (JDBC)
 </pre>
 <p>At game creation the server runtime resolves requested game options and scenario rules from the game-model registry, with SOCServer consulting SOCGameOptionSet to validate and negotiate client/server options. The web game store separately reads Game Option Discovery to negotiate options on connect. Once a game exists, SOCServer optionally connects to the vendor-neutral account/score/bot-params database through the SOCDBHelper persistence facade over JDBC, which in turn owns and issues all reads/writes against the configured external RDBMS. The database is entirely optional — the server runs fully without it, losing only persistent accounts and stats.</p>
 <p>Involves: <a href="web-protocol-map-editor/web-protocol-map-editor.arch.html">Web Protocol &amp; Map Editor</a>, <a href="server-message-protocol/server-message-protocol.arch.html">Server &amp; Message Protocol</a>, <a href="optional-database/optional-database.arch.html">Optional Database</a></p>
@@ -216,17 +216,17 @@ sequenceDiagram
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}, 'sequence': {'mirrorActors': false, 'useMaxWidth': true, 'wrap': true, 'actorMargin': 40}}}%%
 sequenceDiagram
     autonumber
-    participant SOCGame__Authoritative_Game_State_ as SOCGame (Authoritative Game State) [Game Model & Rules Engine]
-    participant SavedGameModel as SavedGameModel [Game Model & Rules Engine]
+    participant SOCGame__Authoritative_Game_State_ as SOCGame (Authoritative Game State) [Game Model &amp; Rules Engine]
+    participant SavedGameModel as SavedGameModel [Game Model &amp; Rules Engine]
     participant Java_Unit_Test_Suite as Java Unit Test Suite [Quality Infrastructure]
     participant SOCGame___SOCPlayer___SOCGameOptionSet as SOCGame / SOCPlayer / SOCGameOptionSet [Quality Infrastructure]
     participant Functional_Test_Suite__extraTest_ as Functional Test Suite (extraTest) [Quality Infrastructure]
     participant SOCServer___RecordingSOCServer as SOCServer / RecordingSOCServer [Quality Infrastructure]
 
-    SOCGame__Authoritative_Game_State_ ->> SavedGameModel: maps game/player state to and from a JSON snapshot (in-process Java calls / G...
-    Java_Unit_Test_Suite ->> SavedGameModel: constructs and round-trips the savegame snapshot to verify JSON serialization...
-    Java_Unit_Test_Suite ->> SOCGame___SOCPlayer___SOCGameOptionSet: constructs and asserts directly against the authoritative game-model classes
-    Functional_Test_Suite__extraTest_ ->> SOCServer___RecordingSOCServer: boots a live server in-JVM over a stringport to drive end-to-end sequences (S...
+    SOCGame__Authoritative_Game_State_ -&gt;&gt; SavedGameModel: maps game/player state to and from a JSON snapshot (in-process Java calls / G...
+    Java_Unit_Test_Suite -&gt;&gt; SavedGameModel: constructs and round-trips the savegame snapshot to verify JSON serialization...
+    Java_Unit_Test_Suite -&gt;&gt; SOCGame___SOCPlayer___SOCGameOptionSet: constructs and asserts directly against the authoritative game-model classes
+    Functional_Test_Suite__extraTest_ -&gt;&gt; SOCServer___RecordingSOCServer: boots a live server in-JVM over a stringport to drive end-to-end sequences (S...
 </pre>
 <p>The <em>SAVEGAME</em>/<em>LOADGAME</em> debug feature maps authoritative game state to and from a JSON snapshot: SavedGameModel reads and writes SOCGame/SOCPlayer state via GSON JSON serialization. The Java unit test suite exercises this path directly, constructing and round-tripping SavedGameModel against the game model to verify the JSON savegame serialization. The same suites also construct and assert against the authoritative game-model classes (SOCGame, SOCPlayer, SOCGameOptionSet) under test, while functional tests boot a live RecordingSOCServer over an in-JVM stringport to drive end-to-end sequences.</p>
 <p>Involves: <a href="game-model-rules-engine/game-model-rules-engine.arch.html">Game Model &amp; Rules Engine</a>, <a href="quality-infrastructure/quality-infrastructure.arch.html">Quality Infrastructure</a></p>
@@ -407,7 +407,7 @@ sequenceDiagram
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="assets/zimwiki.js"></script>
 </body></html>

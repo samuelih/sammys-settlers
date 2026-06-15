@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:50%"></i></span>
       <span class="conf-val">0.50</span></span></div>
         <h1 class="doc-title">Core Game State &amp; Board Model</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Core Game State &amp; Board Model</h1>
@@ -124,7 +124,7 @@ classDiagram
         +public SOCPlayer getPlayer(final String nn)
         +public boolean isMemberChatAllowed(final String memberName)
         +setMemberChatAllowed()
-        +public Set<String> getMemberChatAllowList()
+        +public Set&lt;String&gt; getMemberChatAllowList()
         +public boolean isCurrentPlayerStubbornRobot()
         +public String getName()
         +setName()
@@ -195,7 +195,7 @@ classDiagram
         +public void setNumDevCards(final int nd)
         +public int[] getDevCardDeck()
         +shuffleDevCardDeck()
-        +public Set<String> getSpecialItemTypes()
+        +public Set&lt;String&gt; getSpecialItemTypes()
         +getSpecialItems()
         +getSpecialItem()
         +setSpecialItem()
@@ -217,7 +217,7 @@ classDiagram
         +canPlacePort()
         +placePort()
         +canPlaceShip()
-        +public List<Integer> getShipsPlacedThisTurn()
+        +public List&lt;Integer&gt; getShipsPlacedThisTurn()
         +public void addShipPlacedThisTurn(final int edge)
         +public void putPiece(SOCPlayingPiece pp)
         -putPieceCommon()
@@ -274,7 +274,7 @@ classDiagram
         +canAttackPirateFortress()
         +public int[] attackPirateFortress(final SOCShip adjacent)
         +getPlayersOnHex()
-        +public List<SOCPlayer> getPlayersShipsOnHex(final int hex)
+        +public List&lt;SOCPlayer&gt; getPlayersShipsOnHex(final int hex)
         +public SOCFortress getFortress(final int node)
         +public GameAction getLastAction()
         +public void setLastAction(final GameAction act)
@@ -282,7 +282,7 @@ classDiagram
         +setPlacingRobberForKnightCard()
         +public SOCMoveRobberResult getRobberyResult()
         +public boolean getRobberyPirateFlag()
-        +public List<SOCPlayer> getPossibleVictims()
+        +public List&lt;SOCPlayer&gt; getPossibleVictims()
         +stealFromPlayer()
         -stealFromPlayerPirateFleet()
         +public boolean hasTradeOffers()
@@ -364,7 +364,7 @@ classDiagram
         +public boolean hasPlayedDevCard()
         +public void setPlayedDevCard(boolean value)
         +updateDevCardsPlayed()
-        +public List<Integer> getDevCardsPlayed()
+        +public List&lt;Integer&gt; getDevCardsPlayed()
         +public boolean hasAskedBoardReset()
         +public void setAskedBoardReset(boolean value)
         +public boolean hasAskedSpecialBuild()
@@ -390,13 +390,13 @@ classDiagram
         +public void setNumPieces(int ptype, int amt)
         +public int getNumWarships()
         +public void setNumWarships(final int count)
-        +public Vector<SOCPlayingPiece> getPieces()
-        +public Vector<SOCRoutePiece> getRoadsAndShips()
+        +public Vector&lt;SOCPlayingPiece&gt; getPieces()
+        +public Vector&lt;SOCRoutePiece&gt; getRoadsAndShips()
         +public SOCRoutePiece getRoadOrShip(final int edge)
         +public SOCShip getMostRecentShip()
-        +public Vector<SOCSettlement> getSettlements()
+        +public Vector&lt;SOCSettlement&gt; getSettlements()
         +getSettlementOrCityAtNode()
-        +public Vector<SOCCity> getCities()
+        +public Vector&lt;SOCCity&gt; getCities()
         +getSpecialItems()
         +getSpecialItem()
         +setSpecialItem()
@@ -419,8 +419,8 @@ classDiagram
         +public int getLastSettlementCoord()
         +public int getLastRoadCoord()
         +public int getLongestRoadLength()
-        +public Vector<SOCLRPathData> getLRPaths()
-        +public void setLRPaths(List<SOCLRPathData> lrList)
+        +public Vector&lt;SOCLRPathData&gt; getLRPaths()
+        +public void setLRPaths(List&lt;SOCLRPathData&gt; lrList)
         +public void setLastSettlementCoord(final int node)
         +public void setLongestRoadLength(int len)
         +public SOCResourceSet getResources()
@@ -446,8 +446,8 @@ classDiagram
         +public int getTotalVP()
         +public void forceFinalVP(int score)
         +addSpecialVPInfo()
-        +public ArrayList<SpecialVPInfo> getSpecialVPInfo()
-        +public void setSpecialVPInfo(ArrayList<SpecialVPInfo> info)
+        +public ArrayList&lt;SpecialVPInfo&gt; getSpecialVPInfo()
+        +public void setSpecialVPInfo(ArrayList&lt;SpecialVPInfo&gt; info)
         +public int getPlayerEvents()
         +public void setPlayerEvents(final int events)
         +hasPlayerEvent()
@@ -457,7 +457,7 @@ classDiagram
         +public void setScenarioSVPLandAreas(final int las)
         +public int getStartingLandAreasEncoded()
         +public void setStartingLandAreasEncoded(final int slas)
-        +public Vector<Integer> getRoadNodes()
+        +public Vector&lt;Integer&gt; getRoadNodes()
         +public SOCTradeOffer getCurrentOffer()
         +public void setCurrentOffer(final SOCTradeOffer offer)
         +public long getCurrentOfferTime()
@@ -478,11 +478,11 @@ classDiagram
         -void updateLegalShipsAddHex(final int hexCoord)
         -updatePotentialsAndLegalsAroundRevealedHex()
         +public void updatePotentials(SOCPlayingPiece piece)
-        +public HashSet<Integer> getPotentialSettlements()
+        +public HashSet&lt;Integer&gt; getPotentialSettlements()
         +public int[] getPotentialSettlements_arr()
         +setPotentialAndLegalSettlements()
         +public boolean hasPotentialSettlementsInitialInFog()
-        +public Set<Integer> getLegalSettlements()
+        +public Set&lt;Integer&gt; getLegalSettlements()
         +addLegalSettlement()
         +public boolean canPlaceSettlement(final int node)
         +public boolean isPotentialSettlement(final int node)
@@ -498,7 +498,7 @@ classDiagram
         +public boolean isPotentialShip(int edge)
         +public void clearPotentialShip(int edge)
         +public boolean isLegalShip(final int edge)
-        +public HashSet<Integer> getRestrictedLegalShips()
+        +public HashSet&lt;Integer&gt; getRestrictedLegalShips()
         +public void setRestrictedLegalShips(final int[] edgeList)
         +public boolean hasPotentialRoad()
         +public boolean hasTwoPotentialRoads()
@@ -529,8 +529,8 @@ classDiagram
         -makeNewBoard_checkLandHexResourceClumps()
         -makeNewBoard_shufflePorts()
         -placePort()
-        +public HashSet<Integer> initPlayerLegalRoads()
-        +public HashSet<Integer> initPlayerLegalSettlements()
+        +public HashSet&lt;Integer&gt; initPlayerLegalRoads()
+        +public HashSet&lt;Integer&gt; initPlayerLegalSettlements()
         +getHexLayout()
         +public abstract int[] getLandHexCoords();
         +public boolean isHexOnLand(final int hexCoord)
@@ -547,7 +547,7 @@ classDiagram
         +setNumberLayout()
         +setRobberHex()
         +public abstract int getPortsCount();
-        +public List<Integer> getPortCoordinates(int portType)
+        +public List&lt;Integer&gt; getPortCoordinates(int portType)
         +public int getPortTypeFromNodeCoord(final int nodeCoord)
         +getPortDescForType()
         +public int getNumberOnHexFromCoord(final int hex)
@@ -557,9 +557,9 @@ classDiagram
         +public int getHexTypeFromNumber(final int hex)
         +public void putPiece(SOCPlayingPiece pp)
         +public void removePiece(SOCPlayingPiece piece)
-        +public List<SOCRoutePiece> getRoadsAndShips()
-        +public List<SOCSettlement> getSettlements()
-        +public List<SOCCity> getCities()
+        +public List&lt;SOCRoutePiece&gt; getRoadsAndShips()
+        +public List&lt;SOCSettlement&gt; getSettlements()
+        +public List&lt;SOCCity&gt; getCities()
         +public int getBoardWidth()
         +public int getBoardHeight()
         -setBoardBounds()
@@ -569,7 +569,7 @@ classDiagram
         +getAdjacentNodeFarEndOfEdge()
         +getNodeBetweenAdjacentEdges()
         +isEdgeSameOrAdjacent()
-        +public List<Integer> getAdjacentEdgesToEdge(int coord)
+        +public List&lt;Integer&gt; getAdjacentEdgesToEdge(int coord)
         +getAdjacentHexesToNode()
         +getAdjacentEdgesToNode()
         +getAdjacentEdgesToNode_arr()
@@ -614,7 +614,7 @@ classDiagram
         +setHexLayout()
         +getNumberLayout()
         +setNumberLayout()
-        +public HashMap<String, int[]> getAddedLayoutParts()
+        +public HashMap&lt;String, int[]&gt; getAddedLayoutParts()
         +public int[] getAddedLayoutPart(final String key)
         +setAddedLayoutParts()
         +setAddedLayoutPart()
@@ -638,7 +638,7 @@ classDiagram
         +public SOCVillage getVillageAtNode(final int nodeCoord)
         +public final boolean isEdgeCoastline(final int edge)
         +public final boolean isEdgeLegalRoad(final int edge)
-        +public HashSet<Integer> getLandHexCoordsSet()
+        +public HashSet&lt;Integer&gt; getLandHexCoordsSet()
         +@Override
     public int[] getLandHexCoords()
         +@Override
@@ -653,7 +653,7 @@ classDiagram
         +public void clearSpecialEdges(final int seType)
         +public int[] getVillageAndClothLayout()
         +setVillageAndClothLayout()
-        +public HashMap<Integer, SOCVillage> getVillages()
+        +public HashMap&lt;Integer, SOCVillage&gt; getVillages()
         +public int getCloth()
         +public void setCloth(final int numCloth)
         +public int takeCloth(int numTake)
@@ -666,14 +666,14 @@ classDiagram
         +public final boolean isNodeCoastline(final int node)
         +public int[] getLandHexLayout()
         +public void setLandHexLayout(final int[] lh)
-        +public final HashMap<Integer, Integer> getFogHiddenHexes()
+        +public final HashMap&lt;Integer, Integer&gt; getFogHiddenHexes()
         +setFogHiddenHexes()
         +public int getStartingLandArea()
-        +public HashSet<Integer>[] getLandAreasLegalNodes()
-        +public HashSet<Integer> getLegalSettlements()
+        +public HashSet&lt;Integer&gt;[] getLandAreasLegalNodes()
+        +public HashSet&lt;Integer&gt; getLegalSettlements()
         +setLegalSettlements()
         +initPlayerLegalRoads()
-        -HashSet<Integer> initPlayerLegalShips()
+        -HashSet&lt;Integer&gt; initPlayerLegalShips()
         +getAdjacentHexesToHex()
         -getAdjacentHexes2Hex_AddIfOK()
         +getAdjacentHexToHex()
@@ -718,7 +718,7 @@ classDiagram
         +edgeCoordToString()
     }
     class BoardFactory {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
     }
     class RollResult {
         +public void update(final int dA, final int dB)
@@ -731,8 +731,8 @@ classDiagram
         +createBoard()
     }
 
-    SOCBoardLarge --|> SOCBoard : extends
-    DefaultBoardFactory ..|> BoardFactory : implements
+    SOCBoardLarge --|&gt; SOCBoard : extends
+    DefaultBoardFactory ..|&gt; BoardFactory : implements
 </pre>
 <h3>Dependency</h3>
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryTextColor': '#111827', 'secondaryTextColor': '#111827', 'tertiaryTextColor': '#111827', 'lineColor': '#6b7280', 'fontFamily': 'Inter, ui-sans-serif, system-ui, sans-serif'}}}%%
@@ -746,17 +746,17 @@ graph TD
 
 
     ext_src_main_java_soc_util_DataUtils_java["DataUtils.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_DataUtils_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_DataUtils_java
     ext_src_main_java_soc_util_IntPair_java["IntPair.java"]:::default
-    src_main_java_soc_game_SOCBoardLarge_java -.->|"imports"| ext_src_main_java_soc_util_IntPair_java
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_IntPair_java
-    src_main_java_soc_game_SOCPlayer_java -.->|"imports"| ext_src_main_java_soc_util_IntPair_java
+    src_main_java_soc_game_SOCBoardLarge_java -.-&gt;|"imports"| ext_src_main_java_soc_util_IntPair_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_IntPair_java
+    src_main_java_soc_game_SOCPlayer_java -.-&gt;|"imports"| ext_src_main_java_soc_util_IntPair_java
     ext_src_main_java_soc_util_NodeLenVis_java["NodeLenVis.java"]:::default
-    src_main_java_soc_game_SOCPlayer_java -.->|"imports"| ext_src_main_java_soc_util_NodeLenVis_java
+    src_main_java_soc_game_SOCPlayer_java -.-&gt;|"imports"| ext_src_main_java_soc_util_NodeLenVis_java
     ext_src_main_java_soc_util_SOCFeatureSet_java["SOCFeatureSet.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
     ext_src_main_java_soc_util_SOCGameBoardReset_java["SOCGameBoardReset.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_SOCGameBoardReset_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCGameBoardReset_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -861,7 +861,7 @@ Scope architecture: <a href="game-model-rules-engine.arch.html">game-model-rules
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

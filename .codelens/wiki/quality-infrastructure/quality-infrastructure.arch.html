@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:55%"></i></span>
       <span class="conf-val">0.55</span></span></div>
         <h1 class="doc-title">Quality Infrastructure</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Quality Infrastructure</h1>
@@ -86,14 +86,14 @@ graph TD
     Web_Client_Test_Suite["Web Client Test Suite"]
 
     ext_Gradle_build__build_gradle_["Gradle build (build.gradle)"]:::default
-    ext_SavedGameModel__Server___Message_Protocol_["SavedGameModel (Server & Message Protocol)"]:::default
+    ext_SavedGameModel__Server___Message_Protocol_["SavedGameModel (Server &amp; Message Protocol)"]:::default
 
-    Functional_Test_Suite__extraTest_ -.->|"Gradle wires the suites together: the..."| ext_Gradle_build__build_gradle_
-    Functional_Test_Suite__extraTest_ -->|"imports (4), calls (2)"| Protocol_Message_Sequence_Consistency_Tests
-    Java_Unit_Test_Suite -->|"Both unit and functional suites const... — imports (2), cal…"| Functional_Test_Suite__extraTest_
-    Java_Unit_Test_Suite -->|"calls (1)"| Protocol_Message_Sequence_Consistency_Tests
-    Java_Unit_Test_Suite -.->|"JSON savegame"| ext_SavedGameModel__Server___Message_Protocol_
-    Protocol_Message_Sequence_Consistency_Tests -->|"imports (2), calls (3)"| Functional_Test_Suite__extraTest_
+    Functional_Test_Suite__extraTest_ -.-&gt;|"Gradle wires the suites together: the..."| ext_Gradle_build__build_gradle_
+    Functional_Test_Suite__extraTest_ --&gt;|"imports (4), calls (2)"| Protocol_Message_Sequence_Consistency_Tests
+    Java_Unit_Test_Suite --&gt;|"Both unit and functional suites const... — imports (2), cal…"| Functional_Test_Suite__extraTest_
+    Java_Unit_Test_Suite --&gt;|"calls (1)"| Protocol_Message_Sequence_Consistency_Tests
+    Java_Unit_Test_Suite -.-&gt;|"JSON savegame"| ext_SavedGameModel__Server___Message_Protocol_
+    Protocol_Message_Sequence_Consistency_Tests --&gt;|"imports (2), calls (3)"| Functional_Test_Suite__extraTest_
 
 
 

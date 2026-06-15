@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:70%"></i></span>
       <span class="conf-val">0.70</span></span></div>
         <h1 class="doc-title">TypeScript SOCMessage Protocol Layer</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>TypeScript SOCMessage Protocol Layer</h1>
@@ -36,7 +36,7 @@
 <li><strong>Cross-language source-of-truth discipline</strong> — The code repeatedly anchors itself to the Java source (‘Keep these values in sync with src/main/java/soc/message/SOCMessage.java’, ‘Verified against SOCGameOption.java’), and even corrects a misnamed codepoint in the Java comment. The distinctive rationale here is that Java remains the protocol’s authority and the TypeScript port is a tracked mirror, not an independent definition.</li>
 </ul>
 <h2>Overview</h2>
-<p>This module re-implements the Java SOCMessage string wire protocol in TypeScript so the browser client speaks the exact SEP-delimited unicode-string format the Java <code>SOCServer</code> uses, one <code>toCmd()</code> string per WebSocket text frame. Outbound, <code>encode(msg)</code> is a thin wrapper returning <code>msg.toCmd()</code>. Inbound, <code>decode(raw)</code> reads the integer type id up to the first <code>SEP</code>, validates it the way Java’s <code>Integer.parseInt</code> would, looks the id up in the module-level <code>parserRegistry</code>, and hands the remaining data portion to the matched parser — returning <code>null</code> for an unknown id or any parser error, just as Java’s <code>toMsg</code> ignores unrecognized types. Per-type parsers self-register at import time via <code>registerParser</code>, and <code>constants.ts</code> supplies the shared numeric ordinals all message modules reference.</p>
+<p>This module re-implements the Java SOCMessage string wire protocol in TypeScript so the browser client speaks the exact SEP-delimited unicode-string format the Java <code>SOCServer</code> uses, one <code>toCmd()</code> string per WebSocket text frame. Outbound, <code>encode(msg)</code> is a thin wrapper returning <code>msg.toCmd()</code>. Inbound, <code>decode(raw)</code> reads the integer type id up to the first <code>SEP</code>, validates it with <code>parseJavaInt</code> for Java-style decimal syntax and 32-bit signed range, looks the id up in the module-level <code>parserRegistry</code>, and hands the remaining data portion to the matched parser — returning <code>null</code> for an unknown id or any parser error, just as Java’s <code>toMsg</code> ignores unrecognized types. Per-type parsers self-register at import time via <code>registerParser</code>, and <code>constants.ts</code> supplies the shared numeric ordinals all message modules reference.</p>
 <h2>Components</h2>
 <ul>
 <li><strong>SOCMessage.ts</strong> (referenced; defined externally)</li>
@@ -55,13 +55,13 @@
 <li><strong>Port the Java string wire format verbatim instead of inventing a binary or JSON protocol</strong>: The browser client must interoperate with the unmodified Java <code>SOCServer</code>; constants.ts states the values ‘mirror the exact wire-format tokens and message-type IDs used by the Java SOCServer so the TypeScript client can interoperate over WebSocket’ with one <code>toCmd()</code> string per frame. Keeping byte-for-byte parity is the whole point — encode is therefore just a <code>toCmd()</code> pass-through with no transformation.</li>
 <li><strong>Self-registering parser registry keyed by type id, rather than a central switch statement</strong>: Mirrors Java’s <code>SOCMessage.toMsg</code> switch while keeping each message module self-contained: a module registers its own parser on import, and <code>decode</code> only knows the <code>Map</code>. The cost is reliance on import side-effects — <code>index.ts</code> must re-export every message module so its <code>registerParser()</code> runs; this is documented as a deliberate contract in index.ts’s header comment.</li>
 <li><strong><code>decode</code> returns <code>null</code> (never throws) on unknown or malformed input</strong>: Faithful to Java’s <code>toMsg</code>, which wraps parsing in try/catch and silently ignores unknown types. The parser call is wrapped in try/catch and an absent registry entry returns <code>null</code>, so a single bad frame can’t crash the client’s receive loop.</li>
-<li><strong>Reject type tokens with a regex guard instead of trusting JS <code>Number.parseInt</code></strong>: JS <code>Number.parseInt</code> is lenient (‘1083abc’ → 1083) whereas Java <code>Integer.parseInt</code> rejects any non-integer token. The <code>/^[+-]?\d+$/</code> guard reproduces Java’s stricter acceptance so the two implementations agree on exactly which frames are valid — a cross-language fidelity concern, not a style choice.</li>
+<li><strong>Reject protocol integer tokens with a Java-int parser instead of trusting JS <code>Number.parseInt</code></strong>: JS <code>Number.parseInt</code> is lenient (‘1083abc’ → 1083) and does not enforce Java’s 32-bit signed integer range, whereas Java <code>Integer.parseInt</code> rejects malformed or out-of-range tokens. <code>parseJavaInt</code> applies the decimal-token guard plus <code>-2147483648..2147483647</code> range checks for the core type id and per-message decimal field helpers, so the two implementations agree on which frames are valid — a cross-language fidelity concern, not a style choice.</li>
 <li><strong><code>const</code> objects with derived literal-union types instead of TypeScript <code>enum</code>s</strong>: Lets message modules reference shared numeric ordinals (e.g. <code>MessageType.VERSION</code>) rather than magic numbers, while the <code>(typeof X)[keyof typeof X]</code> pattern yields a precise union type. Plain const objects also keep the values byte-identical to the Java ordinals and avoid <code>enum</code> runtime quirks. Comments flag where ordinals differ from the wire encoding (e.g. <code>SeatLockState</code> ordinals vs. the <code>SeatLockWire</code> ‘true’/‘false’/‘clear’ strings).</li>
 </ul>
 <h2>Constraints</h2>
 <ul>
 <li><strong>[UNVERIFIED]</strong> <code>registerParser</code> MUST throw on a duplicate registration for the same message-type id. — web/src/protocol/SOCMessage.ts::registerParser — <code>if (parserRegistry.has(type)) { throw new Error(...) }</code> (cross-document reconciliation: not verified against <code>web/src/protocol/SOCMessage.ts</code>; recorded as design intent, not current code fact.)</li>
-<li><strong>[UNVERIFIED]</strong> <code>decode</code> MUST reject any type token that Java’s <code>Integer.parseInt</code> would reject (optional leading +/- then digits only) before dispatching. — web/src/protocol/SOCMessage.ts::decode — <code>if (!/^[+-]?\d+$/.test(typeStr)) return null;</code> (cross-document reconciliation: not verified against <code>web/src/protocol/SOCMessage.ts</code>; recorded as design intent, not current code fact.)</li>
+<li><strong>[UNVERIFIED]</strong> <code>decode</code> MUST reject any type token that Java’s <code>Integer.parseInt</code> would reject (optional leading +/- then digits only, within signed 32-bit integer range) before dispatching. — web/src/protocol/SOCMessage.ts::decode; web/src/protocol/javaInt.ts::parseJavaInt — <code>const type = parseJavaInt(typeStr); if (type === null) return null;</code> (cross-document reconciliation: not verified against <code>web/src/protocol/SOCMessage.ts</code>; recorded as design intent, not current code fact.)</li>
 <li><strong>[UNVERIFIED]</strong> <code>decode</code> MUST return <code>null</code> (not throw) for an unknown type id or a parser error, matching Java <code>toMsg</code>’s ignore-on-failure behavior. — web/src/protocol/SOCMessage.ts::decode — <code>parser === undefined</code> returns null; parser call wrapped in <code>try { ... } catch { return null; }</code> (cross-document reconciliation: not verified against <code>web/src/protocol/SOCMessage.ts</code>; recorded as design intent, not current code fact.)</li>
 <li><strong>[SOFT]</strong> Protocol constant values SHOULD stay in sync with <code>src/main/java/soc/message/SOCMessage.java</code> and <code>SOCGameOption.java</code>. — web/src/protocol/constants.ts header comment ‘Keep these values in sync with src/main/java/soc/message/SOCMessage.java’</li>
 </ul>
@@ -69,13 +69,13 @@
 <ul>
 <li><strong>reliability</strong> — A malformed or unknown wire frame must not crash the receive path; decode degrades to <code>null</code> via try/catch and registry-miss handling. — web/src/protocol/SOCMessage.ts::decode</li>
 <li><strong>error-handling</strong> — Accidental duplicate parser registration is surfaced immediately as a thrown Error rather than silently overwriting an existing parser. — web/src/protocol/SOCMessage.ts::registerParser</li>
-<li><strong>interoperability</strong> — Type-id parsing must match Java <code>Integer.parseInt</code> semantics so client and server agree on which frames are valid; enforced by the <code>/^[+-]?\d+$/</code> token guard. — web/src/protocol/SOCMessage.ts::decode</li>
+<li><strong>interoperability</strong> — Type-id parsing must match Java <code>Integer.parseInt</code> semantics so client and server agree on which frames are valid; enforced by <code>parseJavaInt</code> syntax and 32-bit range checks. — web/src/protocol/SOCMessage.ts::decode; web/src/protocol/javaInt.ts::parseJavaInt</li>
 </ul>
 <h2>Examples</h2>
 <p><em>Shows the defensive parse-and-validate that keeps decode aligned with Java’s stricter integer parsing.</em>
 <em>Source: <code>web/src/protocol/SOCMessage.ts::decode</code></em></p>
-<pre><code>const type = Number.parseInt(typeStr, 10);
-  if (!Number.isInteger(type)) {
+<pre><code>const type = parseJavaInt(typeStr);
+  if (type === null) {
     return null;
   }
 </code></pre>
@@ -95,12 +95,13 @@ graph TD
     web_src_protocol_SOCMessage_ts["SOCMessage.ts"]
     web_src_protocol_constants_ts["constants.ts"]
 
-    web_src_protocol_SOCMessage_ts -->|"imports"| web_src_protocol_constants_ts
+    web_src_protocol_SOCMessage_ts --&gt;|"imports"| web_src_protocol_constants_ts
 </pre>
 <h2>Source Linkage</h2>
 <ul>
 <li><code class="code-ref" title="source file in your repository">encode serializes via toCmd</code></li>
 <li><code class="code-ref" title="source file in your repository">decode reads type id from first SEP token, validates as integer, and dispatches to registered parser</code></li>
+<li><code class="code-ref" title="source file in your repository">Java-compatible integer parser for protocol tokens</code></li>
 <li><code class="code-ref" title="source file in your repository">registerParser self-registration, throws on duplicate</code></li>
 <li><code class="code-ref" title="source file in your repository">_clearParsersForTest resets registry between tests (not in package index)</code></li>
 <li><code class="code-ref" title="source file in your repository">MessageParser type alias and SOCMessage interface</code></li>
@@ -134,6 +135,12 @@ Scope architecture: <a href="web-protocol-map-editor.arch.html">web-protocol-map
 <td>Source Linkage: decode reads type id from first SEP token, validates as integer, and dispatches to registered parser</td>
 <td>Base SOCMessage type, parser registry, and encode/decode helpers.</td>
 <td>web/src/protocol/SOCMessage.ts:79-112</td>
+<td style="text-align:right">0.75</td>
+</tr>
+<tr>
+<td>Source Linkage: Java-compatible integer parser for protocol tokens</td>
+<td>Java-style decimal syntax and 32-bit signed range validation for TypeScript protocol parsing.</td>
+<td>web/src/protocol/javaInt.ts</td>
 <td style="text-align:right">0.75</td>
 </tr>
 <tr>
@@ -207,7 +214,7 @@ Scope architecture: <a href="web-protocol-map-editor.arch.html">web-protocol-map
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

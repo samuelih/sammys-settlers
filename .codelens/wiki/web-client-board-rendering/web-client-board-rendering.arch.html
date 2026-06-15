@@ -26,12 +26,12 @@
       <span class="conf-bar"><i style="width:75%"></i></span>
       <span class="conf-val">0.75</span></span></div>
         <h1 class="doc-title">Web Client &amp; Board Rendering</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Web Client &amp; Board Rendering</h1>
 <h2>Overview</h2>
-<p>Server Protocol &amp; WebSocket Connectivity: the browser client’s protocol layer for the Java SOCServer wire protocol over WebSocket. Outbound, encode(msg) calls msg.toCmd() to produce one command string per text frame; inbound, decode(raw) splits on the SEP separator, reads the leading integer message-type id, looks it up in a module-level parser registry, and dispatches the data portion to the matching MessageParser. Key decisions: registry-based parser dispatch instead of a giant switch; fail-soft decode but fail-loud registration; stricter integer parsing than Number.parseInt; constants ported verbatim from Java rather than negotiated at runtime; a wire/ordinal split for seat-lock state. Board Geometry &amp; SVG Rendering: the geometry-and-shape substrate beneath the in-game board. A SOCBoardLayout2 message is parsed into a render-friendly BoardModel (types.ts) of hexes, ports, robber/pirate positions and viewport dimensions, each element carrying a single packed 0xRRCC integer coordinate (row&lt;&lt;8 | col). The SVG renderer translates packed coordinates to pixel space via coords.ts. Key decisions: one integer-packed coordinate scheme shared by hexes/nodes/edges; pure functions with no React/store/network coupling; linear grid mapping plus a Y-parity slope drop rather than trigonometric hexagon math; hexPolygonPoints corners derived from the same node deltas pieces use; a hex-type to HexKind semantic indirection; presentation entirely via CSS custom properties and motion-suppression media queries. Screens, UI Components &amp; Client State: inbound messages decoded by the net layer’s GameConnection are dispatched into useGameStore, whose pure synchronous reducers fold them into connection status, the lobby list, registries, and the joined CurrentGame room (board, pieces, per-seat PlayerViews, inventory, trade and robber prompts, and Cities &amp; Knights counters). React screens subscribe and render; outbound, UI interactions invoke action senders. Key decisions: client state split across three independent Zustand stores rather than one; action senders early-return instead of optimistically mutating local state; reducers pure and immutable with one changed object per update; settings derive DOM presentation through dedicated pure helpers. Custom Map Editor: turns a .map.json document into an editable in-memory CustomMap and back. On import, parseMapJson JSON-parses and fromRaw coerces into a CustomMap, keeping every hex/port coord as its original “0xRRCC” string so import-&gt;edit-&gt;export is byte-faithful; parseCoord/rowOf/colOf/coordOf translate the packed (row&lt;&lt;8)|col form on demand and encodeCoord re-serializes. Key decisions: keep coordinates as on-disk strings rather than parsing at import; house zero business validation in mapSchema.ts (only JSON&lt;-&gt;model coercion and the coordinate codec); permissive GSON-mimicking deserialization in fromRaw; canonicalize land areas on export by grouping hexes by ascending area tag; normalize the import-only “3:1” port alias to canonical “misc” for new edits while still accepting it on import.</p>
+<p>Server Protocol &amp; WebSocket Connectivity: the browser client’s protocol layer for the Java SOCServer wire protocol over WebSocket. Outbound, encode(msg) calls msg.toCmd() to produce one command string per text frame; inbound, decode(raw) splits on the SEP separator, reads the leading integer message-type id with Java-style decimal syntax and signed 32-bit range checks, looks it up in a module-level parser registry, and dispatches the data portion to the matching MessageParser. Key decisions: registry-based parser dispatch instead of a giant switch; fail-soft decode but fail-loud registration; stricter integer parsing than Number.parseInt; constants ported verbatim from Java rather than negotiated at runtime; a wire/ordinal split for seat-lock state. Board Geometry &amp; SVG Rendering: the geometry-and-shape substrate beneath the in-game board. A SOCBoardLayout2 message is parsed into a render-friendly BoardModel (types.ts) of hexes, ports, robber/pirate positions and viewport dimensions, each element carrying a single packed 0xRRCC integer coordinate (row&lt;&lt;8 | col). The SVG renderer translates packed coordinates to pixel space via coords.ts. Key decisions: one integer-packed coordinate scheme shared by hexes/nodes/edges; pure functions with no React/store/network coupling; linear grid mapping plus a Y-parity slope drop rather than trigonometric hexagon math; hexPolygonPoints corners derived from the same node deltas pieces use; a hex-type to HexKind semantic indirection; presentation entirely via CSS custom properties and motion-suppression media queries. Screens, UI Components &amp; Client State: inbound messages decoded by the net layer’s GameConnection are dispatched into useGameStore, whose pure synchronous reducers fold them into connection status, the lobby list, registries, and the joined CurrentGame room (board, pieces, per-seat PlayerViews, inventory, trade and robber prompts, and Cities &amp; Knights counters). React screens subscribe and render; outbound, UI interactions invoke action senders. Key decisions: client state split across three independent Zustand stores rather than one; action senders early-return instead of optimistically mutating local state; reducers pure and immutable with one changed object per update; settings derive DOM presentation through dedicated pure helpers. Custom Map Editor: turns a .map.json document into an editable in-memory CustomMap and back. On import, parseMapJson JSON-parses and fromRaw coerces into a CustomMap, keeping every hex/port coord as its original “0xRRCC” string so import-&gt;edit-&gt;export is byte-faithful; parseCoord/rowOf/colOf/coordOf translate the packed (row&lt;&lt;8)|col form on demand and encodeCoord re-serializes. Key decisions: keep coordinates as on-disk strings rather than parsing at import; house zero business validation in mapSchema.ts (only JSON&lt;-&gt;model coercion and the coordinate codec); permissive GSON-mimicking deserialization in fromRaw; canonicalize land areas on export by grouping hexes by ascending area tag; normalize the import-only “3:1” port alias to canonical “misc” for new edits while still accepting it on import.</p>
 <ul>
 <li><a class="inv-cite" href="../invariants/INV-CL-001.invariant.html">INV-CL-001</a></li>
 <li><a class="inv-cite" href="../invariants/INV-CL-002.invariant.html">INV-CL-002</a></li>
@@ -78,23 +78,23 @@
 graph TD
 
     subgraph group_web["web"]
-        Board_Geometry___SVG_Rendering["Board Geometry & SVG Rendering"]
+        Board_Geometry___SVG_Rendering["Board Geometry &amp; SVG Rendering"]
         Client_State_Stores["Client State Stores"]
         Custom_Map_Editor["Custom Map Editor"]
         Network_Transport__GameConnection_["Network Transport (GameConnection)"]
-        Protocol___WebSocket_Connectivity["Protocol & WebSocket Connectivity"]
-        Screens___UI_Components["Screens & UI Components"]
+        Protocol___WebSocket_Connectivity["Protocol &amp; WebSocket Connectivity"]
+        Screens___UI_Components["Screens &amp; UI Components"]
     end
 
-    Client_State_Stores -->|"imports (1), calls (3)"| Network_Transport__GameConnection_
-    Client_State_Stores -->|"calls (2)"| Protocol___WebSocket_Connectivity
-    Custom_Map_Editor -->|"coords.ts functions (rowOf/colOf/coor... — imports (1), cal…"| Board_Geometry___SVG_Rendering
-    Custom_Map_Editor -->|"WebSocket (SOCMessage command strings)"| Protocol___WebSocket_Connectivity
-    Network_Transport__GameConnection_ -->|"WebSocket (text frames carrying SOCMe... — calls (2)"| Protocol___WebSocket_Connectivity
-    Screens___UI_Components -->|"Store subscriptions exposing CurrentG... — imports (1), cal…"| Board_Geometry___SVG_Rendering
-    Screens___UI_Components -->|"imports (2), calls (8)"| Client_State_Stores
-    Screens___UI_Components -->|"imports (1), calls (42)"| Custom_Map_Editor
-    Screens___UI_Components -->|"WebSocket (SOCMessage command strings)"| Protocol___WebSocket_Connectivity
+    Client_State_Stores --&gt;|"imports (1), calls (3)"| Network_Transport__GameConnection_
+    Client_State_Stores --&gt;|"calls (2)"| Protocol___WebSocket_Connectivity
+    Custom_Map_Editor --&gt;|"coords.ts functions (rowOf/colOf/coor... — imports (1), cal…"| Board_Geometry___SVG_Rendering
+    Custom_Map_Editor --&gt;|"WebSocket (SOCMessage command strings)"| Protocol___WebSocket_Connectivity
+    Network_Transport__GameConnection_ --&gt;|"WebSocket (text frames carrying SOCMe... — calls (2)"| Protocol___WebSocket_Connectivity
+    Screens___UI_Components --&gt;|"Store subscriptions exposing CurrentG... — imports (1), cal…"| Board_Geometry___SVG_Rendering
+    Screens___UI_Components --&gt;|"imports (2), calls (8)"| Client_State_Stores
+    Screens___UI_Components --&gt;|"imports (1), calls (42)"| Custom_Map_Editor
+    Screens___UI_Components --&gt;|"WebSocket (SOCMessage command strings)"| Protocol___WebSocket_Connectivity
 
 
 

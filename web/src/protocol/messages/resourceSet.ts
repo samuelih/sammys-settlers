@@ -12,6 +12,7 @@
 // message builds its own field list, so it doesn't use this helper's 5-int form.
 
 import { Resource, type ResourceValue } from '../constants';
+import { parseJavaInt } from '../javaInt';
 
 /**
  * A held set of resources, keyed by resource type. Amounts default to 0 when
@@ -150,10 +151,7 @@ export function setAmount(rs: ResourceSet, amount: number, type: ResourceValue):
   }
 }
 
-/** Strict integer check matching Java Integer.parseInt (allows leading '-'). */
+/** Strict integer check matching Java Integer.parseInt (allows leading sign). */
 export function parseIntStrict(s: string): number | null {
-  if (!/^[+-]?\d+$/.test(s)) {
-    return null;
-  }
-  return Number.parseInt(s, 10);
+  return parseJavaInt(s);
 }

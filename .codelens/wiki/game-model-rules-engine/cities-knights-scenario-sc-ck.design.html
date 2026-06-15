@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:55%"></i></span>
       <span class="conf-val">0.55</span></span></div>
         <h1 class="doc-title">Cities &amp; Knights Scenario (SC_CK)</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Cities &amp; Knights Scenario (SC_CK)</h1>
@@ -127,7 +127,7 @@ classDiagram
         +public SOCPlayer getPlayer(final String nn)
         +public boolean isMemberChatAllowed(final String memberName)
         +setMemberChatAllowed()
-        +public Set<String> getMemberChatAllowList()
+        +public Set&lt;String&gt; getMemberChatAllowList()
         +public boolean isCurrentPlayerStubbornRobot()
         +public String getName()
         +setName()
@@ -198,7 +198,7 @@ classDiagram
         +public void setNumDevCards(final int nd)
         +public int[] getDevCardDeck()
         +shuffleDevCardDeck()
-        +public Set<String> getSpecialItemTypes()
+        +public Set&lt;String&gt; getSpecialItemTypes()
         +getSpecialItems()
         +getSpecialItem()
         +setSpecialItem()
@@ -220,7 +220,7 @@ classDiagram
         +canPlacePort()
         +placePort()
         +canPlaceShip()
-        +public List<Integer> getShipsPlacedThisTurn()
+        +public List&lt;Integer&gt; getShipsPlacedThisTurn()
         +public void addShipPlacedThisTurn(final int edge)
         +public void putPiece(SOCPlayingPiece pp)
         -putPieceCommon()
@@ -277,7 +277,7 @@ classDiagram
         +canAttackPirateFortress()
         +public int[] attackPirateFortress(final SOCShip adjacent)
         +getPlayersOnHex()
-        +public List<SOCPlayer> getPlayersShipsOnHex(final int hex)
+        +public List&lt;SOCPlayer&gt; getPlayersShipsOnHex(final int hex)
         +public SOCFortress getFortress(final int node)
         +public GameAction getLastAction()
         +public void setLastAction(final GameAction act)
@@ -285,7 +285,7 @@ classDiagram
         +setPlacingRobberForKnightCard()
         +public SOCMoveRobberResult getRobberyResult()
         +public boolean getRobberyPirateFlag()
-        +public List<SOCPlayer> getPossibleVictims()
+        +public List&lt;SOCPlayer&gt; getPossibleVictims()
         +stealFromPlayer()
         -stealFromPlayerPirateFleet()
         +public boolean hasTradeOffers()
@@ -365,10 +365,10 @@ classDiagram
         +public boolean add(final SOCGameOption opt)
         +public SOCGameOption put(final SOCGameOption opt)
         +public SOCGameOption get(final String optKey)
-        +public Map<String, SOCGameOption> getAll()
-        +public Collection<SOCGameOption> values()
-        +public Set<String> keySet()
-        +public Iterator<SOCGameOption> iterator()
+        +public Map&lt;String, SOCGameOption&gt; getAll()
+        +public Collection&lt;SOCGameOption&gt; values()
+        +public Set&lt;String&gt; keySet()
+        +public Iterator&lt;SOCGameOption&gt; iterator()
         +public SOCGameOption remove(final String optKey)
         +public void clear()
         +public boolean isOptionSet(final String optKey)
@@ -446,17 +446,17 @@ graph TD
 
 
     ext_src_main_java_soc_util_DataUtils_java["DataUtils.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_DataUtils_java
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_DataUtils_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_DataUtils_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_DataUtils_java
     ext_src_main_java_soc_util_IntPair_java["IntPair.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_IntPair_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_IntPair_java
     ext_src_main_java_soc_util_SOCFeatureSet_java["SOCFeatureSet.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCFeatureSet_java
     ext_src_main_java_soc_util_SOCGameBoardReset_java["SOCGameBoardReset.java"]:::default
-    src_main_java_soc_game_SOCGame_java -.->|"imports"| ext_src_main_java_soc_util_SOCGameBoardReset_java
+    src_main_java_soc_game_SOCGame_java -.-&gt;|"imports"| ext_src_main_java_soc_util_SOCGameBoardReset_java
     ext_src_main_java_soc_util_Version_java["Version.java"]:::default
-    src_main_java_soc_game_SOCGameOptionSet_java -.->|"imports"| ext_src_main_java_soc_util_Version_java
+    src_main_java_soc_game_SOCGameOptionSet_java -.-&gt;|"imports"| ext_src_main_java_soc_util_Version_java
 </pre>
 <h2>Source Linkage</h2>
 <ul>
@@ -561,7 +561,7 @@ Scope architecture: <a href="game-model-rules-engine.arch.html">game-model-rules
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

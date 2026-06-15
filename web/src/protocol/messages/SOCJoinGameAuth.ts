@@ -19,13 +19,11 @@
 
 import { MessageType, SEP, SEP2 } from '../constants';
 import { registerParser, type SOCMessage } from '../SOCMessage';
+import { parseJavaInt } from '../javaInt';
 
 /** Strict integer check: Java Integer.parseInt accepts optional sign + digits. */
 function parseIntStrict(s: string): number | null {
-  if (!/^[+-]?\d+$/.test(s)) {
-    return null;
-  }
-  return Number.parseInt(s, 10);
+  return parseJavaInt(s);
 }
 
 /**

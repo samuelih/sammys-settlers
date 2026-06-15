@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:40%"></i></span>
       <span class="conf-val">0.40</span></span></div>
         <h1 class="doc-title">Robot / AI Players</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Robot / AI Players</h1>
@@ -80,26 +80,26 @@ graph TD
     SOCRobotNegotiator__trade_evaluation_["SOCRobotNegotiator (trade evaluation)"]
     sample3p_third_party_bot_extension_framework["sample3p third-party bot extension framework"]
 
-    ext_SOCServer___SOCMessage_protocol__Server___Message_Protocol_["SOCServer / SOCMessage protocol (Server & Message Protocol)"]:::default
+    ext_SOCServer___SOCMessage_protocol__Server___Message_Protocol_["SOCServer / SOCMessage protocol (Server &amp; Message Protocol)"]:::default
     ext_soc_util_DebugRecorder["soc.util.DebugRecorder"]:::default
 
-    Robot_strategy_objects -->|"calls (19)"| SOCPlayerTracker__board___opponent_tracking_
-    Robot_strategy_objects -->|"calls (1)"| SOCRobotClient__connection_layer_
-    Robot_strategy_objects -->|"calls (4)"| SOCRobotDM__decision_maker___build_planner_
-    Robot_strategy_objects -->|"calls (15)"| SOCRobotNegotiator__trade_evaluation_
-    SOCPlayerTracker__board___opponent_tracking_ -->|"calls (2)"| Robot_strategy_objects
-    SOCRobotClient__connection_layer_ -->|"calls (12)"| Robot_strategy_objects
-    SOCRobotClient__connection_layer_ -.->|"SOCMessage strings over TCP Socket or..."| ext_SOCServer___SOCMessage_protocol__Server___Message_Protocol_
-    SOCRobotDM__decision_maker___build_planner_ -->|"calls (12)"| Robot_strategy_objects
-    SOCRobotDM__decision_maker___build_planner_ -->|"calls (36)"| SOCPlayerTracker__board___opponent_tracking_
-    SOCRobotDM__decision_maker___build_planner_ -->|"in-process Java calls"| SOCRobotBrain__per_game_decision_loop_
-    SOCRobotDM__decision_maker___build_planner_ -.->|"in-process Java calls"| ext_soc_util_DebugRecorder
-    SOCRobotNegotiator__trade_evaluation_ -->|"calls (5)"| Robot_strategy_objects
-    SOCRobotNegotiator__trade_evaluation_ -->|"calls (2)"| SOCPlayerTracker__board___opponent_tracking_
-    SOCRobotNegotiator__trade_evaluation_ -->|"calls (2)"| SOCRobotDM__decision_maker___build_planner_
-    sample3p_third_party_bot_extension_framework -->|"imports (3), calls (1), inherits (1)"| Robot_strategy_objects
-    sample3p_third_party_bot_extension_framework -->|"imports (2), inherits (1)"| SOCRobotClient__connection_layer_
-    sample3p_third_party_bot_extension_framework -->|"imports (1)"| SOCRobotNegotiator__trade_evaluation_
+    Robot_strategy_objects --&gt;|"calls (19)"| SOCPlayerTracker__board___opponent_tracking_
+    Robot_strategy_objects --&gt;|"calls (1)"| SOCRobotClient__connection_layer_
+    Robot_strategy_objects --&gt;|"calls (4)"| SOCRobotDM__decision_maker___build_planner_
+    Robot_strategy_objects --&gt;|"calls (15)"| SOCRobotNegotiator__trade_evaluation_
+    SOCPlayerTracker__board___opponent_tracking_ --&gt;|"calls (2)"| Robot_strategy_objects
+    SOCRobotClient__connection_layer_ --&gt;|"calls (12)"| Robot_strategy_objects
+    SOCRobotClient__connection_layer_ -.-&gt;|"SOCMessage strings over TCP Socket or..."| ext_SOCServer___SOCMessage_protocol__Server___Message_Protocol_
+    SOCRobotDM__decision_maker___build_planner_ --&gt;|"calls (12)"| Robot_strategy_objects
+    SOCRobotDM__decision_maker___build_planner_ --&gt;|"calls (36)"| SOCPlayerTracker__board___opponent_tracking_
+    SOCRobotDM__decision_maker___build_planner_ --&gt;|"in-process Java calls"| SOCRobotBrain__per_game_decision_loop_
+    SOCRobotDM__decision_maker___build_planner_ -.-&gt;|"in-process Java calls"| ext_soc_util_DebugRecorder
+    SOCRobotNegotiator__trade_evaluation_ --&gt;|"calls (5)"| Robot_strategy_objects
+    SOCRobotNegotiator__trade_evaluation_ --&gt;|"calls (2)"| SOCPlayerTracker__board___opponent_tracking_
+    SOCRobotNegotiator__trade_evaluation_ --&gt;|"calls (2)"| SOCRobotDM__decision_maker___build_planner_
+    sample3p_third_party_bot_extension_framework --&gt;|"imports (3), calls (1), inherits (1)"| Robot_strategy_objects
+    sample3p_third_party_bot_extension_framework --&gt;|"imports (2), inherits (1)"| SOCRobotClient__connection_layer_
+    sample3p_third_party_bot_extension_framework --&gt;|"imports (1)"| SOCRobotNegotiator__trade_evaluation_
 
 
 
@@ -203,7 +203,7 @@ graph TD
         <div class="row"><span class="k">commit</span><span class="val">3a054b7699</span></div>
         <div class="row"><span class="k">dikl</span><span class="val">no</span></div>
       </div></div>
-
+      
     </aside></div>
 <script src="../assets/zimwiki.js"></script>
 </body></html>

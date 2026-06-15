@@ -26,7 +26,7 @@
       <span class="conf-bar"><i style="width:50%"></i></span>
       <span class="conf-val">0.50</span></span></div>
         <h1 class="doc-title">Web Protocol &amp; Map Editor</h1>
-
+        
       </div>
       <div class="hyp-banner"><span class="hi">◑</span><div>This document is a <b>hypothesis</b> CodeLens inferred from your source code. It is pending review and ratification by your team — verify load-bearing claims against the cited files before relying on them.</div></div>
       <div class="prose"><h1>Web Protocol &amp; Map Editor</h1>
@@ -73,7 +73,7 @@
 </li>
 </ul>
 <h2>Overview</h2>
-<p>TypeScript SOCMessage Protocol Layer (web/src/protocol): re-implements the Java SOCMessage string wire protocol in TypeScript so the browser speaks the exact SEP-delimited unicode-string format the Java SOCServer uses, one toCmd() string per WebSocket text frame. encode(msg) is a thin wrapper over msg.toCmd(); decode(raw) reads the type id to the first SEP, guards it with a regex (not JS Number.parseInt), looks it up in a self-registering parserRegistry keyed by type id, and returns null (never throws) on unknown/malformed input. Decisions: port the Java format verbatim rather than invent a binary/JSON protocol; registry over a central switch; const objects with derived literal-union types instead of enums. Custom Map Editor Canvas &amp; Palette (web/src/map-editor/components): authoring splits into two stateless presentational components driven by a parent screen owning the single CustomMap. EditorPalette selects the active EditorTool and paint parameters (hex type, dice number, land area, port type/facing) and emits metadata edits via callbacks; EditorCanvas reads the same CustomMap, memo-indexes placed hexes and ports by integer 0xRRCC coordinate, enumerates the fixed grid via editorGrid, and renders each cell with HexCell. Decisions: pure/presentational with all state lifted; reuse in-game board geometry (coords.ts, board defs/textures) read-only; normalize loose map-type strings through a closed motif set with an ‘unknown’ fallback; memo-index and memoize grid/viewBox derivations; expose the data layer through one barrel module. Map Schema &amp; Custom-Map JSON Model (web/src/map-editor/mapSchema.ts): the data-model spine. Repository evidence: <code>web/src/map-editor/mapSchema.ts</code>, <code>web/src/protocol/messages/SOCJoinGameAuth.ts</code>. Repository evidence: <code>web/src/map-editor/mapSchema.ts</code>.</p>
+<p>TypeScript SOCMessage Protocol Layer (web/src/protocol): re-implements the Java SOCMessage string wire protocol in TypeScript so the browser speaks the exact SEP-delimited unicode-string format the Java SOCServer uses, one toCmd() string per WebSocket text frame. encode(msg) is a thin wrapper over msg.toCmd(); decode(raw) reads the type id to the first SEP, parses it with a Java-compatible integer helper (strict decimal syntax plus 32-bit signed range), looks it up in a self-registering parserRegistry keyed by type id, and returns null (never throws) on unknown/malformed input. Decisions: port the Java format verbatim rather than invent a binary/JSON protocol; registry over a central switch; const objects with derived literal-union types instead of enums. Custom Map Editor Canvas &amp; Palette (web/src/map-editor/components): authoring splits into two stateless presentational components driven by a parent screen owning the single CustomMap. EditorPalette selects the active EditorTool and paint parameters (hex type, dice number, land area, port type/facing) and emits metadata edits via callbacks; EditorCanvas reads the same CustomMap, memo-indexes placed hexes and ports by integer 0xRRCC coordinate, enumerates the fixed grid via editorGrid, and renders each cell with HexCell. Decisions: pure/presentational with all state lifted; reuse in-game board geometry (coords.ts, board defs/textures) read-only; normalize loose map-type strings through a closed motif set with an ‘unknown’ fallback; memo-index and memoize grid/viewBox derivations; expose the data layer through one barrel module. Map Schema &amp; Custom-Map JSON Model (web/src/map-editor/mapSchema.ts): the data-model spine. Repository evidence: <code>web/src/map-editor/mapSchema.ts</code>, <code>web/src/protocol/messages/SOCJoinGameAuth.ts</code>. Repository evidence: <code>web/src/map-editor/mapSchema.ts</code>.</p>
 <h2>Components</h2>
 <ul>
 <li><strong>Protocol Codec &amp; Parser Registry</strong>: Serialize outbound model messages to SEP-delimited unicode strings and parse one inbound WebSocket text frame into a typed message object.</li>
@@ -88,8 +88,8 @@
 </ul>
 <h2>Boundaries</h2>
 <ul>
-<li><strong>Protocol Codec &amp; Parser Registry</strong> boundary: Owns the encode/decode spine of the browser wire layer: encode(msg) returns msg.toCmd(); decode(raw) reads the integer type id up to the first SEP, guards it with a regex (rather than trusting JS Number.parseInt), looks it up in a module-level self-registering parserRegistry keyed by type id, and dispatches. decode never throws — it returns null on unknown or malformed input. Does NOT own per-message field semantics; those live in the Message Catalog.</li>
-<li><strong>Protocol Message Catalog</strong> boundary: Owns one TypeScript class per SOCMessage type — including the high-centrality SOCScenarioInfo, SOCSetSeatLock, and SOCStatusMessage — plus the shared resourceSet encoder reused by resource-bearing trade/pick messages (SOCAcceptOffer, SOCBankTrade, SOCMakeOffer, SOCPickResources). Each class self-registers its parser into the registry and implements toCmd(); the catalog is the black box for each message type’s field layout.</li>
+<li><strong>Protocol Codec &amp; Parser Registry</strong> boundary: Owns the encode/decode spine of the browser wire layer: encode(msg) returns msg.toCmd(); decode(raw) reads the integer type id up to the first SEP, validates it through a Java-compatible parser (rather than trusting JS Number.parseInt), looks it up in a module-level self-registering parserRegistry keyed by type id, and dispatches. decode never throws — it returns null on unknown or malformed input. Does NOT own per-message field semantics; those live in the Message Catalog.</li>
+<li><strong>Protocol Message Catalog</strong> boundary: Owns one TypeScript class per SOCMessage type — including the high-centrality SOCScenarioInfo, SOCSetSeatLock, and SOCStatusMessage — plus the shared resourceSet encoder reused by resource-bearing trade/pick messages (SOCAcceptOffer, SOCBankTrade, SOCMakeOffer, SOCPickResources). Each class self-registers its parser into the registry and implements toCmd(); decimal integer field helpers delegate to the shared Java-compatible parser so malformed and out-of-range values match Java Integer.parseInt behavior. The catalog is the black box for each message type’s field layout.</li>
 <li><strong>Game Option Discovery</strong> boundary: web/src/protocol/gameOptions.ts — owns the TypeScript representation and parsing of the server’s game-option / scenario discovery used by the client to negotiate game options before joining. Boundary edge is the parsed option model; does not own the connection or store state that drives discovery.</li>
 <li><strong>Custom-Map Schema &amp; Codec</strong> boundary: web/src/map-editor/mapSchema.ts — the data-model spine. Repository evidence: <code>web/src/map-editor/mapSchema.ts</code>, <code>web/src/protocol/messages/SOCJoinGameAuth.ts</code>. Coordinates are kept as on-disk “0xRRCC” strings inside the model rather than parsed to ints at load. <em>[unverified: no imports/calls edge web/src/map-editor/mapSchema.ts -&gt; CustomMapLoader in code graph]</em></li>
 <li><strong>Editor Operations</strong> boundary: web/src/map-editor/editorActions.ts and web/src/map-editor/editorEnhancements.ts — stateless transformations that take a CustomMap plus a tool action and return a new CustomMap; editorEnhancements layers higher-level composite operations on top of editorActions. No UI state is held here; all editor state is owned by the parent screen.</li>
@@ -112,30 +112,30 @@
 graph TD
 
     subgraph group_web["web"]
-        Custom_Map_Schema___Codec["Custom-Map Schema & Codec"]
-        Editor_Canvas___Palette["Editor Canvas & Palette"]
+        Custom_Map_Schema___Codec["Custom-Map Schema &amp; Codec"]
+        Editor_Canvas___Palette["Editor Canvas &amp; Palette"]
         Editor_Grid_Geometry["Editor Grid Geometry"]
         Editor_Operations["Editor Operations"]
         Game_Option_Discovery["Game Option Discovery"]
         Map_Editor_Barrel["Map Editor Barrel"]
         Map_Validation["Map Validation"]
-        Protocol_Codec___Parser_Registry["Protocol Codec & Parser Registry"]
+        Protocol_Codec___Parser_Registry["Protocol Codec &amp; Parser Registry"]
         Protocol_Message_Catalog["Protocol Message Catalog"]
     end
 
-    Editor_Canvas___Palette -->|"imports (2), calls (3)"| Custom_Map_Schema___Codec
-    Editor_Canvas___Palette -->|"imports (1), calls (3)"| Editor_Grid_Geometry
-    Editor_Canvas___Palette -->|"imports (1), calls (1)"| Editor_Operations
-    Editor_Grid_Geometry -->|"imports (1), calls (1)"| Custom_Map_Schema___Codec
-    Editor_Operations -->|"imports (7), calls (24)"| Custom_Map_Schema___Codec
-    Editor_Operations -->|"Function calls into the editor barrel... (unverified)"| Editor_Canvas___Palette
-    Editor_Operations -->|"imports (8), calls (10)"| Editor_Grid_Geometry
-    Editor_Operations -->|"imports (2), calls (1)"| Map_Validation
-    Editor_Operations -->|"WebSocket (SOCMessage text frames)"| Protocol_Codec___Parser_Registry
-    Game_Option_Discovery -->|"imports (2)"| Protocol_Codec___Parser_Registry
-    Map_Validation -->|"imports (5), calls (13)"| Custom_Map_Schema___Codec
-    Map_Validation -->|"WebSocket (SOCMessage text frames)"| Protocol_Codec___Parser_Registry
-    Protocol_Message_Catalog -->|"imports (7)"| Protocol_Codec___Parser_Registry
+    Editor_Canvas___Palette --&gt;|"imports (2), calls (3)"| Custom_Map_Schema___Codec
+    Editor_Canvas___Palette --&gt;|"imports (1), calls (3)"| Editor_Grid_Geometry
+    Editor_Canvas___Palette --&gt;|"imports (1), calls (1)"| Editor_Operations
+    Editor_Grid_Geometry --&gt;|"imports (1), calls (1)"| Custom_Map_Schema___Codec
+    Editor_Operations --&gt;|"imports (7), calls (24)"| Custom_Map_Schema___Codec
+    Editor_Operations --&gt;|"Function calls into the editor barrel... (unverified)"| Editor_Canvas___Palette
+    Editor_Operations --&gt;|"imports (8), calls (10)"| Editor_Grid_Geometry
+    Editor_Operations --&gt;|"imports (2), calls (1)"| Map_Validation
+    Editor_Operations --&gt;|"WebSocket (SOCMessage text frames)"| Protocol_Codec___Parser_Registry
+    Game_Option_Discovery --&gt;|"imports (2)"| Protocol_Codec___Parser_Registry
+    Map_Validation --&gt;|"imports (5), calls (13)"| Custom_Map_Schema___Codec
+    Map_Validation --&gt;|"WebSocket (SOCMessage text frames)"| Protocol_Codec___Parser_Registry
+    Protocol_Message_Catalog --&gt;|"imports (7)"| Protocol_Codec___Parser_Registry
 
 
 
@@ -149,6 +149,7 @@ graph TD
 <h2>Source Linkage</h2>
 <ul>
 <li><code class="code-ref" title="source file in your repository">Protocol Codec &amp; Parser Registry</code></li>
+<li><code class="code-ref" title="source file in your repository">Java-compatible protocol integer parser</code></li>
 <li><code class="code-ref" title="source file in your repository">Protocol type-id constants</code></li>
 <li><code class="code-ref" title="source file in your repository">Protocol public barrel</code></li>
 <li><code class="code-ref" title="source file in your repository">SOCScenarioInfo message</code></li>

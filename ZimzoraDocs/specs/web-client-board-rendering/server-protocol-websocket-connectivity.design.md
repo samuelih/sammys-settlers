@@ -35,11 +35,11 @@ codelens:
 - **One toCmd() string per frame** — Per constants.ts, 'Each WebSocket text frame carries exactly one toCmd() string' — this framing decision (one message per frame, no transport-level framing inside encode/decode) is what keeps the TS encode/decode contract symmetric and lets it reuse the Java per-class toCmd()/parseDataStr() shape directly.
 
 ## Overview
-This feature is the browser client's protocol layer for speaking the Java SOCServer wire protocol over WebSocket. Outbound, a message object is serialized via encode(msg) → msg.toCmd(), producing one command string per WebSocket text frame. Inbound, decode(raw) splits the raw frame on the SEP separator, parses the leading token as the integer message-type id, looks that id up in a module-level parser registry, and dispatches the remaining data portion to the matching MessageParser; it returns null for a missing separator-only type, an unknown id, a non-integer token, or a parser that rejects garbled data. The registry is populated lazily: importing web/src/protocol/index.ts triggers each ported message module's self-registration through registerParser. Shared constant tables in constants.ts supply the type ids and enum ordinals every parser and serializer depends on, keeping the TypeScript client byte-compatible with the existing Java server.
+This feature is the browser client's protocol layer for speaking the Java SOCServer wire protocol over WebSocket. Outbound, a message object is serialized via encode(msg) → msg.toCmd(), producing one command string per WebSocket text frame. Inbound, decode(raw) splits the raw frame on the SEP separator, parses the leading token as a Java-compatible signed 32-bit integer message-type id, looks that id up in a module-level parser registry, and dispatches the remaining data portion to the matching MessageParser; it returns null for a missing separator-only type, an unknown id, a non-integer/out-of-range token, or a parser that rejects garbled data. The registry is populated lazily: importing web/src/protocol/index.ts triggers each ported message module's self-registration through registerParser. Shared constant tables in constants.ts supply the type ids and enum ordinals every parser and serializer depends on, keeping the TypeScript client byte-compatible with the existing Java server.
 
 ## Components
 - **SOCMessage**: Defines the SOCMessage interface (readonly numeric `type` + `toCmd()` serialization contract), the per-type parser registry, and the encode/decode entry points. Pure TypeScript, no React.
-- **decode / encode** (referenced; defined externally): decode(raw) reads the integer type id up to the first SEP, looks up a registered parser, and hands it the remaining data portion; encode(msg) is a thin wrapper over msg.toCmd().
+- **decode / encode** (referenced; defined externally): decode(raw) reads the integer type id up to the first SEP, validates it with the Java-compatible integer helper, looks up a registered parser, and hands it the remaining data portion; encode(msg) is a thin wrapper over msg.toCmd().
 - **registerParser / _clearParsersForTest** (referenced; defined externally): registerParser(type, parser) installs a parser keyed by type id and throws on a duplicate id; _clearParsersForTest() resets the registry for test isolation and is intentionally not re-exported from the package index.
 - **protocol constants** (referenced; defined externally): Frozen lookup tables (SEP/SEP2/EMPTYSTR, MessageType, StatusValue, SeatLockState/SeatLockWire, OptionType, OptionFlag, GameState, ...) ported verbatim from soc.message.SOCMessage and related Java sources to mirror the exact wire-format tokens and message-type ids.
 - **protocol package index** (referenced; defined externally): Public surface of the protocol core; re-exports constants, the SOCMessage contract, and every ported message module. Importing it runs each message module's side-effecting registerParser() call so decode() can dispatch to all ported types.
@@ -52,13 +52,13 @@ This feature is the browser client's protocol layer for speaking the Java SOCSer
 ## Design Decisions
 - **Registry-based parser dispatch instead of a giant switch**: decode() looks up a Map<number, MessageParser> rather than hard-coding a switch like Java's SOCMessage.toMsg(String). Each message module self-registers on import via registerParser, so the dispatch table is assembled by side effect from index.ts. This lets new message types be added by porting one module without editing the core decoder, and keeps SOCMessage.ts free of dependencies on the concrete message classes.
 - **Fail-soft decode, fail-loud registration**: decode() never throws: unknown type ids, separator-only frames, non-integer tokens, and parser exceptions all collapse to null — deliberately mirroring Java's toMsg, where unknown/garbled types are ignored so a malformed frame can't crash the client. registerParser(), by contrast, throws on a duplicate type id because a duplicate is a programming error caught at module load, not runtime input.
-- **Stricter integer parsing than Number.parseInt**: JS Number.parseInt is lenient ('1083abc' -> 1083), but Java's Integer.parseInt rejects such tokens. decode() pre-validates the type token with /^[+-]?\d+$/ before parsing so the TypeScript client accepts exactly the tokens the Java server would, avoiding silent divergence in framing edge cases.
+- **Stricter integer parsing than Number.parseInt**: JS Number.parseInt is lenient ('1083abc' -> 1083) and does not enforce Java's signed 32-bit integer range. decode() parses the type token with `parseJavaInt` before dispatch so the TypeScript client accepts exactly the tokens the Java server would, avoiding silent divergence in framing edge cases.
 - **Constants ported verbatim from Java rather than negotiated at runtime**: MessageType ids and enum ordinals are copied as literal `as const` tables from the Java sources, with comments recording the authoritative origin and noting where task descriptions were wrong (e.g. OptionType verified against SOCGameOption.java). Hard-coding the values keeps the bundle dependency-free and the wire format byte-compatible, at the cost of requiring manual sync with SOCMessage.java when the protocol changes.
 - **Wire/ordinal split for seat-lock state**: SeatLockState keeps the Java enum ordinals (UNLOCKED=0, LOCKED=1, CLEAR_ON_RESET=2), but SeatLockWire maps each to its back-compat string ('true'/'false'/'clear') because SOCSetSeatLock.toCmd() writes the legacy boolean form, not the ordinal — the ordinal is explicitly NOT what travels on the wire.
 
 ## Constraints
 - **[UNVERIFIED]** A given message-type id MUST NOT have two parsers registered; registerParser throws on a duplicate id. — web/src/protocol/SOCMessage.ts::registerParser (throws `Duplicate parser registration for message type ${type}`) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
-- **[UNVERIFIED]** decode MUST reject a type token that Java's Integer.parseInt would reject, validating against /^[+-]?\d+$/ before dispatch. — web/src/protocol/SOCMessage.ts::decode (regex guard on typeStr) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
+- **[UNVERIFIED]** decode MUST reject a type token that Java's Integer.parseInt would reject, including malformed decimal tokens and values outside the signed 32-bit integer range, before dispatch. — web/src/protocol/SOCMessage.ts::decode; web/src/protocol/javaInt.ts::parseJavaInt (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
 - **[UNVERIFIED]** decode MUST return null (never throw) for unknown type ids, missing separators, or parser errors, matching Java's toMsg ignore-on-error behavior. — web/src/protocol/SOCMessage.ts::decode (try/catch returning null; undefined-parser branch) (cross-document reconciliation: not verified against `web/src/protocol/SOCMessage.ts`; recorded as design intent, not current code fact.)
 - **[SOFT]** Constant tables SHOULD stay in sync with src/main/java/soc/message/SOCMessage.java and related Java sources. — web/src/protocol/constants.ts (header comment: 'Keep these values in sync with ... SOCMessage.java')
 Repository evidence: `web/src/protocol/SOCMessage.ts`.
@@ -82,10 +82,10 @@ export function registerParser(type: number, parser: MessageParser): void {
 *Demonstrates the stricter-than-JS integer validation that keeps decode aligned with Java's Integer.parseInt.*
 *Source: `web/src/protocol/SOCMessage.ts::decode`*
 ```
-if (!/^[+-]?\d+$/.test(typeStr)) {
+const type = parseJavaInt(typeStr);
+  if (type === null) {
     return null;
   }
-  const type = Number.parseInt(typeStr, 10);
 ```
 
 ## Diagrams
@@ -122,6 +122,7 @@ graph TD
 
 ## Source Linkage
 - [decode parses a wire string into a SOCMessage via separator split and type-keyed parser dispatch](../../../web/src/protocol/SOCMessage.ts::decode)
+- [Java-compatible integer parser for protocol type tokens](../../../web/src/protocol/javaInt.ts::parseJavaInt)
 - [encode serializes a SOCMessage to its wire command string via toCmd()](../../../web/src/protocol/SOCMessage.ts::encode)
 - [registerParser populates the type-keyed parser registry and rejects duplicate type registrations](../../../web/src/protocol/SOCMessage.ts::registerParser)
 - [_clearParsersForTest resets the parser registry between tests](../../../web/src/protocol/SOCMessage.ts::_clearParsersForTest)
@@ -140,6 +141,7 @@ _Per-row confidence; `_unverified_` rows are disclosed, not verified; `0.08 (res
 | Element | Doc Evidence | Code Evidence | Confidence |
 |---------|--------------|---------------|-----------:|
 | Source Linkage: decode parses a wire string into a SOCMessage via separator split and type-keyed parser dispatch | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:79-112 | 0.75 |
+| Source Linkage: Java-compatible integer parser for protocol type tokens | Java-style decimal syntax and signed 32-bit range validation. | web/src/protocol/javaInt.ts | 0.75 |
 | Source Linkage: encode serializes a SOCMessage to its wire command string via toCmd() | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:64-66 | 0.75 |
 | Source Linkage: registerParser populates the type-keyed parser registry and rejects duplicate type registrations | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:50-55 | 0.75 |
 | Source Linkage: _clearParsersForTest resets the parser registry between tests | Base SOCMessage type, parser registry, and encode/decode helpers. | web/src/protocol/SOCMessage.ts:118-120 | 0.75 |
